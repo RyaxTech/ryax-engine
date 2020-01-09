@@ -1,0 +1,6 @@
+[submodule "ryaxpkgs"]
+	path = ryaxpkgs
+	url = git@gitlab.com:ryax-tech/dev/ryaxpkgs.git
+[submodule "ryax_common"]
+	path = common
+	url = git@gitlab.com:ryax-tech/dev/ryax_common.git
