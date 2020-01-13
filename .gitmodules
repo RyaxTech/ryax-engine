@@ -1,15 +1,15 @@
 [submodule "ryaxpkgs"]
 	path = ryaxpkgs
-	url = git@gitlab.com:ryax-tech/dev/ryaxpkgs.git
+	url = ./ryaxpkgs.git
 [submodule "ryax_common"]
 	path = common
-	url = git@gitlab.com:ryax-tech/dev/ryax_common.git
+	url = ./ryax_common.git
 [submodule "ryax_functions"]
 	path = functions
-	url = git@gitlab.com:ryax-tech/dev/ryax_functions.git
+	url = ./ryax_functions.git
 [submodule "ryax_function_def_reducer"]
 	path = function_def_reducer
-	url = git@gitlab.com:ryax-tech/dev/ryax_function_def_reducer.git
+	url = ./ryax_function_def_reducer.git
 [submodule "ryax_function_inst_reducer"]
 	path = function_inst_reducer
-	url = git@gitlab.com:ryax-tech/dev/ryax_function_inst_reducer.git
+	url = ./ryax_function_inst_reducer.git
