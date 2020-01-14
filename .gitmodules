@@ -18,4 +18,4 @@
 	url = ./ryax_function_inst_reducer.git
 [submodule "api"]
 	path = api
-	url = git@gitlab.com:ryax-tech/dev/ryax_api
+	url = ./ryax_api.git
