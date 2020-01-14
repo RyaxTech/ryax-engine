@@ -3,19 +3,19 @@
 	url = ../ryaxpkgs.git
 [submodule "ryax_common"]
 	path = common
-	url = ./ryax_common.git
+	url = ../ryax_common.git
 [submodule "ryax_api"]
 	path = ./api
-    url = ./ryax_api.git
+    url = ../ryax_api.git
 [submodule "ryax_functions"]
 	path = functions
-	url = ./ryax_functions.git
+	url = ../ryax_functions.git
 [submodule "ryax_function_def_reducer"]
 	path = function_def_reducer
-	url = ./ryax_function_def_reducer.git
+	url = ../ryax_function_def_reducer.git
 [submodule "ryax_function_inst_reducer"]
 	path = function_inst_reducer
-	url = ./ryax_function_inst_reducer.git
+	url = ../ryax_function_inst_reducer.git
 [submodule "api"]
 	path = api
-	url = ./ryax_api.git
+	url = ../ryax_api.git
