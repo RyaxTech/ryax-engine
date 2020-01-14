@@ -4,9 +4,6 @@
 [submodule "ryax_common"]
 	path = common
 	url = ../ryax_common.git
-[submodule "ryax_api"]
-	path = ./api
-    url = ../ryax_api.git
 [submodule "ryax_functions"]
 	path = functions
 	url = ../ryax_functions.git
