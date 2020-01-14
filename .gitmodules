@@ -10,9 +10,9 @@
 [submodule "ryax_function_def_reducer"]
 	path = function_def_reducer
 	url = ../ryax_function_def_reducer.git
-[submodule "ryax_function_inst_reducer"]
-	path = function_inst_reducer
-	url = ../ryax_function_inst_reducer.git
 [submodule "api"]
 	path = api
 	url = ../ryax_api.git
+[submodule "function_build_reducer"]
+	path = function_build_reducer
+	url = ../function_build_reducer.git
