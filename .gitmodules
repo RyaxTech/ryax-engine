@@ -1,6 +1,6 @@
 [submodule "ryaxpkgs"]
 	path = ryaxpkgs
-	url = ./ryaxpkgs.git
+	url = ../ryaxpkgs.git
 [submodule "ryax_common"]
 	path = common
 	url = ./ryax_common.git
