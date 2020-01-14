@@ -16,3 +16,6 @@
 [submodule "function_build_reducer"]
 	path = function_build_reducer
 	url = ../function_build_reducer.git
+[submodule "user_reducer"]
+	path = user_reducer
+	url = ../user_reducer
