@@ -15,7 +15,7 @@
 	url = ../ryax_api.git
 [submodule "function_build_reducer"]
 	path = function_build_reducer
-	url = ../function_build_reducer.git
+	url = ../ryax_function_build_reducer.git
 [submodule "user_reducer"]
 	path = user_reducer
-	url = ../user_reducer.git
+	url = ../ryax_user_reducer.git
