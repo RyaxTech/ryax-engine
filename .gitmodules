@@ -19,3 +19,6 @@
 [submodule "user_reducer"]
 	path = user_reducer
 	url = ../ryax_user_reducer.git
+[submodule "cli"]
+	path = cli
+	url = ../cli
