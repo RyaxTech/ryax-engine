@@ -16,3 +16,6 @@
 [submodule "reducers"]
 	path = reducers
 	url = ../ryax_reducers.git
+[submodule "workflows"]
+	path = workflows
+	url = ../ryax_workflows.git
