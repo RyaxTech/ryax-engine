@@ -19,3 +19,6 @@
 [submodule "workflows"]
 	path = workflows
 	url = ../ryax_workflows.git
+[submodule "launcher"]
+	path = launcher
+	url = ../ryax_launcher.git
