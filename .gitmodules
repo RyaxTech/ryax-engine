@@ -14,8 +14,8 @@
 	path = cli
 	url = ../ryax_cli.git
 [submodule "reducers"]
-	path = reducers
-	url = ../ryax_reducers.git
+	path = core
+	url = ../ryax_core.git
 [submodule "workflows"]
 	path = workflows
 	url = ../ryax_workflows.git
