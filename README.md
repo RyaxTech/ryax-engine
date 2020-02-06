@@ -16,5 +16,23 @@ git submodule foreach git checkout master
 
 Updates all submodules from master:
 ```sh
- git submodule foreach git pull
+git submodule foreach git pull
+```
+
+## Useful commands for development
+
+Most repos have their own shell.nix, which setup all dependencies at the right version.
+Thus, dont forget to:
+```sh
+nix-shell
+```
+
+However, this previous requires you to restart the nix-shell everythime that you update a dependency.
+It may be useful, for python dependencies, to make symlinks.
+```sh
+ln -s $(pwd)/lib/common/ryax_common/ reducers/ryax_core/
+ln -s $(pwd)/lib/common/ryax_common/ effects/orchestrator_kube_effect/
+ln -s $(pwd)/lib/functions/ryax_functions/ effects/orchestrator_kube_effect/
+ln -s $(pwd)/lib/common/ryax_common/ launcher/
+ln -s $(pwd)/lib/functions/ryax_functions/ launcher/
 ```
