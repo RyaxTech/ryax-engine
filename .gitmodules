@@ -25,3 +25,6 @@
 [submodule "effects/orchestrator_kube_effect"]
 	path = effects/orchestrator_kube_effect
 	url = ../ryax_orchestrator_kube_effect.git
+[submodule "effects/builder_nix_effect"]
+	path = effects/builder_nix_effect
+	url = ../ryax_builder_nix_effect.git

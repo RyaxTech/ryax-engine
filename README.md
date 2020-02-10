@@ -27,7 +27,7 @@ Thus, dont forget to:
 nix-shell
 ```
 
-However, this previous requires you to restart the nix-shell everythime that you update a dependency.
+However, this previous requires you to restart the nix-shell every time that you update a dependency.
 It may be useful, for python dependencies, to make symlinks.
 ```sh
 ln -s $(pwd)/lib/common/ryax_common/ reducers/ryax_core/
