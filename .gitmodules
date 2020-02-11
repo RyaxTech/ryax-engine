@@ -28,3 +28,9 @@
 [submodule "effects/builder_nix_effect"]
 	path = effects/builder_nix_effect
 	url = ../ryax_builder_nix_effect.git
+[submodule "lib/gateways"]
+	path = lib/gateways
+	url = ../ryax_gateways.git
+[submodule "tests"]
+	path = tests
+	url = ../integration_tests.git
