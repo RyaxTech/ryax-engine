@@ -19,6 +19,11 @@ Updates all submodules from master:
 git submodule foreach git pull
 ```
 
+When a new submodule is added, clone it:
+```sh
+git submodule update
+```
+
 ## Useful commands for development
 
 Most repos have their own shell.nix, which setup all dependencies at the right version.
