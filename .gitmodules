@@ -34,3 +34,6 @@
 [submodule "tests"]
 	path = tests
 	url = ../integration_tests.git
+[submodule "adm"]
+	path = adm
+	url = ../ryax-adm.git
