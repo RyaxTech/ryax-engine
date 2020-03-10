@@ -37,3 +37,9 @@
 [submodule "adm"]
 	path = adm
 	url = ../ryax-adm.git
+[submodule "ci"]
+	path = ci
+	url = ../ci-common.git
+[submodule "infra"]
+	path = infra
+	url = ../ryax-infrastructure.git
