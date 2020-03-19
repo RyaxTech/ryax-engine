@@ -54,6 +54,14 @@ find . -name 'release.json' -exec grep -l $LIBRARY {} +
 Increase the version of the new library on each of them along with the main
 version of the tool and repeat the release process.
 
+You can check the consistency of the library version with:
+```sh
+for file in $(find . -name release.json -exec grep -l $LIBRARY {} +)
+do
+echo $file
+cat $file | jq .dependencies.$LIBRARY.version
+done
+```
 
 ## Submodule management
 
