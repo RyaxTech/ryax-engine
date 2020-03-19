@@ -2,3 +2,10 @@ __pycache__
 tags
 *.swp
 .mypy_cache
+kubeconfig.yaml
+result*
+ryaxpkgs
+ci
+.ryax_token
+.flake8
+.isort.cfg
