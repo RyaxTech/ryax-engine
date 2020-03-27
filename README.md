@@ -17,7 +17,7 @@ After you have checked that the CI is still running successfully on the master
 branch, you can tag your last commit and push it with the following command:
 
 ```sh
-VERSION=$(cat release.json | jq -r .version) && git tag -a -m "Release $VERSION" "$VERSION" && git push
+VERSION=$(cat release.json | jq -r .version) && git tag -a -m "Release $VERSION" "$VERSION" && git push origin $VERSION
 ```
 
 Then, you can go to Gitlab and edit the description of the release:
