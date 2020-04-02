@@ -45,7 +45,7 @@ def describe_repos():
 
         lib["git_version"] = (
             subprocess.run(
-                f"cd {lib['dir']} ; git describe", shell=True, capture_output=True
+                f"cd {lib['dir']} ; git describe --dirty", shell=True, capture_output=True
             )
             .stdout.decode()
             .strip()
@@ -123,6 +123,7 @@ def print_dep(repos: dict, repos_with_no_dep: list, indent=0):
 
 
 def print_json(repos: dict, repos_with_no_dep: list):
+    analyze_repos(repos, repos_with_no_dep, print_errors=False)
     print(json.dumps(repos, indent=2))
 
 
