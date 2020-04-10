@@ -127,6 +127,11 @@ def print_json(repos: dict, repos_with_no_dep: list):
     print(json.dumps(repos, indent=2))
 
 
+def print_current_version(repos: dict, *args):
+    for name, repo in repos.items():
+        print(f'{name}: {TCOLOR.OKGREEN}{repo["last_tag"]}{TCOLOR.ENDC}')
+
+
 def update_release_json(repos: dict, repos_with_no_dep: list):
     # find problems
     analyze_repos(repos, repos_with_no_dep, print_errors=False)
@@ -193,6 +198,7 @@ def order_update(repos: dict, repos_with_no_dep: list):
 
 COMMANDS = {
     "print_json": {"description": "Print all infos in JSON.", "function": print_json},
+    "print_version": {"description": "Print current version of each package.", "function": print_current_version},
     "print_dep": {
         "description": "Print dependencies in reverse order.",
         "function": print_dep,
@@ -217,7 +223,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="The ultimate tool to help JEllyFishes releasing the Ryax software."
     )
-    subparsers = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
+    subparsers = parser.add_subparsers(
+        dest="command", required=True, metavar="COMMAND")
     for cmd, descr in COMMANDS.items():
         p = subparsers.add_parser(
             cmd, description=descr["description"], help=descr["description"]
