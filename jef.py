@@ -132,6 +132,14 @@ def print_current_version(repos: dict, *args):
         print(f'{name}: {TCOLOR.OKGREEN}{repo["last_tag"]}{TCOLOR.ENDC}')
 
 
+def print_release_json(repos: dict, repos_with_no_dep: list):
+    analyze_repos(repos, repos_with_no_dep, print_errors=False)
+    to_print = {}
+    for name, repo in repos.items():
+        to_print[name] = repo["last_tag"]
+    print(json.dumps(to_print, indent=2))
+
+
 def update_release_json(repos: dict, repos_with_no_dep: list):
     # find problems
     analyze_repos(repos, repos_with_no_dep, print_errors=False)
@@ -199,6 +207,7 @@ def order_update(repos: dict, repos_with_no_dep: list):
 COMMANDS = {
     "print_json": {"description": "Print all infos in JSON.", "function": print_json},
     "print_version": {"description": "Print current version of each package.", "function": print_current_version},
+    "print_release": {"description": "Print a json file that can be included to the ryax release.", "function": print_release_json},
     "print_dep": {
         "description": "Print dependencies in reverse order.",
         "function": print_dep,
