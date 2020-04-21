@@ -5,7 +5,9 @@ import glob
 import json
 import os
 import subprocess
-
+import re
+from operator import itemgetter
+from typing import Any, BinaryIO, Dict, Iterator, List, Optional, Tuple, Union
 
 class TCOLOR:
     HEADER = "\033[95m"
@@ -16,6 +18,55 @@ class TCOLOR:
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
     ENDC = "\033[0m"
+
+
+def print_list_of_dict_as_table(
+    d: List[dict], headers_order: Optional[List[str]] = None, sort_by: str = None
+) -> None:
+    """
+    print the list of dict <d> as a table in the console.  Items will be sorted
+    using <headers_order> and only items that are in <headers_order> are
+    printed.
+    """
+    if headers_order is None:
+        if len(d) == 0:
+            return
+        else:
+            headers_order = list(d[0].keys())
+
+    sorted(d, key=itemgetter(*headers_order))
+    if sort_by is not None:
+        d = sorted(d, key=lambda x: (x[sort_by] or "?"))
+
+    # convert non string values to strings
+    for row in d:
+        for h in headers_order:
+            if type(row[h]) == list:
+                row[h] = ",".join([str(x) for x in row[h]])
+            elif not isinstance((row[h]), str):
+                row[h] = str(row[h])
+
+    def len_without_color(s):
+        return len(re.sub(r"\033\[[0-9]+m", "", s))
+
+    headers_width = {}
+    for h in headers_order:
+        headers_width[h] = len_without_color(h)
+        for row in d:
+            headers_width[h] = max(headers_width[h], len_without_color(str(row[h])))
+
+    print(TCOLOR.UNDERLINE + "|", end="")
+    for h in headers_order:
+        print(" {: >{}}|".format(h, headers_width[h]), end="")
+    print(TCOLOR.ENDC)
+
+
+    for row in d:
+        print("|", end="")
+        for h in headers_order:
+            len_color_overhead = len(row[h]) - len_without_color(row[h])
+            print(" {: >{}}|".format(row[h], headers_width[h] + len_color_overhead), end="")
+        print("")
 
 
 def describe_repos():
@@ -113,6 +164,14 @@ def analyze_repos(repos: dict, repos_with_no_dep: list, print_errors=True):
                     )
                 repo["need_update"] = True
 
+        # determine next_version
+        if repo["need_update"]:
+            semver = repo["last_tag"].split(".")
+            semver[-1] = str(int(semver[-1]) + 1)
+            repo["next_version"] = ".".join(semver)
+        else:
+            repo["next_version"] = repo["version"]
+
 
 def print_dep(repos: dict, repos_with_no_dep: list, indent=0):
     # print(indent, repos_with_no_dep)
@@ -127,30 +186,39 @@ def print_json(repos: dict, repos_with_no_dep: list):
     print(json.dumps(repos, indent=2))
 
 
-def print_current_version(repos: dict, *args):
-    for name, repo in repos.items():
-        print(f'{name}: {TCOLOR.OKGREEN}{repo["last_tag"]}{TCOLOR.ENDC}')
-
-
-def print_release_json(repos: dict, repos_with_no_dep: list):
+def print_current_version(repos: dict, repos_with_no_dep: list):
     analyze_repos(repos, repos_with_no_dep, print_errors=False)
-    to_print = {}
-    for name, repo in repos.items():
-        to_print[name] = repo["last_tag"]
-    print(json.dumps(to_print, indent=2))
+
+    # Compute a score to order repos.
+    # The lower score should be updated first.
+    # This doesn't work on some complex settings, but is enough for our case.
+    for repo in repos.values():
+        repo["score"] = len(repos)
+    for repo in repos.values():
+        for dep in repo["dependencies"]:
+            repos[dep]["score"] -= 1
+
+    repos_list = []
+    for repo in repos.values():
+        if repo["need_update"]:
+            correct_version = f"{TCOLOR.FAIL}{repo['next_version']}{TCOLOR.ENDC}"
+        else:
+            correct_version = f"{TCOLOR.OKGREEN}{repo['next_version']}{TCOLOR.ENDC}"
+
+        repos_list.append({
+            **repo,
+            "next": correct_version,
+            "rls.json": repo["version"],
+            "tag": repo["last_tag"],
+            "git": repo["git_version"],
+            " ": repo["score"],
+            })
+    print_list_of_dict_as_table(repos_list, [ " ", "libname", "next", "rls.json", "tag", "git"], "score")
 
 
 def update_release_json(repos: dict, repos_with_no_dep: list):
     # find problems
     analyze_repos(repos, repos_with_no_dep, print_errors=False)
-    # determine next_version
-    for repo in repos.values():
-        if repo["need_update"]:
-            semver = repo["last_tag"].split(".")
-            semver[-1] = str(int(semver[-1]) + 1)
-            repo["next_version"] = ".".join(semver)
-        else:
-            repo["next_version"] = repo["version"]
     # create release.json
     print(json.dumps(repos, indent=2))
     for repo in repos.values():
@@ -174,40 +242,9 @@ def update_release_json(repos: dict, repos_with_no_dep: list):
         )
 
 
-def order_update_rec(repos: dict, repos_with_no_dep: list, score):
-    for repo in repos_with_no_dep:
-        repos[repo]["score"] += score
-        order_update_rec(repos, repos[repo]["reverse_dependencies"], score + 3)
-
-
-def order_update(repos: dict, repos_with_no_dep: list):
-    analyze_repos(repos, repos_with_no_dep, print_errors=False)
-    for repo in repos.values():
-        repo["score"] = 0
-    order_update_rec(repos, repos_with_no_dep, 1)
-    repos_sorted = sorted(repos.values(), key=lambda x: x["score"])
-    for i, repo in enumerate(repos_sorted):
-        if repo["need_update"]:
-            need_update = f"{TCOLOR.FAIL}NEED UPDATE{TCOLOR.ENDC}"
-        else:
-            need_update = f"{TCOLOR.OKGREEN}OK{TCOLOR.ENDC}"
-        print(
-            i + 1,
-            ") ",
-            repo["libname"],
-            ": \t",
-            repo["dir"],
-            " \t",
-            need_update,
-            sep="",
-        )
-        # print_dep(repos, repos[repo]["reverse_dependencies"], score+1)
-
-
 COMMANDS = {
     "print_json": {"description": "Print all infos in JSON.", "function": print_json},
-    "print_version": {"description": "Print current version of each package.", "function": print_current_version},
-    "print_release": {"description": "Print a json file that can be included to the ryax release.", "function": print_release_json},
+    "print_version": {"description": "Print versions of each package.", "function": print_current_version},
     "print_dep": {
         "description": "Print dependencies in reverse order.",
         "function": print_dep,
@@ -220,11 +257,8 @@ COMMANDS = {
         "description": "Update the release.json files.",
         "function": update_release_json,
     },
-    "order_update": {
-        "description": "Print repo in order they should be updated",
-        "function": order_update,
-    },
 }
+
 
 if __name__ == "__main__":
     import argparse
