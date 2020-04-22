@@ -4,10 +4,11 @@
 import glob
 import json
 import os
-import subprocess
 import re
+import subprocess
 from operator import itemgetter
 from typing import Any, BinaryIO, Dict, Iterator, List, Optional, Tuple, Union
+
 
 class TCOLOR:
     HEADER = "\033[95m"
@@ -60,12 +61,14 @@ def print_list_of_dict_as_table(
         print(" {: >{}}|".format(h, headers_width[h]), end="")
     print(TCOLOR.ENDC)
 
-
     for row in d:
         print("|", end="")
         for h in headers_order:
             len_color_overhead = len(row[h]) - len_without_color(row[h])
-            print(" {: >{}}|".format(row[h], headers_width[h] + len_color_overhead), end="")
+            print(
+                " {: >{}}|".format(row[h], headers_width[h] + len_color_overhead),
+                end="",
+            )
         print("")
 
 
@@ -96,7 +99,9 @@ def describe_repos():
 
         lib["git_version"] = (
             subprocess.run(
-                f"cd {lib['dir']} ; git describe --dirty", shell=True, capture_output=True
+                f"cd {lib['dir']} ; git describe --dirty",
+                shell=True,
+                capture_output=True,
             )
             .stdout.decode()
             .strip()
@@ -205,15 +210,19 @@ def print_current_version(repos: dict, repos_with_no_dep: list):
         else:
             correct_version = f"{TCOLOR.OKGREEN}{repo['next_version']}{TCOLOR.ENDC}"
 
-        repos_list.append({
-            **repo,
-            "next": correct_version,
-            "rls.json": repo["version"],
-            "tag": repo["last_tag"],
-            "git": repo["git_version"],
-            " ": repo["score"],
-            })
-    print_list_of_dict_as_table(repos_list, [ " ", "libname", "next", "rls.json", "tag", "git"], "score")
+        repos_list.append(
+            {
+                **repo,
+                "next": correct_version,
+                "rls.json": repo["version"],
+                "tag": repo["last_tag"],
+                "git": repo["git_version"],
+                " ": repo["score"],
+            }
+        )
+    print_list_of_dict_as_table(
+        repos_list, [" ", "libname", "next", "rls.json", "tag", "git"], "score"
+    )
 
 
 def update_release_json(repos: dict, repos_with_no_dep: list):
@@ -244,7 +253,10 @@ def update_release_json(repos: dict, repos_with_no_dep: list):
 
 COMMANDS = {
     "print_json": {"description": "Print all infos in JSON.", "function": print_json},
-    "print_version": {"description": "Print versions of each package.", "function": print_current_version},
+    "print_version": {
+        "description": "Print versions of each package.",
+        "function": print_current_version,
+    },
     "print_dep": {
         "description": "Print dependencies in reverse order.",
         "function": print_dep,
@@ -266,8 +278,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="The ultimate tool to help JEllyFishes releasing the Ryax software."
     )
-    subparsers = parser.add_subparsers(
-        dest="command", required=True, metavar="COMMAND")
+    subparsers = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
     for cmd, descr in COMMANDS.items():
         p = subparsers.add_parser(
             cmd, description=descr["description"], help=descr["description"]
