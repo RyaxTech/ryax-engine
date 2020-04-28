@@ -43,3 +43,6 @@
 [submodule "infra"]
 	path = infra
 	url = ../ryax-infrastructure.git
+[submodule "user-pkgs"]
+	path = user-pkgs
+	url = ../ryax-users-pkgs.git
