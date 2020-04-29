@@ -91,7 +91,6 @@ def describe_repos():
         lib["version"] = release_json["version"]
         lib["dependencies"] = {}
         if "dependencies" in release_json:
-            deps = {}
             for p, d in release_json["dependencies"].items():
                 lib["dependencies"][p] = d["version"]
         if len(lib["dependencies"]) == 0:
@@ -157,7 +156,7 @@ def analyze_repos(repos: dict, repos_with_no_dep: list, print_errors=True):
             repo["need_update"] = True
 
         for dep, depver in repo["dependencies"].items():
-            if depver != repos[dep]["version"]:
+            if depver != "master" and depver != repos[dep]["version"]:
                 if print_errors:
                     print(
                         "Dependency",
@@ -234,7 +233,10 @@ def update_release_json(repos: dict, repos_with_no_dep: list):
         print("=========", repo["libname"], repo["release_file"])
         deps = {}
         for dep, depver in repo["dependencies"].items():
-            deps[dep] = {"version": repos[dep]["next_version"]}
+            if depver == "master":
+                deps[dep] = {"version": "master", "rolling": True}
+            else:
+                deps[dep] = {"version": repos[dep]["next_version"]}
         print(
             json.dumps(
                 {
