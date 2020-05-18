@@ -20,6 +20,12 @@ class TCOLOR:
     UNDERLINE = "\033[4m"
     ENDC = "\033[0m"
 
+# Package naming is odd. Some packages have different name.
+# We use this table as a rosetta stone.
+SYNONYMS = {
+    "ryax-users-pkgs": "ryaxuserpkgs",
+    }
+
 
 def print_list_of_dict_as_table(
     d: List[dict], headers_order: Optional[List[str]] = None, sort_by: str = None
@@ -117,11 +123,16 @@ def describe_repos():
 
         lib["reverse_dependencies"] = []
 
-        repos[lib["libname"]] = lib
+        if lib["libname"] in SYNONYMS:
+            repos[SYNONYMS[lib["libname"]]] = lib
+        else:
+            repos[lib["libname"]] = lib
 
     # find reverse dependencies
     for reponame, repo in repos.items():
         for dep, depver in repo["dependencies"].items():
+            if dep not in repos:
+                raise Exception(f"Repo '{dep}', dependency of '{reponame}' not in the repos {repos.keys()}")
             repos[dep]["reverse_dependencies"].append(reponame)
 
     return repos, repos_with_no_dep
