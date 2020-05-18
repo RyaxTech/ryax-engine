@@ -257,11 +257,16 @@ def update_release_json(repos: dict, repos_with_no_dep: list):
                 indent=4,
             )
         )
-        json.dump(
-            {"version": repo["next_version"], "dependencies": deps},
-            open(repo["release_file"], "w"),
-            indent=4,
-        )
+        with open(repo["release_file"], "w") as rlsjson:
+            json.dump(
+                {"version": repo["next_version"], "dependencies": deps},
+                rlsjson,
+                indent=4,
+            )
+            # Some people likes files with an extra new line
+            rlsjson.write("\n")
+
+
 
 
 COMMANDS = {
