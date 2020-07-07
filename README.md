@@ -67,7 +67,7 @@ done
 
 Get all the submodules:
 ```sh
-git clone --recursive git@gitlab.com:ryax-tech/dev/ryax-main.git
+git clone --recursive git@gitlab.com:ryax-tech/dev/backend/ryax-main.git
 ```
 
 Got from detached head to master branch for all repo:
