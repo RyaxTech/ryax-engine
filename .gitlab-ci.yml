@@ -2,7 +2,7 @@ image: python:3.7-alpine
 
 
 pages:
-  stage: pages
+  stage: deploy
   script:
   - pip install -U sphinx sphinx_rtd_theme recommonmark
   - mv README.md index.md
