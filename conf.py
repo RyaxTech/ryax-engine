@@ -33,7 +33,9 @@ exclude_patterns = [
 print(os.listdir())
 # Avoid content.rst not found error
 # https://stackoverflow.com/questions/56336234/build-fail-sphinx-error-contents-rst-not-found
-master_doc = 'README'
+master_doc = 'index'
+html_domain_indices = True
+html_use_index = True
 
 
 # -- Options for HTML output -------------------------------------------------

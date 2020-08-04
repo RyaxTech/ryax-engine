@@ -53,6 +53,12 @@ You can find documentation of all submodules in their gitlab page:
         A Nix repository that may be opened one day
 
 
+Ryax use several technologies, here are some tutorials:
+- Nix, the package manager: https://nix.dev/index.html
+- Docker and kubernetes, the container system and its orchestration: https://container.training/
+- Python3.asyncio, the concurrent python lib: https://realpython.com/async-io-python/
+- RabbitMQ, the message broker: https://www.rabbitmq.com/tutorials/tutorial-one-python.html and http://tryrabbitmq.com/
+
 
 ## Releasing
 
