@@ -1,6 +1,8 @@
 # Ryax main repository
 
 Ryax main repository for the backend.
+At Ryax Tech, we use several Git repositories.
+This repository includes all of them using the [submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules) system.
 
 To clone this repository:
 ```sh
@@ -37,6 +39,8 @@ You can find documentation of all submodules in their gitlab page:
         An effect that builds modules
     - [ryax_orchestrator_kube_effect](https://ryax-tech.gitlab.io/dev/backend/ryax_orchestrator_kube_effect/)
         An effect that manages Kubernetes
+    - [ryax-webui](https://gitlab.com/ryax-tech/dev/ryax-webui)
+        The WebUI. WARNING: it contains javascript.
 - CI/CD stuff:
     - [ryax-adm](https://ryax-tech.gitlab.io/dev/backend/ryax-adm/):
         Everything you need to install Ryax
@@ -46,6 +50,8 @@ You can find documentation of all submodules in their gitlab page:
         Ryax infrastructure definitions and deployment tools
     - [ci-common](https://ryax-tech.gitlab.io/dev/backend/ci-common/):
         Common CI stuff
+    - [ryax-release](https://ryax-tech.gitlab.io/dev/ryax-release/):
+        Everything to release a new version of Ryax, for testing purpose or in production.
 - Nix stuff:
     - [ryaxpkgs](https://ryax-tech.gitlab.io/dev/backend/ryaxpkgs/):
         A Nix repository internal to Ryax
@@ -54,10 +60,10 @@ You can find documentation of all submodules in their gitlab page:
 
 
 Ryax use several technologies, here are some tutorials:
-- Nix, the package manager: https://nix.dev/index.html
-- Docker and kubernetes, the container system and its orchestration: https://container.training/
-- Python3.asyncio, the concurrent python lib: https://realpython.com/async-io-python/
-- RabbitMQ, the message broker: https://www.rabbitmq.com/tutorials/tutorial-one-python.html and http://tryrabbitmq.com/
+- Nix, the package manager: [a generic tutorial](https://nix.dev/index.html)
+- Docker and kubernetes, the container system and its orchestration: [a page with tutorials covering everything](https://container.training/)
+- Python3.asyncio, the concurrent python lib: [A generic tutorial](https://realpython.com/async-io-python/)
+- RabbitMQ, the message broker: [the official tutorial](https://www.rabbitmq.com/tutorials/tutorial-one-python.html) and [an online simulator](http://tryrabbitmq.com/).
 
 
 ## Releasing
@@ -66,7 +72,7 @@ Ryax use several technologies, here are some tutorials:
 
 To release a new version of a submodule, first you have to increase the `version` field in the
 `release.json` file located the root of each subproject. Please follow the
-semantic versioning guidelines: See https://semver.org/
+semantic versioning guidelines: See [Semver](https://semver.org/).
 
 Then, create a Merge request (or use an existing one) with your working branch.
 If The CI run successfully, you can merge your MR into master.
@@ -116,6 +122,11 @@ If the `tag`, `git`, and `rls.json` are equals, you can use the same tool to upd
 ```sh
 python jef.py update
 ```
+
+### Release of Ryax
+
+See the [ryax-release](https://ryax-tech.gitlab.io/dev/ryax-release/) git repository.
+
 
 ### A new submodule has been added
 

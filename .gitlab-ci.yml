@@ -1,5 +1,15 @@
 image: python:3.7-alpine
 
+test:
+  stage: test
+  script:
+  - pip install -U sphinx sphinx_rtd_theme recommonmark
+  - mv README.md index.md
+  - sphinx-build -b html . public
+  only:
+  - branches
+  except:
+  - master
 
 pages:
   stage: deploy
@@ -10,5 +20,5 @@ pages:
   artifacts:
     paths:
     - public
-  #only:
-  #- master
+  only:
+  - master
