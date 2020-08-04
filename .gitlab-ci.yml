@@ -6,6 +6,7 @@ test:
   - pip install -U sphinx sphinx_rtd_theme recommonmark
   - mv README.md index.md
   - sphinx-build -b html . public
+  - chmod -R u+w public
   only:
   - branches
   except:
@@ -17,6 +18,7 @@ pages:
   - pip install -U sphinx sphinx_rtd_theme recommonmark
   - mv README.md index.md
   - sphinx-build -b html . public
+  - chmod -R u+w public
   artifacts:
     paths:
     - public
