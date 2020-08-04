@@ -1,4 +1,4 @@
-# ryax-main
+# Ryax main repository
 
 Ryax main repository for the backend.
 
@@ -117,4 +117,10 @@ If a new submodule is added, clone it:
 ```sh
 git submodule update
 ```
+
+
+---
+
+[License](LICENSE.md)
+
 
