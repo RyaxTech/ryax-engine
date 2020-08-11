@@ -1,14 +1,78 @@
-# ryax-main
+# Ryax main repository
 
-Ryax main repository.
+Ryax main repository for the backend.
+At Ryax Tech, we use several Git repositories.
+This repository includes all of them using the [submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules) system.
+
+To clone this repository:
+```sh
+git clone --recursive git@gitlab.com:ryax-tech/dev/backend/ryax-main.git
+```
+
+Got from detached head to master branch for all repo:
+```sh
+git submodule foreach git checkout master
+```
+
+Updates all submodules from their current branch:
+```sh
+git submodule foreach git pull
+```
+
+## Documentation
+
+You can find documentation of all submodules in their gitlab page:
+- Code stuff:
+    - [ryax_workflows](https://ryax-tech.gitlab.io/dev/backend/ryax_workflows/):
+        Some modules and workflows
+    - [ryax_cli](https://ryax-tech.gitlab.io/dev/backend/ryax_cli/):
+        The CLI to command Ryax
+    - [ryax_core](https://ryax-tech.gitlab.io/dev/backend/ryax_core/):
+        Home of the reducers, the core of Ryax logic
+    - [ryax_launcher](https://ryax-tech.gitlab.io/dev/backend/ryax_launcher/):
+        The piece of code that launch function (aka module) code
+    - [ryax_gateways](https://ryax-tech.gitlab.io/dev/backend/ryax_gateways/):
+        The piece of code that launch gateway (aka source) code
+    - [ryax_functions](https://ryax-tech.gitlab.io/dev/backend/ryax_functions/)
+        A library to manage modules.
+    - [ryax_builder_nix_effect](https://ryax-tech.gitlab.io/dev/backend/ryax_builder_nix_effect/)
+        An effect that builds modules
+    - [ryax_orchestrator_kube_effect](https://ryax-tech.gitlab.io/dev/backend/ryax_orchestrator_kube_effect/)
+        An effect that manages Kubernetes
+    - [ryax-webui](https://gitlab.com/ryax-tech/dev/ryax-webui)
+        The WebUI. WARNING: it contains javascript.
+- CI/CD stuff:
+    - [ryax-adm](https://ryax-tech.gitlab.io/dev/backend/ryax-adm/):
+        Everything you need to install Ryax
+    - [integration_tests](https://ryax-tech.gitlab.io/dev/backend/integration_tests/):
+        Integration tests
+    - [ryax-infrastructure](https://ryax-tech.gitlab.io/dev/backend/ryax-infrastructure/):
+        Ryax infrastructure definitions and deployment tools
+    - [ci-common](https://ryax-tech.gitlab.io/dev/backend/ci-common/):
+        Common CI stuff
+    - [ryax-release](https://ryax-tech.gitlab.io/dev/ryax-release/):
+        Everything to release a new version of Ryax, for testing purpose or in production.
+- Nix stuff:
+    - [ryaxpkgs](https://ryax-tech.gitlab.io/dev/backend/ryaxpkgs/):
+        A Nix repository internal to Ryax
+    - [ryaxuserpkgs](https://ryax-tech.gitlab.io/dev/backend/ryaxuserpkgs/):
+        A Nix repository that may be opened one day
+
+
+Ryax use several technologies, here are some tutorials:
+- Nix, the package manager: [a generic tutorial](https://nix.dev/index.html)
+- Docker and kubernetes, the container system and its orchestration: [a page with tutorials covering everything](https://container.training/)
+- Python3.asyncio, the concurrent python lib: [A generic tutorial](https://realpython.com/async-io-python/)
+- RabbitMQ, the message broker: [the official tutorial](https://www.rabbitmq.com/tutorials/tutorial-one-python.html) and [an online simulator](http://tryrabbitmq.com/).
+
 
 ## Releasing
 
-### Release the Library
+### Release of a submodule
 
-To release a library, first you have to increase the `version` field in the
+To release a new version of a submodule, first you have to increase the `version` field in the
 `release.json` file located the root of each subproject. Please follow the
-semantic versioning guidelines: See https://semver.org/
+semantic versioning guidelines: See [Semver](https://semver.org/).
 
 Then, create a Merge request (or use an existing one) with your working branch.
 If The CI run successfully, you can merge your MR into master.
@@ -44,43 +108,36 @@ Here is an example template for your release note:
 Now you can propagate the new library version in the other Ryax tools that
 depends on it.
 
-You can list these tools with the following command:
+List all modules, with their current git version, current tag, current version in the `release.json` file and their potential next version:
 ```sh
-# From ryax-main for ryax_functions
-export LIBRARY=ryax_functions
-find . -name 'release.json' -exec grep -l $LIBRARY {} +
+python jef.py print_version
 ```
 
-Increase the version of the new library on each of them along with the main
-version of the tool and repeat the release process.
+Submodules in red need to be updated, it can be because of:
+- the tag is different than the version in release.json (columns `tag` and `rls.json` are different)
+- their are somme commits done after the last tag (columns `tag` and `git` are different)
+- some of its dependencies are not up to date.
 
-You can check the consistency of the library version with:
+If the `tag`, `git`, and `rls.json` are equals, you can use the same tool to update all `release.json` files:
 ```sh
-for file in $(find . -name release.json -exec grep -l $LIBRARY {} +)
-do
-echo $file
-cat $file | jq .dependencies.$LIBRARY.version
-done
+python jef.py update
 ```
 
-## Submodule management
+### Release of Ryax
 
-Get all the submodules:
-```sh
-git clone --recursive git@gitlab.com:ryax-tech/dev/ryax-main.git
-```
+See the [ryax-release](https://ryax-tech.gitlab.io/dev/ryax-release/) git repository.
 
-Got from detached head to master branch for all repo:
-```sh
-git submodule foreach git checkout master
-```
 
-Updates all submodules from master:
-```sh
-git submodule foreach git pull
-```
+### A new submodule has been added
 
-When a new submodule is added, clone it:
+If a new submodule is added, clone it:
 ```sh
 git submodule update
 ```
+
+
+---
+
+[License](LICENSE.md)
+
+

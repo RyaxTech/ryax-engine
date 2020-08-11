@@ -9,3 +9,5 @@ ci
 .ryax_token
 .flake8
 .isort.cfg
+_build
+public
