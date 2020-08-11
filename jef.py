@@ -20,11 +20,12 @@ class TCOLOR:
     UNDERLINE = "\033[4m"
     ENDC = "\033[0m"
 
+
 # Package naming is odd. Some packages have different name.
 # We use this table as a rosetta stone.
 SYNONYMS = {
     "ryax-users-pkgs": "ryaxuserpkgs",
-    }
+}
 
 
 def print_list_of_dict_as_table(
@@ -132,7 +133,9 @@ def describe_repos():
     for reponame, repo in repos.items():
         for dep, depver in repo["dependencies"].items():
             if dep not in repos:
-                raise Exception(f"Repo '{dep}', dependency of '{reponame}' not in the repos {repos.keys()}")
+                raise Exception(
+                    f"Repo '{dep}', dependency of '{reponame}' not in the repos {repos.keys()}"
+                )
             repos[dep]["reverse_dependencies"].append(reponame)
 
     return repos, repos_with_no_dep
@@ -265,8 +268,6 @@ def update_release_json(repos: dict, repos_with_no_dep: list):
             )
             # Some people likes files with an extra new line
             rlsjson.write("\n")
-
-
 
 
 COMMANDS = {
