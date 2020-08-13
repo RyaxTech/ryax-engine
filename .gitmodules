@@ -5,7 +5,7 @@
 	path = lib/common
 	url = ../lib/common.git
 [submodule "ryax_functions"]
-	path = lib/functions
+	path = lib/modules
 	url = ../lib/functions.git
 [submodule "api"]
 	path = api
@@ -29,7 +29,7 @@
 	path = effects/builder
 	url = ../effects/ryax_builder.git
 [submodule "lib/gateways"]
-	path = lib/gateways
+	path = lib/sources
 	url = ../lib/gateways.git
 [submodule "integration_tests"]
 	path = integration_tests
