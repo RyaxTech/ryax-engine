@@ -3,46 +3,46 @@
 	url = ../ryaxpkgs.git
 [submodule "ryax_common"]
 	path = lib/common
-	url = ../ryax_common.git
+	url = ../lib/common.git
 [submodule "ryax_functions"]
 	path = lib/functions
-	url = ../ryax_functions.git
+	url = ../lib/functions.git
 [submodule "api"]
 	path = api
-	url = ../ryax_api.git
+	url = ../api.git
 [submodule "cli"]
 	path = cli
-	url = ../ryax_cli.git
-[submodule "reducers"]
+	url = ../cli.git
+[submodule "core"]
 	path = core
-	url = ../ryax_core.git
+	url = ../core.git
 [submodule "workflows"]
 	path = workflows
-	url = ../ryax_workflows.git
+	url = ../workflows.git
 [submodule "launcher"]
 	path = launcher
-	url = ../ryax_launcher.git
-[submodule "effects/orchestrator_kube_effect"]
-	path = effects/orchestrator_kube_effect
-	url = ../ryax_orchestrator_kube_effect.git
-[submodule "effects/builder_nix_effect"]
-	path = effects/builder_nix_effect
-	url = ../ryax_builder_nix_effect.git
+	url = ../launcher.git
+[submodule "effects/orchestrator"]
+	path = effects/orchestrator
+	url = ../effects/orchestrator.git
+[submodule "effects/builder"]
+	path = effects/builder
+	url = ../effects/ryax_builder.git
 [submodule "lib/gateways"]
 	path = lib/gateways
-	url = ../ryax_gateways.git
-[submodule "tests"]
-	path = tests
+	url = ../lib/gateways.git
+[submodule "integration_tests"]
+	path = integration_tests
 	url = ../integration_tests.git
 [submodule "adm"]
 	path = adm
-	url = ../ryax-adm.git
-[submodule "ci"]
-	path = ci
-	url = ../ci-common.git
-[submodule "infra"]
-	path = infra
-	url = ../ryax-infrastructure.git
-[submodule "user-pkgs"]
-	path = user-pkgs
-	url = ../ryax-users-pkgs.git
+	url = ../adm.git
+[submodule "ci_common"]
+	path = ci_common
+	url = ../ci_common.git
+[submodule "internal_services"]
+	path = internal_services
+	url = ../internal_services.git
+[submodule "ryaxuserpkgs"]
+	path = ryaxuserpkgs
+	url = ../ryaxuserpkgs.git
