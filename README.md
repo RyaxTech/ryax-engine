@@ -23,32 +23,32 @@ git submodule foreach git pull
 
 You can find documentation of all submodules in their gitlab page:
 - Code stuff:
-    - [ryax_workflows](https://ryax-tech.gitlab.io/dev/backend/ryax_workflows/):
+    - [workflows](https://ryax-tech.gitlab.io/dev/backend/workflows/):
         Some modules and workflows
-    - [ryax_cli](https://ryax-tech.gitlab.io/dev/backend/ryax_cli/):
+    - [cli](https://ryax-tech.gitlab.io/dev/backend/cli/):
         The CLI to command Ryax
-    - [ryax_core](https://ryax-tech.gitlab.io/dev/backend/ryax_core/):
+    - [core](https://ryax-tech.gitlab.io/dev/backend/core/):
         Home of the reducers, the core of Ryax logic
-    - [ryax_launcher](https://ryax-tech.gitlab.io/dev/backend/ryax_launcher/):
+    - [launcher](https://ryax-tech.gitlab.io/dev/backend/launcher/):
         The piece of code that launch function (aka module) code
-    - [ryax_gateways](https://ryax-tech.gitlab.io/dev/backend/ryax_gateways/):
-        The piece of code that launch gateway (aka source) code
-    - [ryax_functions](https://ryax-tech.gitlab.io/dev/backend/ryax_functions/)
+    - [sources](https://ryax-tech.gitlab.io/dev/backend/sources/):
+        The piece of code that launch source (aka gateway) code
+    - [modules](https://ryax-tech.gitlab.io/dev/backend/modules/)
         A library to manage modules.
-    - [ryax_builder_nix_effect](https://ryax-tech.gitlab.io/dev/backend/ryax_builder_nix_effect/)
+    - [builder](https://ryax-tech.gitlab.io/dev/backend/effects/builder)
         An effect that builds modules
-    - [ryax_orchestrator_kube_effect](https://ryax-tech.gitlab.io/dev/backend/ryax_orchestrator_kube_effect/)
+    - [orchestrator](https://ryax-tech.gitlab.io/dev/backend/effects/orchestrator/)
         An effect that manages Kubernetes
     - [ryax-webui](https://gitlab.com/ryax-tech/dev/ryax-webui)
         The WebUI. WARNING: it contains javascript.
-- CI/CD stuff:
-    - [ryax-adm](https://ryax-tech.gitlab.io/dev/backend/ryax-adm/):
+- Operational and CI/CD stuff:
+    - [adm](https://ryax-tech.gitlab.io/dev/backend/adm/):
         Everything you need to install Ryax
     - [integration_tests](https://ryax-tech.gitlab.io/dev/backend/integration_tests/):
         Integration tests
-    - [ryax-infrastructure](https://ryax-tech.gitlab.io/dev/backend/ryax-infrastructure/):
+    - [internal_services](https://ryax-tech.gitlab.io/dev/backend/internal_services/):
         Ryax infrastructure definitions and deployment tools
-    - [ci-common](https://ryax-tech.gitlab.io/dev/backend/ci-common/):
+    - [ci_common](https://ryax-tech.gitlab.io/dev/backend/ci_common/):
         Common CI stuff
     - [ryax-release](https://ryax-tech.gitlab.io/dev/ryax-release/):
         Everything to release a new version of Ryax, for testing purpose or in production.
@@ -61,7 +61,7 @@ You can find documentation of all submodules in their gitlab page:
 
 Ryax use several technologies, here are some tutorials:
 - Nix, the package manager: [a generic tutorial](https://nix.dev/index.html)
-- Docker and kubernetes, the container system and its orchestration: [a page with tutorials covering everything](https://container.training/)
+- Docker and Kubernetes, the container system and its orchestration: [a page with tutorials covering everything](https://container.training/)
 - Python3.asyncio, the concurrent python lib: [A generic tutorial](https://realpython.com/async-io-python/)
 - RabbitMQ, the message broker: [the official tutorial](https://www.rabbitmq.com/tutorials/tutorial-one-python.html) and [an online simulator](http://tryrabbitmq.com/).
 
@@ -87,7 +87,7 @@ VERSION=$(cat release.json | jq -r .version) && git tag -a -m "Release $VERSION"
 Then, you can go to Gitlab and edit the description of the release:
 ```sh
 # Get the link for ryax common:
-SUBPROJECT=ryax_common echo https://gitlab.com/ryax-tech/dev/backend/$SUBPROJECT/-/tags/$VERSION/release/edit
+SUBPROJECT=lib/common echo https://gitlab.com/ryax-tech/dev/backend/$SUBPROJECT/-/tags/$VERSION/release/edit
 ```
 
 Here is an example template for your release note:
