@@ -1,12 +1,18 @@
 [submodule "ryaxpkgs"]
 	path = ryaxpkgs
 	url = ../ryaxpkgs.git
-[submodule "ryax_common"]
+[submodule "ryaxuserpkgs"]
+	path = ryaxuserpkgs
+	url = ../ryaxuserpkgs.git
+[submodule "lib/common"]
 	path = lib/common
 	url = ../lib/common.git
-[submodule "ryax_functions"]
+[submodule "lib/modules"]
 	path = lib/modules
-	url = ../lib/functions.git
+	url = ../lib/modules.git
+[submodule "lib/sources"]
+	path = lib/sources
+	url = ../lib/sources.git
 [submodule "api"]
 	path = api
 	url = ../api.git
@@ -27,10 +33,7 @@
 	url = ../effects/orchestrator.git
 [submodule "effects/builder"]
 	path = effects/builder
-	url = ../effects/ryax_builder.git
-[submodule "lib/gateways"]
-	path = lib/sources
-	url = ../lib/gateways.git
+	url = ../effects/builder.git
 [submodule "integration_tests"]
 	path = integration_tests
 	url = ../integration_tests.git
@@ -43,6 +46,3 @@
 [submodule "internal_services"]
 	path = internal_services
 	url = ../internal_services.git
-[submodule "ryaxuserpkgs"]
-	path = ryaxuserpkgs
-	url = ../ryaxuserpkgs.git
