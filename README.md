@@ -1,25 +1,6 @@
-# Ryax main repository
+# Ryax Internal Documentation
 
-Ryax main repository for the backend.
-At Ryax Tech, we use several Git repositories.
-This repository includes all of them using the [submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules) system.
-
-To clone this repository:
-```sh
-git clone --recursive git@gitlab.com:ryax-tech/dev/backend/ryax-main.git
-```
-
-Got from detached head to master branch for all repo:
-```sh
-git submodule foreach git checkout master
-```
-
-Updates all submodules from their current branch:
-```sh
-git submodule foreach git pull
-```
-
-## Documentation
+## Internal Documentation
 
 You can find documentation of all submodules in their gitlab page:
 - Code stuff:
@@ -58,6 +39,7 @@ You can find documentation of all submodules in their gitlab page:
     - [ryaxuserpkgs](https://ryax-tech.gitlab.io/dev/backend/ryaxuserpkgs/):
         A Nix repository that may be opened one day
 
+## External Documentation
 
 Ryax use several technologies, here are some tutorials:
 - Nix, the package manager: [a generic tutorial](https://nix.dev/index.html)
@@ -65,6 +47,26 @@ Ryax use several technologies, here are some tutorials:
 - Python3.asyncio, the concurrent python lib: [A generic tutorial](https://realpython.com/async-io-python/)
 - RabbitMQ, the message broker: [the official tutorial](https://www.rabbitmq.com/tutorials/tutorial-one-python.html) and [an online simulator](http://tryrabbitmq.com/).
 
+## Ryax Main Repository
+
+Ryax main repository for the backend.
+At Ryax Tech, we use several Git repositories.
+This repository includes all of them using the [submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules) system.
+
+To clone this repository:
+```sh
+git clone --recursive git@gitlab.com:ryax-tech/dev/backend/ryax-main.git
+```
+
+Got from detached head to master branch for all repo:
+```sh
+git submodule foreach git checkout master
+```
+
+Updates all submodules from their current branch:
+```sh
+git submodule foreach git pull
+```
 
 ## Releasing
 
