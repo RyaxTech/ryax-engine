@@ -68,6 +68,11 @@ Updates all submodules from their current branch:
 git submodule foreach git pull
 ```
 
+If a new submodule is added, clone it:
+```sh
+git submodule update
+```
+
 ## Releasing
 
 ### Release of a submodule
@@ -127,15 +132,8 @@ python jef.py update
 
 ### Release of Ryax
 
-See the [ryax-release](https://ryax-tech.gitlab.io/dev/ryax-release/) git repository.
+See the [ryax-release](https://gitlab.com/ryax-tech/dev/ryax-release/) git repository.
 
-
-### A new submodule has been added
-
-If a new submodule is added, clone it:
-```sh
-git submodule update
-```
 
 
 ---
