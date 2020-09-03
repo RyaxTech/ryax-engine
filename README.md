@@ -2,36 +2,44 @@
 
 ## Internal Documentation
 
-You can find documentation of all submodules in their gitlab page:
-- Code stuff:
-    - [workflows](https://ryax-tech.gitlab.io/dev/backend/workflows/):
-        Some modules and workflows
+You can find documentation of all Ryax component in their own documentation:
+
+- UI
     - [cli](https://ryax-tech.gitlab.io/dev/backend/cli/):
         The CLI to command Ryax
+    - [ryax-webui](https://gitlab.com/ryax-tech/dev/ryax-webui)
+        The WebUI. WARNING: it contains javascript.
+- Workflows
+    - [workflows](https://gitlab.com/ryax-tech/dev/backend/workflows/):
+        Some modules and workflows
+- Internal services and tools
     - [core](https://ryax-tech.gitlab.io/dev/backend/core/):
         Home of the reducers, the core of Ryax logic
-    - [launcher](https://ryax-tech.gitlab.io/dev/backend/launcher/):
-        The piece of code that launch function (aka module) code
-    - [sources](https://ryax-tech.gitlab.io/dev/backend/sources/):
-        The piece of code that launch source (aka gateway) code
-    - [modules](https://ryax-tech.gitlab.io/dev/backend/modules/)
-        A library to manage modules.
+    - [api](https://ryax-tech.gitlab.io/dev/backend/api/)
+        Ryax REST API service
     - [builder](https://ryax-tech.gitlab.io/dev/backend/effects/builder)
         An effect that builds modules
     - [orchestrator](https://ryax-tech.gitlab.io/dev/backend/effects/orchestrator/)
         An effect that manages Kubernetes
-    - [ryax-webui](https://gitlab.com/ryax-tech/dev/ryax-webui)
-        The WebUI. WARNING: it contains javascript.
+    - [launcher](https://ryax-tech.gitlab.io/dev/backend/launcher/):
+        The piece of code that launch function (aka module) code
+- Libraries
+    - [common](https://ryax-tech.gitlab.io/dev/backend/lib/common/)
+        Common framework and tools for Ryax services.
+    - [sources](https://ryax-tech.gitlab.io/dev/backend/lib/sources/)
+        The piece of code that launch source (aka gateway) code
+    - [modules](https://ryax-tech.gitlab.io/dev/backend/lib/modules/)
+        A library to manage modules.
 - Operational and CI/CD stuff:
     - [adm](https://ryax-tech.gitlab.io/dev/backend/adm/):
         Everything you need to install Ryax
-    - [integration_tests](https://ryax-tech.gitlab.io/dev/backend/integration_tests/):
+    - [integration_tests](https://gitlab.com/ryax-tech/dev/backend/integration_tests/):
         Integration tests
     - [internal_services](https://ryax-tech.gitlab.io/dev/backend/internal_services/):
         Ryax infrastructure definitions and deployment tools
     - [ci_common](https://ryax-tech.gitlab.io/dev/backend/ci_common/):
         Common CI stuff
-    - [ryax-release](https://ryax-tech.gitlab.io/dev/ryax-release/):
+    - [ryax-release](https://gitlab.com/ryax-tech/dev/ryax-release):
         Everything to release a new version of Ryax, for testing purpose or in production.
 - Nix stuff:
     - [ryaxpkgs](https://ryax-tech.gitlab.io/dev/backend/ryaxpkgs/):
@@ -49,9 +57,9 @@ Ryax use several technologies, here are some tutorials:
 
 ## Ryax Main Repository
 
-Ryax main repository for the backend.
-At Ryax Tech, we use several Git repositories.
-This repository includes all of them using the [submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules) system.
+This repository is the Ryax main repository for the backend.  At Ryax Tech, we
+use several Git repositories.  This repository includes all of them using the
+[submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules) system.
 
 To clone this repository:
 ```sh
