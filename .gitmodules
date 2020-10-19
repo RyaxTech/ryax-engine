@@ -46,3 +46,9 @@
 [submodule "internal_services"]
 	path = internal_services
 	url = ../internal_services.git
+[submodule "module_builder"]
+	path = module_builder
+	url = ../module_builder
+[submodule "repository"]
+	path = repository
+	url = ../repository

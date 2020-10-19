@@ -23,6 +23,10 @@ You can find documentation of all Ryax component in their own documentation:
         An effect that manages Kubernetes
     - [launcher](https://ryax-tech.gitlab.io/dev/backend/launcher/):
         The piece of code that launch function (aka module) code
+    - [repository](https://gitlab.com/ryax-tech/dev/backend/repository/-/blob/master/README.rst)
+        Manage repositories of user's modules
+    - [module_builder](https://gitlab.com/ryax-tech/dev/backend/module_builder/-/blob/master/README.rst)
+        Module builder related to the repositories service
 - Libraries
     - [common](https://ryax-tech.gitlab.io/dev/backend/lib/common/)
         Common framework and tools for Ryax services.
