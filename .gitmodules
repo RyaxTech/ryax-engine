@@ -52,3 +52,6 @@
 [submodule "repository"]
 	path = repository
 	url = ../repository
+[submodule "studio"]
+	path = studio
+	url = ../studio
