@@ -185,7 +185,10 @@ def analyze_repos(repos: dict, repos_with_no_dep: list, print_errors=True):
         # determine next_version
         if repo["need_update"]:
             semver = repo["last_tag"].split(".")
-            semver[-1] = str(int(semver[-1]) + 1)
+            if semver[-1]:
+                semver[-1] = str(int(semver[-1]) + 1)
+            else:
+                semver = ["0" ,"1", "0"]
             repo["next_version"] = ".".join(semver)
         else:
             repo["next_version"] = repo["version"]
