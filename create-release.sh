@@ -6,7 +6,7 @@ set -e
 VERSION=${1:-"staging"}
 
 # ryaxpkgs is here for api proxy image (TODO move it to ./api)
-SERVICES="./repository ./api ./core ./adm ./cli ./studio ./effects/builder ./effects/orchestrator ./ryaxpkgs"
+SERVICES="./webui ./repository ./api ./core ./adm ./cli ./studio ./effects/builder ./effects/orchestrator ./ryaxpkgs"
 
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
