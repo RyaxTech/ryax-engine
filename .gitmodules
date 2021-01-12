@@ -55,3 +55,6 @@
 [submodule "studio"]
 	path = studio
 	url = ../studio
+[submodule "webui"]
+	path = webui
+	url = ../webui
