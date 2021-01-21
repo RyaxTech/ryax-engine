@@ -3,7 +3,8 @@
 set -e
 # set -x
 
-VERSION=${1:-"staging"}
+VERSION=${1:-"latest"}
+FROM_VERSION=${2:-"staging"}
 
 # ryaxpkgs is here for api proxy image (TODO move it to ./api)
 SERVICES="./webui ./repository ./api ./core ./adm ./cli ./studio ./effects/builder ./effects/orchestrator ./ryaxpkgs"
@@ -14,8 +15,8 @@ for service in $SERVICES
 do
     echo === Entering $service
     cd $service
-    git checkout master
     git pull
+    git checkout "$FROM_VERSION"
     if [[ $(git tag --points-at HEAD | grep $VERSION) == $VERSION ]]
     then
         echo == Version $VERSION already on the head of master for $service
