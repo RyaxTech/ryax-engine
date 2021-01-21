@@ -58,3 +58,6 @@
 [submodule "webui"]
 	path = webui
 	url = ../webui
+[submodule "sdk"]
+	path = sdk
+	url = ../sdk
