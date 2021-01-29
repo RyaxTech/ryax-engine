@@ -15,8 +15,8 @@ for service in $SERVICES
 do
     echo === Entering $service
     cd $service
-    git pull
     git checkout "$FROM_VERSION"
+    git pull
     if [[ $(git tag --points-at HEAD | grep $VERSION) == $VERSION ]]
     then
         echo == Version $VERSION already on the head of master for $service
