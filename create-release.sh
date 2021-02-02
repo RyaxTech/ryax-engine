@@ -21,11 +21,15 @@ do
     if [[ $(git tag --points-at HEAD | grep $VERSION) == $VERSION ]]
     then
         echo == Version $VERSION already on the reference $FROM_VERSION for $service
+        git checkout master
+        git push origin "$VERSION"
     else
         echo == Updating the $VERSION to the head of master
         git tag --delete "$VERSION" || true
         git push --delete origin "$VERSION" || true
-        git tag "$VERSION" && git push origin "$VERSION"
+        git tag "$VERSION"
+        git checkout master
+        git push origin "$VERSION"
     fi
     cd $CURRENT_DIR
 done
