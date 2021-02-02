@@ -7,7 +7,7 @@ VERSION=${1:-"latest"}
 FROM_VERSION=${2:-"staging"}
 
 # ryaxpkgs is here for api proxy image (TODO move it to ./api)
-SERVICES="./webui ./repository ./api ./core ./adm ./cli ./studio ./effects/orchestrator ./ryaxpkgs"
+SERVICES="./webui ./repository ./api ./core ./adm ./cli ./studio ./effects/orchestrator ./ryaxpkgs ./module_builder"
 
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
