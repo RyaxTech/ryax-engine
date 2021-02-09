@@ -57,7 +57,7 @@
 	url = ../studio
 [submodule "webui"]
 	path = webui
-	url = ../webui
+	url = ../../ryax-webui
 [submodule "sdk"]
-	path = sdk
-	url = ../sdk
+	path = sdk/ryax-python-sdk
+	url = ../../ryax-sdk/ryax-python-sdk
