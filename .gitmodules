@@ -58,6 +58,6 @@
 [submodule "webui"]
 	path = webui
 	url = ../../ryax-webui
-[submodule "sdk"]
+[submodule "sdk/ryax-python-sdk"]
 	path = sdk/ryax-python-sdk
 	url = ../../ryax-sdk/ryax-python-sdk
