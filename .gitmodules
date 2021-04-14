@@ -61,3 +61,6 @@
 [submodule "sdk/ryax-python-sdk"]
 	path = sdk/ryax-python-sdk
 	url = ../../ryax-sdk/ryax-python-sdk
+[submodule "default-modules"]
+	path = default-modules
+	url = git@gitlab.com:ryax-tech/dev/default-modules.git
