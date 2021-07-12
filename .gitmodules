@@ -64,3 +64,6 @@
 [submodule "default-modules"]
 	path = default-modules
 	url = ../../../workflows/default-modules.git
+[submodule "authorization"]
+	path = authorization
+	url = git@gitlab.com:ryax-tech/dev/backend/authorization.git
