@@ -67,3 +67,6 @@
 [submodule "authorization"]
 	path = authorization
 	url = git@gitlab.com:ryax-tech/dev/backend/authorization.git
+[submodule "errored-modules"]
+	path = errored-modules
+	url = git@gitlab.com:ryax-tech/dev/errored-modules.git
