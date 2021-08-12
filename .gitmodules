@@ -70,6 +70,6 @@
 [submodule "errored-modules"]
 	path = errored-modules
 	url = git@gitlab.com:ryax-tech/dev/errored-modules.git
-[submodule "execution"]
-	path = execution
+[submodule "runtime_engine"]
+	path = runtime_engine
 	url = git@gitlab.com:ryax-tech/dev/backend/execution.git
