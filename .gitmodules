@@ -66,10 +66,13 @@
 	url = ../../../workflows/default-modules.git
 [submodule "authorization"]
 	path = authorization
-	url = git@gitlab.com:ryax-tech/dev/backend/authorization.git
+	url = ./authorization.git
 [submodule "errored-modules"]
 	path = errored-modules
 	url = git@gitlab.com:ryax-tech/dev/errored-modules.git
 [submodule "runtime_engine"]
 	path = runtime_engine
-	url = git@gitlab.com:ryax-tech/dev/backend/execution.git
+	url = ./execution.git
+[submodule "templates/template"]
+	path = templates/template
+	url = ./templates/template.git
