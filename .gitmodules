@@ -69,10 +69,13 @@
 	url = ./authorization.git
 [submodule "errored-modules"]
 	path = errored-modules
-	url = git@gitlab.com:ryax-tech/dev/errored-modules.git
+	url = ../../errored-modules.git
 [submodule "runtime_engine"]
 	path = runtime_engine
 	url = ./execution.git
 [submodule "templates/template"]
 	path = templates/template
 	url = ./templates/template.git
+[submodule "ryax-public-doc"]
+	path = ryax-public-doc
+	url = ../../ryax-public-doc.git
