@@ -40,6 +40,9 @@ REPOS_TO_BE_RELEASED = {
     "core": {
         "gitlab_project": "ryax-tech/dev/backend/core",
     },
+    "default-modules": {
+        "gitlab_project": "ryax-tech/workflows/default-modules",
+    },
     "module_builder": {
         "gitlab_project": "ryax-tech/dev/backend/module_builder",
     },
@@ -245,7 +248,7 @@ def command_check_stagings(args):
     print(f"'{TCOLOR.OKGREEN}=={TCOLOR.ENDC}' if it is the same commit; '{TCOLOR.OKBLUE}>>{TCOLOR.ENDC}' if the left commit is more recent than the right one.")
     for repo_name, repo_d in REPOS_TO_BE_RELEASED.items():
         repo = Repo(repo_name)
-        print(f"{repo_name: <15}", end="")
+        print(f"{repo_name: <16}", end="")
         print_last_versions_order(repo)
 
 
@@ -299,7 +302,7 @@ def print_pipe(reponame, pipe):
 
 def command_wait_all_pipes(args):
     tag = args.tag
-    GITLAB_TOKEN="FeUCMZgK_SJL24yoyP_b"
+    GITLAB_TOKEN = os.environ['GITLAB_TOKEN']
     import gitlab
     gl = gitlab.Gitlab('https://gitlab.com/', private_token=GITLAB_TOKEN)
     gl.auth()
@@ -322,7 +325,8 @@ def command_wait_all_pipes(args):
     while len(repo_not_finished) > 1:
         reponame = repo_not_finished.pop(0)
         if reponame == "SLEEP":
-            time.sleep(1.5)
+            print("...")
+            time.sleep(5.5)
             repo_not_finished.append(reponame)
             continue
         repo = REPOS_TO_BE_RELEASED[reponame]
