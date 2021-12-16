@@ -70,9 +70,6 @@
 [submodule "errored-modules"]
 	path = errored-modules
 	url = ../../errored-modules.git
-[submodule "runtime_engine"]
-	path = runtime_engine
-	url = ./execution.git
 [submodule "templates/template"]
 	path = templates/template
 	url = ./templates/template.git
