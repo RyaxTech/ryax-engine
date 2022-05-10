@@ -14,7 +14,7 @@ Ryax is an open-source platform that streamlines the design, deployment, and mon
 
 ## Documentation
 
-Links to the documentation.
+https://docs.ryax.tech
 
 
 ## Install
