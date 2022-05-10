@@ -1,6 +1,6 @@
 # Ryax
 
-![Color solo (soft)500px](https://user-images.githubusercontent.com/104617518/167607203-14bf4435-0142-4113-8206-762ed011a27d.png)
+![Color solo (soft)150px](https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd2-460a-b263-2e4c79b69196.png)
 
 
 Ryax is an open-source platform that streamlines the design, deployment, and monitoring of Cloud automations and APIs.
