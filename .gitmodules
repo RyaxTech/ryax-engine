@@ -1,42 +1,12 @@
 [submodule "ryaxpkgs"]
 	path = ryaxpkgs
 	url = ../ryaxpkgs.git
-[submodule "ryaxuserpkgs"]
-	path = ryaxuserpkgs
-	url = ../ryaxuserpkgs.git
-[submodule "lib/common"]
-	path = lib/common
-	url = ../lib/common.git
-[submodule "lib/modules"]
-	path = lib/modules
-	url = ../lib/modules.git
-[submodule "lib/sources"]
-	path = lib/sources
-	url = ../lib/sources.git
-[submodule "api"]
-	path = api
-	url = ../api.git
 [submodule "cli"]
 	path = cli
-	url = ../cli.git
-[submodule "core"]
-	path = core
-	url = ../core.git
+	url = git@gitlab.com:ryax-tech/ryax/ryax-cli.git
 [submodule "workflows"]
 	path = workflows
 	url = ../workflows.git
-[submodule "launcher"]
-	path = launcher
-	url = ../launcher.git
-[submodule "effects/orchestrator"]
-	path = effects/orchestrator
-	url = ../effects/orchestrator.git
-[submodule "effects/builder"]
-	path = effects/builder
-	url = ../effects/builder.git
-[submodule "integration_tests"]
-	path = integration_tests
-	url = ../integration_tests.git
 [submodule "adm"]
 	path = adm
 	url = ../adm.git
@@ -76,3 +46,12 @@
 [submodule "ryax-public-doc"]
 	path = ryax-public-doc
 	url = ../../ryax-public-doc.git
+[submodule "business-user-webui"]
+	path = business-user-webui
+	url = ../../business-user-webui.git
+[submodule "module_wrappers"]
+	path = module_wrappers
+	url = ../module_wrappers.git
+[submodule "runner"]
+	path = runner
+	url = ../runner.git
