@@ -9,7 +9,7 @@
 	url = ../workflows.git
 [submodule "adm"]
 	path = adm
-	url = ../adm.git
+	url = https://gitlab.com/ryax-tech/ryax/ryax-adm.git
 [submodule "ci_common"]
 	path = ci_common
 	url = ../ci_common.git
