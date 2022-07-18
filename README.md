@@ -91,13 +91,6 @@ TODO write how to know which ports are exposed. (Or test a conflict situation)
 
 ### On an existing kube cluster
 
-TODO : minimal configuration?
-
-Best method for a longer lasting installation. Also the easiest if you already
-have a cluster. Best idea is to use ryax-adm in its docker image but it's also
-possible to run it on the local machine (see previous section) (you don't need
-kind).
-
 #### Preparatory steps on the cluster
 
 - Make sure you're on the intended cluster : `kubectl config current-context`
@@ -117,6 +110,7 @@ Installing Ryax is very much analogous to installing a Helm chart. To get
 you started we will use a default configuration and tweak one thing or two
 so that everything is compatible with your kube provider, but be assured
 that you will be able to fine tune your installation later on.
+
 Just like helm charts, we call "values" the configuration of a Ryax
 cluster.
 
