@@ -63,6 +63,8 @@ want a longer lasting installation for your production needs.
 
 ### On a local machine
 
+// TODO we have nix-shell for all the dependencies, but we need to fix it.
+
 You will need the following dependencies :
 
 - [Helm](https://helm.sh/)
@@ -91,18 +93,19 @@ TODO write how to know which ports are exposed. (Or test a conflict situation)
 
 ### On an existing kube cluster
 
-#### Preparatory steps on the cluster
+#### Preparatory steps
 
 - Make sure you're on the intended cluster : `kubectl config current-context`
-- Make sure it's empty. Ryax may or may not function properly alongside
-other installations, as some cluster wide resources may collide with one
-another (CRDs, for instance). It is preffered that Ryax gets its own
-cluster to ensure a trouble free installation so if you do not wish to set
-up a brand new cluster for Ryax, check out <link to the section for a
-local install>.
-- Make sure you have got complete admin access to the cluster. You will have
-to create namespaces and some cluster resources. Try to run `kubectl auth
-can-i create ns` or `kubectl auth can-i create pc`, for instance.
+- Make sure it's empty : we offer no guarantee that Ryax will run smoothly
+  alongside other applications.
+- Make sure you have got complete admin access to the cluster. Try to run
+  `kubectl auth can-i create ns` or `kubectl auth can-i create pc`, for
+  instance.
+
+We will assume that you are comfortable with Kubernetes and therefore we will
+not provide too many details on the Kubernetes parts of the installation. If
+not, you can just copy paste the commands and leave the default values as they
+are.
 
 #### Customize your installation
 
@@ -112,28 +115,52 @@ so that everything is compatible with your kube provider, but be assured
 that you will be able to fine tune your installation later on.
 
 Just like helm charts, we call "values" the configuration of a Ryax
-cluster.
+cluster. Let's initialize a basic values file.
 
-TODO init values. These have to be minimal. Edit : instance url, storage
-classes (give the name of the default ones for aws, azure, gcp), pvc sizes
-(give minimal amount so that it works, state that it's better to start small
-because you can't shrink them in kubernetes)
-
+// TODO make the docker image public with a 'latest' tag
+// TODO is this really more convenient than running at home in a nix-shell?
 ```{bash}
+docker run -v $PWD:/data/volume -u $UID registry-1.ryax.org/dev/ryax-adm:staging init --values volume/ryax_values.yaml
+vim ryax_values.yaml # Or your favorite text editor
 ```
 
-TODO edit
+The `clusterName` value is the name you give to your cluster, which is used in
+various places. One of those places is the url of your cluster that will end up
+being <clusterName>.<domainName>.io, therefore it has to be consistent with your dns.
+
+// TODO sensible defaults for the values file.
+// TODO add a 'domain' value so the user can use its own domain, instead of 'ryax.io'
+
+The rest of the values is self explanatory, feel free to make them suit your
+needs. We recommend that you start small with the volumes sizes, as you can't
+shrink them later on without deleting them, which will force you to
+backup/restore your data. The default values give comfortable volume sizes to
+start working on the platform, you can always scale them later.
 
 #### Install Ryax
 
-TODO apply values
+Once you have customized your values, install Ryax on your cluster :
 
 ```{bash}
+docker run -v $PWD:/data/volume -u $UID registry-1.ryax.org/dev/ryax-adm:staging apply --values volume/ryax_values.yaml
 ```
+
+If the installation fails, check the logs, check your configuration and try
+again. If you are lost you can contact us and we will be happy to help! <TODO
+links to the various ways to contact us>
 
 #### Configure your dns
 
-TODO how to retrieve traefik external IP
+The very last step is configuring your dns so that you can connect to your
+cluster. The address you should register is <clusterName>.<domainName>.ryax.io.
+
+To retrieve the external IP of your cluster, run this one liner
+```
+kubectl -n kube-system get svc traefik -o jsonpath='{.status.loadBalancer.ingress[].ip}'
+```
+
+If you want something less tiresome to type, it is also visible with `kubectl
+-n kube-system get svc traefik`.
 
 ## 🛹 Roadmap
 
