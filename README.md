@@ -126,7 +126,7 @@ vim ryax_values.yaml # Or your favorite text editor
 
 The `clusterName` value is the name you give to your cluster, which is used in
 various places. One of those places is the url of your cluster that will end up
-being <clusterName>.<domainName>.io, therefore it has to be consistent with your dns.
+being \<clusterName\>.\<domainName\>.io, therefore it has to be consistent with your dns.
 
 // TODO sensible defaults for the values file.
 // TODO add a 'domain' value so the user can use its own domain, instead of 'ryax.io'
@@ -152,15 +152,15 @@ links to the various ways to contact us>
 #### Configure your dns
 
 The very last step is configuring your dns so that you can connect to your
-cluster. The address you should register is <clusterName>.<domainName>.ryax.io.
+cluster. The address you should register is \<clusterName\>.\<domainName\>.ryax.io.
 
 To retrieve the external IP of your cluster, run this one liner
 ```
 kubectl -n kube-system get svc traefik -o jsonpath='{.status.loadBalancer.ingress[].ip}'
 ```
 
-If you want something less tiresome to type, it is also visible with `kubectl
--n kube-system get svc traefik`.
+If you want something easier to type day to day : `kubectl -n kube-system get
+svc traefik`, under "External IP".
 
 ## 🛹 Roadmap
 
