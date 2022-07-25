@@ -49,58 +49,52 @@ Deploying Ryax:
 - [Terraform](https://www.terraform.io/)
 - [Helm](https://helm.sh/)
 
-## Getting started with Ryax
-
-We describe here two possible ways to install Ryax.
-
-**On your local machine** : We recommend this option if you wish to test our
-product with a minimal amount of configuration steps. You will have to install
-a few dependencies.
-
-**On a Kubernetes cluster** : This is the standard and recommended approach. We
-recommend this option if you have an available cluster on your hands or if you
-want a longer lasting installation for your production needs.
+## ⚡ Getting started with Ryax
 
 ### On a local machine
 
-**TODO we have nix-shell for all the dependencies, but we need to fix it.**
+We recommend this option if you wish to test our product with a minimal amount of configuration steps.
 
-You will need the following dependencies :
-
+You need the following dependencies :
 - [Helm](https://helm.sh/)
 - [Helmfile](https://github.com/roboll/helmfile)
 - [Poetry](https://python-poetry.org/) (Or `nix-shell`, although poetry is
   substantially faster)
 - [Kind](https://github.com/kubernetes-sigs/kind)
 
-Once these are available on your machine, follow these steps to run a local
-Ryax instance.
+Once these are available on your machine:
 
-- Clone [ryax-adm](https://gitlab.com/ryax-tech/ryax/ryax-adm/) somewhere and
+1) Clone [ryax-adm](https://gitlab.com/ryax-tech/ryax/ryax-adm/) and
   `cd` into it.
-- Run `poetry install` to generate a virtual environment for python.
-- Run `poetry shell` to activate the virtual environment. These last two steps
+2) Run `poetry install` to generate a virtual environment for python.
+3) Run `poetry shell` to activate the virtual environment. These last two steps
   can also be replaced by `nix-shell`, although this one can take a while.
-- Run `./adm/local_ryax/local-ryax.sh`. This will deploy a Ryax instance on
+4) Run `./adm/local_ryax/local-ryax.sh` to deploy a Ryax instance on
   your machine with `kind`.
-- Connect to `localhost` on your navigator and *voilà*.
+5) Connect to `http://localhost` on your web browser and *voilà*.
 
-**/!\ Warning** Kind runs a kubernetes instance in a docker container on your
-machine, which will expose the NodePorts of the cluster. This may conflict with
-ports that would be already used on your machine.
 
-**TODO write how to know which ports are exposed. (Or test a conflict situation)**
+### On an existing Kubernetes cluster
 
-### On an existing kube cluster
+This is the standard and recommended approach.
 
-- Make sure you're on the intended cluster: `kubectl config current-context`
-- Get the helm value file: ```{bash}
+1) Make sure you're on the intended cluster:
+```bash
+kubectl config current-context
+```
+2) Get the helm value file:
+```bash
 docker run -v $PWD:/data/volume -u $UID registry-1.ryax.org/dev/ryax-adm:staging init --values volume/ryax_values.yaml
 ```
-- Edit it if needed: `vim ryax_values.yaml # Or your favorite text editor`
-- Install: ```{bash}
+3) Edit it if needed:
+```bash
+vim ryax_values.yaml # Or your favorite text editor
+```
+4) Install:
+```bash
 docker run -v $PWD:/data/volume -u $UID registry-1.ryax.org/dev/ryax-adm:staging apply --values volume/ryax_values.yaml
 ```
+5) An ingress has been opened by Traeffik, connect to to on your web browser and *voilà*.
 
 For more details on the configuration, see [our documentation](https://docs.ryax.tech/howto/install_ryax_kubernetes.html).
 
