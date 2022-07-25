@@ -94,7 +94,7 @@ vim ryax_values.yaml # Or your favorite text editor
 ```bash
 docker run -v $PWD:/data/volume -u $UID registry-1.ryax.org/dev/ryax-adm:staging apply --values volume/ryax_values.yaml
 ```
-5) An ingress has been opened by Traeffik, connect to to on your web browser and *voilà*.
+5) An ingress has been opened by Traefik, connect to it on your web browser and *voilà*.
 
 For more details on the configuration, see [our documentation](https://docs.ryax.tech/howto/install_ryax_kubernetes.html).
 
