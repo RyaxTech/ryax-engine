@@ -82,7 +82,7 @@ This is the standard and recommended approach.
 ```bash
 kubectl config current-context
 ```
-2) Get the helm value file:
+2) Get a basic configuration for your new cluster:
 ```bash
 docker run -v $PWD:/data/volume -u $UID registry-1.ryax.org/dev/ryax-adm:staging init --values volume/ryax_values.yaml
 ```
@@ -94,7 +94,10 @@ vim ryax_values.yaml # Or your favorite text editor
 ```bash
 docker run -v $PWD:/data/volume -u $UID registry-1.ryax.org/dev/ryax-adm:staging apply --values volume/ryax_values.yaml
 ```
-5) An ingress has been opened by Traefik, connect to it on your web browser and *voilà*.
+5) Get the external IP of Ryax, and connect to it on your browser:
+```bash
+kubectl -n kube-system get svc traefik
+```
 
 For more details on the configuration, see [our documentation](https://docs.ryax.tech/howto/install_ryax_kubernetes.html).
 
