@@ -1,6 +1,6 @@
 [submodule "adm"]
 	path = adm
-	url = https://gitlab.com/ryax-tech/ryax/ryax-adm.git
+	url = git@gitlab.com:ryax-tech/ryax/ryax-adm.git
 
 [submodule "authorization"]
 	path = authorization
@@ -42,7 +42,7 @@
 	url = git@gitlab.com:ryax-tech/workflows/draft-actions.git
 [submodule "default-modules"]
 	path = default-modules
-	url = git@gitlab.com:ryax-tech/workflows/default-modules.git
+	url = git@gitlab.com:ryax-tech/workflows/default-actions.git
 
 [submodule "ryax-public-doc"]
 	path = ryax-public-doc
