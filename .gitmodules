@@ -41,7 +41,7 @@
 	path = draft-actions
 	url = git@gitlab.com:ryax-tech/workflows/draft-actions.git
 [submodule "default-modules"]
-	path = default-modules
+	path = default-actions
 	url = git@gitlab.com:ryax-tech/workflows/default-actions.git
 
 [submodule "ryax-public-doc"]

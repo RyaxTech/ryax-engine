@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-# Copyright (c) Ryax Technologies
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+## ## ## ##
+# Jef, a tool to help you release Ryax.
+## ## ## ##
 
 import glob
 import json
@@ -37,10 +43,10 @@ REPOS_TO_BE_RELEASED = {
     "cli": {
         "gitlab_project": "ryax-tech/ryax/cli",
     },
-    "default-modules": {
+    "default-actions": {
         "gitlab_project": "ryax-tech/workflows/default-actions",
     },
-    "module_builder": {
+    "action-builder": {
         "gitlab_project": "ryax-tech/ryax/action-builder",
     },
     "module_wrappers": {
