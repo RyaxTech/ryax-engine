@@ -1,57 +1,54 @@
-[submodule "ryaxpkgs"]
-	path = ryaxpkgs
-	url = ../ryaxpkgs.git
-[submodule "cli"]
-	path = cli
-	url = git@gitlab.com:ryax-tech/ryax/ryax-cli.git
-[submodule "workflows"]
-	path = workflows
-	url = ../workflows.git
 [submodule "adm"]
 	path = adm
 	url = https://gitlab.com/ryax-tech/ryax/ryax-adm.git
-[submodule "ci_common"]
-	path = ci_common
-	url = ../ci_common.git
-[submodule "internal_services"]
-	path = internal_services
-	url = ../internal_services.git
-[submodule "module_builder"]
-	path = module_builder
-	url = ../module_builder
+
+[submodule "authorization"]
+	path = authorization
+	url = git@gitlab.com:ryax-tech/ryax/ryax-authorization.git
 [submodule "repository"]
 	path = repository
-	url = ../repository
-[submodule "studio"]
-	path = studio
-	url = ../studio
+	url = git@gitlab.com:ryax-tech/ryax/ryax-repository.git
+[submodule "runner"]
+	path = runner
+	url = git@gitlab.com:ryax-tech/ryax/ryax-runner.git
+[submodule "front"]
+	path = front
+	url = git@gitlab.com:ryax-tech/ryax/ryax-front.git
 [submodule "webui"]
 	path = webui
-	url = ../../ryax-webui
+	url = git@gitlab.com:ryax-tech/ryax/ryax-webui.git
+[submodule "action-builder"]
+	path = action-builder
+	url = git@gitlab.com:ryax-tech/ryax/ryax-action-builder.git
+[submodule "studio"]
+	path = studio
+	url = git@gitlab.com:ryax-tech/ryax/ryax-studio.git
+[submodule "module_wrappers"]
+	path = module_wrappers
+	url = git@gitlab.com:ryax-tech/dev/backend/module_wrappers.git
+
+[submodule "cli"]
+	path = cli
+	url = git@gitlab.com:ryax-tech/ryax/ryax-cli.git
 [submodule "sdk/ryax-python-sdk"]
 	path = sdk/ryax-python-sdk
 	url = ../../ryax-sdk/ryax-python-sdk
+
+[submodule "errored-actions"]
+	path = errored-actions
+	url = git@gitlab.com:ryax-tech/ryax/errored-actions.git
+[submodule "draft-actions"]
+	path = draft-actions
+	url = git@gitlab.com:ryax-tech/workflows/draft-actions.git
 [submodule "default-modules"]
 	path = default-modules
-	url = ../../../workflows/default-modules.git
-[submodule "authorization"]
-	path = authorization
-	url = ./authorization.git
-[submodule "errored-modules"]
-	path = errored-modules
-	url = ../../errored-modules.git
-[submodule "templates/template"]
-	path = templates/template
-	url = ./templates/template.git
+	url = git@gitlab.com:ryax-tech/workflows/default-modules.git
+
 [submodule "ryax-public-doc"]
 	path = ryax-public-doc
-	url = ../../ryax-public-doc.git
-[submodule "business-user-webui"]
-	path = business-user-webui
-	url = ../../business-user-webui.git
-[submodule "module_wrappers"]
-	path = module_wrappers
-	url = ../module_wrappers.git
-[submodule "runner"]
-	path = runner
-	url = ../runner.git
+	url = git@gitlab.com:ryax-tech/ryax/ryax-public-doc.git
+
+[submodule "ci_common"]
+	path = ci_common
+	url = git@gitlab.com:ryax-tech/dev/backend/ci_common.git
+	

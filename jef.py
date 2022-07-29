@@ -29,29 +29,37 @@ class TCOLOR:
 
 REPOS_TO_BE_RELEASED = {
     "adm": {
-        "gitlab_project": "ryax-tech/dev/backend/adm",
+        "gitlab_project": "ryax-tech/ryax/adm",
     },
     "authorization": {
-        "gitlab_project": "ryax-tech/dev/backend/authorization",
+        "gitlab_project": "ryax-tech/ryax/authorization",
     },
     "cli": {
-        "gitlab_project": "ryax-tech/dev/backend/cli",
-    },
-    "core": {
-        "gitlab_project": "ryax-tech/dev/backend/core",
+        "gitlab_project": "ryax-tech/ryax/cli",
     },
     "default-modules": {
-        "gitlab_project": "ryax-tech/workflows/default-modules",
+        "gitlab_project": "ryax-tech/workflows/default-actions",
     },
     "module_builder": {
-        "gitlab_project": "ryax-tech/dev/backend/module_builder",
+        "gitlab_project": "ryax-tech/ryax/action-builder",
+    },
+    "module_wrappers": {
+        "gitlab_project": "ryax-tech/ryax/action-wrappers",
     },
     "repository": {
-        "gitlab_project": "ryax-tech/dev/backend/repository",
+        "gitlab_project": "ryax-tech/ryax/repository",
     },
-    #"runtime_engine": {},
     "studio": {
-        "gitlab_project": "ryax-tech/dev/backend/studio",
+        "gitlab_project": "ryax-tech/ryax/studio",
+    },
+    "runner": {
+        "gitlab_project": "ryax-tech/ryax/runner",
+    },
+    "front": {
+        "gitlab_project": "ryax-tech/dev/ryax-front",
+    },
+    "studio": {
+        "gitlab_project": "ryax-tech/ryax/studio",
     },
     "webui": {
         "gitlab_project": "ryax-tech/dev/ryax-webui",
