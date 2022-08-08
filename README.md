@@ -14,9 +14,11 @@
     <br />
     <a href="https://youtu.be/IL40ruhuDUI">View Demo</a>
     ·
-    <a href="https://gitlab.com/ryax-tech/dev/ryax/-/issues">Report Bug</a>
+    <a href="https://gitlab.com/ryax-tech/ryax/ryax-main/-/issues/new">Report Bug</a>
     ·
-    <a href="https://gitlab.com/ryax-tech/dev/ryax/-/issues">Request Feature</a>
+    <a href="https://gitlab.com/ryax-tech/ryax/ryax-main/-/issues/new">Request Feature</a>
+    ·
+    <a href="https://discord.gg/bg7s7Es8">Talk with the devs</a>
   </p>
 </div>
 
@@ -65,6 +67,13 @@ A more complete roadmap will be published soon.
 
 ## 🤗 Contributing
 
-The code will be published soon, if you want a beta access, contact us!
+If you want to say thank you and/or support the active development of Ryax:
+
+1. Add a [GitHub Star](https://github.com/RyaxTech/ryax/) to the project.
+2. Tweet about the project on your Twitter.
+3. Write a review or tutorial on Medium, Dev.to or personal blog.
+4. Share some triggers and actions with the [community](https://discord.gg/bg7s7Es8).
+5. Fix bugs and implement features to [our code](https://gitlab.com/ryax-tech/ryax/ryax-main).
+
 
 [Discord](https://discord.gg/bg7s7Es8), [Reddit](https://www.reddit.com/r/ryax/), [Slack](https://join.slack.com/t/ryax/shared_invite/zt-fjx7pud0-GAYiNrDEa1hHyArs5etMiA)
