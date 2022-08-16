@@ -95,7 +95,7 @@ vim ryax_values.yaml # Or your favorite text editor
 ```
 4) Install:
 ```bash
-docker run -v $PWD:/data/volume -u $UID registry-1.ryax.org/dev/ryax-adm:staging apply --values volume/ryax_values.yaml
+docker run -v $PWD:/data/volume -u $UID registry-1.ryax.org/dev/ryax-adm:staging apply --values volume/ryax_values.yaml --suppress-diff
 ```
 5) Get the external IP of Ryax, and connect to it on your browser:
 ```bash
