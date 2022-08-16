@@ -73,6 +73,9 @@ Once these are available on your machine:
   your machine with `kind`.
 5) Connect to `http://localhost` on your web browser and *voilà*.
 
+**/!\ Warning** To make it easier for you to access the cluster from your
+browser, we expose the ports 80 (http) and 443 (https) on your local machine.
+Make sure these aren't already used!
 
 ### On an existing Kubernetes cluster
 
