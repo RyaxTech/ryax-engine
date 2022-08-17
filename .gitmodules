@@ -23,16 +23,16 @@
 [submodule "studio"]
 	path = studio
 	url = git@gitlab.com:ryax-tech/ryax/ryax-studio.git
-[submodule "module_wrappers"]
+[submodule "action-wrappers"]
 	path = action-wrappers
-	url = git@gitlab.com:ryax-tech/dev/backend/module_wrappers.git
+	url = git@gitlab.com:ryax-tech/ryax/ryax-action-wrappers.git
 
 [submodule "cli"]
 	path = cli
 	url = git@gitlab.com:ryax-tech/ryax/ryax-cli.git
 [submodule "sdk/ryax-python-sdk"]
 	path = sdk/ryax-python-sdk
-	url = git@gitlab.com:ryax-tech/dev/ryax-sdk/ryax-python-sdk.git
+	url = git@gitlab.com:ryax-tech/ryax/ryax-sdk/ryax-python-sdk.git
 
 [submodule "errored-actions"]
 	path = errored-actions
@@ -51,4 +51,3 @@
 [submodule "ci_common"]
 	path = ci_common
 	url = git@gitlab.com:ryax-tech/dev/backend/ci_common.git
-	
