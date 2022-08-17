@@ -19,10 +19,6 @@ import shutil
 import argparse
 
 
-
-
-
-
 class TCOLOR:
     HEADER = "\033[95m"
     OKBLUE = "\033[94m"
@@ -35,40 +31,40 @@ class TCOLOR:
 
 REPOS_TO_BE_RELEASED = {
     "adm": {
-        "gitlab_project": "ryax-tech/ryax/adm",
+        "gitlab_project": "ryax-tech/ryax/ryax-adm",
     },
     "authorization": {
-        "gitlab_project": "ryax-tech/ryax/authorization",
+        "gitlab_project": "ryax-tech/ryax/ryax-authorization",
     },
     "cli": {
-        "gitlab_project": "ryax-tech/ryax/cli",
+        "gitlab_project": "ryax-tech/ryax/ryax-cli",
     },
     "default-actions": {
         "gitlab_project": "ryax-tech/workflows/default-actions",
     },
     "action-builder": {
-        "gitlab_project": "ryax-tech/ryax/action-builder",
+        "gitlab_project": "ryax-tech/ryax/ryax-action-builder",
     },
     "module_wrappers": {
-        "gitlab_project": "ryax-tech/ryax/action-wrappers",
+        "gitlab_project": "ryax-tech/ryax/ryax-action-wrappers",
     },
     "repository": {
-        "gitlab_project": "ryax-tech/ryax/repository",
+        "gitlab_project": "ryax-tech/ryax/ryax-repository",
     },
     "studio": {
-        "gitlab_project": "ryax-tech/ryax/studio",
+        "gitlab_project": "ryax-tech/ryax/ryax-studio",
     },
     "runner": {
-        "gitlab_project": "ryax-tech/ryax/runner",
+        "gitlab_project": "ryax-tech/ryax/ryax-runner",
     },
     "front": {
-        "gitlab_project": "ryax-tech/dev/ryax-front",
+        "gitlab_project": "ryax-tech/ryax/ryax-front",
     },
     "studio": {
-        "gitlab_project": "ryax-tech/ryax/studio",
+        "gitlab_project": "ryax-tech/ryax/ryax-studio",
     },
     "webui": {
-        "gitlab_project": "ryax-tech/dev/ryax-webui",
+        "gitlab_project": "ryax-tech/ryax/ryax-webui",
     },
 }
 
@@ -284,7 +280,7 @@ def command_pull_all(args):
 
 
 def get_last_pipe(projgit, tag):
-    for pipe in projgit.pipelines.list():
+    for pipe in projgit.pipelines.list(get_all=False):
         if tag != pipe.ref:
             continue
         return {
@@ -310,6 +306,8 @@ def print_pipe(reponame, pipe):
         status = f"{TCOLOR.OKGREEN}success{TCOLOR.ENDC}"
     elif status == "failed":
         status = f"{TCOLOR.FAIL}failed{TCOLOR.ENDC} "
+    else:
+        status = f"{TCOLOR.WARNING}{status}{TCOLOR.ENDC} "
 
     print(f"{reponame: <15} {pipe['ref']: <7} {pipe['sha'][:6]} {status} {pipe['url']}")
 
