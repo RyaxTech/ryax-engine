@@ -24,7 +24,7 @@
 	path = studio
 	url = git@gitlab.com:ryax-tech/ryax/ryax-studio.git
 [submodule "module_wrappers"]
-	path = module_wrappers
+	path = action-wrappers
 	url = git@gitlab.com:ryax-tech/dev/backend/module_wrappers.git
 
 [submodule "cli"]
