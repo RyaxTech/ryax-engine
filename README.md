@@ -87,7 +87,7 @@ kubectl config current-context
 ```
 2) Get a basic configuration for your new cluster:
 ```bash
-docker run -v $PWD:/data/volume -u $UID ryax-adm:staging init --values volume/ryax_values.yaml
+docker run -v $PWD:/data/volume -u $UID ryaxtech/ryax-adm init --values volume/ryax_values.yaml
 ```
 3) Edit it if needed:
 ```bash
@@ -95,7 +95,7 @@ vim ryax_values.yaml # Or your favorite text editor
 ```
 4) Install:
 ```bash
-docker run -v $PWD:/data/volume -u $UID ryax-adm:staging apply --values volume/ryax_values.yaml --suppress-diff
+docker run -v $PWD:/data/volume -u $UID ryaxtech/ryax-adm apply --values volume/ryax_values.yaml --suppress-diff
 ```
 5) Get the external IP of Ryax, and connect to it on your browser:
 ```bash
