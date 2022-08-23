@@ -51,3 +51,6 @@
 [submodule "ci_common"]
 	path = ci_common
 	url = git@gitlab.com:ryax-tech/dev/backend/ci_common.git
+[submodule "common-helm-charts"]
+	path = common-helm-charts
+	url = git@gitlab.com:ryax-tech/ryax/common-helm-charts.git

@@ -17,6 +17,8 @@ import shutil
 from typing import Any, Dict, List
 import argparse
 
+from git import Repo
+
 
 class TCOLOR:
     HEADER = "\033[95m"
@@ -39,13 +41,16 @@ REPOS_TO_BE_RELEASED = {
     "cli": {
         "gitlab_project": "ryax-tech/ryax/ryax-cli",
     },
+    "common-helm-charts": {
+        "gitlab_project": "ryax-tech/ryax/common-helm-charts",
+    },
     "default-actions": {
         "gitlab_project": "ryax-tech/workflows/default-actions",
     },
     "action-builder": {
         "gitlab_project": "ryax-tech/ryax/ryax-action-builder",
     },
-    "module_wrappers": {
+    "action-wrappers": {
         "gitlab_project": "ryax-tech/ryax/ryax-action-wrappers",
     },
     "repository": {
@@ -75,8 +80,6 @@ MAIN_RELEASE_REPO = {
 MAX_REPO_NAME_LEN = max([len(r) for r in REPOS_TO_BE_RELEASED.keys()])
 
 
-from git import Repo
-import re
 
 
 class Version:
@@ -217,7 +220,7 @@ def command_check_stagings(args) -> None:
     )
     for repo_name, repo_d in REPOS_TO_BE_RELEASED.items():
         repo = Repo(repo_name)
-        print(f"{repo_name: <16}", end="")
+        print(f"{repo_name: <19}", end="")
         print_last_versions_order(repo)
 
 
