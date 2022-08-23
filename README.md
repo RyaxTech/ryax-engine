@@ -69,7 +69,7 @@ Once these are available on your machine:
 2) Run `poetry install` to generate a virtual environment for python.
 3) Run `poetry shell` to activate the virtual environment. These last two steps
   can also be replaced by `nix-shell`, although this one can take a while.
-4) Run `./adm/local_ryax/local-ryax.sh` to deploy a Ryax instance on
+4) Run `./local_ryax/local-ryax.sh` to deploy a Ryax instance on
   your machine with `kind`.
 5) Connect to `http://localhost` on your web browser and *voilà*.
 
