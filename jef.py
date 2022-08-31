@@ -74,7 +74,7 @@ REPOS_TO_BE_RELEASED = {
 }
 
 MAIN_RELEASE_REPO = {
-    "gitlab_project": "ryax-tech/dev/ryax-release",
+    "gitlab_project": "ryax-tech/ryax/ryax-release",
 }
 
 MAX_REPO_NAME_LEN = max([len(r) for r in REPOS_TO_BE_RELEASED.keys()])
