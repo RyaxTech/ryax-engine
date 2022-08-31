@@ -124,7 +124,9 @@ A more complete roadmap will be published soon.
 - [x] Create workflows
 - [x] Support actions and triggers made in python
 - [x] User and project management
-- [x] Create HTTP API
+- [x] Create HTTP API with Ryax
+- [ ] Manage credentials for the integrations
+- [ ] Integrate a data store for users
 - [ ] Support actions and triggers made in javascript
 
 ## 🤗 Contributing
