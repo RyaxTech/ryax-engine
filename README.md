@@ -92,6 +92,7 @@ Make sure these aren't already used!
 ### On an existing Kubernetes cluster
 
 This is the standard and recommended approach.
+It works on most managed Kubernetes, like AWS EKS, Azure AKS, GCP GKE.
 
 1) Make sure you're on the intended cluster:
 ```bash
