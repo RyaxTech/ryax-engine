@@ -12,7 +12,7 @@
     <a href="https://docs.ryax.tech/"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://youtu.be/IL40ruhuDUI">View Demo</a>
+    <a href="https://www.youtube.com/watch?v=PUVgu8lkNJI">View Demo</a>
     ·
     <a href="https://gitlab.com/ryax-tech/ryax/ryax-main/-/issues/new">Report Bug</a>
     ·
