@@ -77,10 +77,15 @@ You need the following dependencies :
 Once these are available on your machine:
 
 1) Clone [ryax-adm](https://gitlab.com/ryax-tech/ryax/ryax-adm/) and
-  `cd` into it.
-2) Run `poetry install` to generate a virtual environment for python.
-3) Run `poetry shell` to activate the virtual environment. These last two steps
-  can also be replaced by `nix-shell`, although this one can take a while.
+  `cd` into the repo's root.
+2) Generate a virtual environment for python
+```bash
+poetry install
+```
+3) Activate this virtual environment
+```bash
+poetry shell
+```
 4) Run `./local_ryax/local-ryax.sh` to deploy a Ryax instance on
   your machine with `kind`. It takes a while.
 5) Connect to `http://localhost` on your web browser and *voilà*.
@@ -98,9 +103,19 @@ It works on most managed Kubernetes, like AWS EKS, Azure AKS, GCP GKE.
 ```bash
 kubectl config current-context
 ```
-2) Get a basic configuration for your new cluster:
+2) Clone [ryax-adm](https://gitlab.com/ryax-tech/ryax/ryax-adm/) and
+  `cd` into the repo's root.
+3) Generate a virtual environment for python
 ```bash
-docker run -v $PWD:/data/volume -u $UID ryaxtech/ryax-adm init --values volume/ryax_values.yaml
+poetry install
+```
+4) Activate this virtual environment
+```bash
+poetry shell
+```
+5) Get a basic configuration for your new cluster
+```bash
+ryax-adm init
 ```
 3) Edit it if needed:
 ```bash
@@ -108,7 +123,7 @@ vim ryax_values.yaml # Or your favorite text editor
 ```
 4) Install:
 ```bash
-docker run -v $PWD:/data/volume -u $UID ryaxtech/ryax-adm apply --values volume/ryax_values.yaml --suppress-diff
+ryax-adm apply --values volume/ryax_values.yaml --suppress-diff
 ```
 5) Get the external IP of Ryax, and connect to it on your browser:
 ```bash
