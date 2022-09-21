@@ -99,33 +99,54 @@ Make sure these aren't already used!
 This is the standard and recommended approach.
 It works on most managed Kubernetes, like AWS EKS, Azure AKS, GCP GKE.
 
-1) Make sure you're on the intended cluster:
-```bash
-kubectl config current-context
-```
-2) Clone [ryax-adm](https://gitlab.com/ryax-tech/ryax/ryax-adm/) and
-  `cd` into the repo's root.
-3) Generate a virtual environment for python
-```bash
+There are two ways of running ryax-adm, our administration tool.
+
+Using poetry shell :
+
+```{bash}
+# Clone ryax-adm
+git clone https://gitlab.com/ryax-tech/ryax/ryax-adm/
+cd ryax-adm
+
+# Generate ryax-adm's virtual environment
 poetry install
-```
-4) Activate this virtual environment
-```bash
+
+# Activate it
 poetry shell
+ryax-adm --help
 ```
-5) Get a basic configuration for your new cluster
+
+Inside a container :
+
+```{bash}
+# Create a folder to pass down the kubeconfig and tweak its permissions
+mkdir $TMP_RYAX=$(mktemp -d)
+sudo chown 1200 $TMP_RYAX
+
+# Copy you kubeconfig in it, change its permissions too
+cp $KUBECONFIG $TMP_RYAX
+sudo chown 1200 $TMP_RYAX/$(basename $KUBECONFIG)
+
+# Run the container interactively.
+docker run -v $TMP_RYAX:/data/volume -e KUBECONFIG=/data/volume/$(basename $KUBECONFIG) --entrypoint /bin/sh -ti ryaxtech/ryax-adm
+ryax-adm --help
+```
+
+Once you are logged to your cluster, you are ready ton install Ryax.
+
+1) Get a basic configuration for your new cluster
 ```bash
 ryax-adm init
 ```
-3) Edit it if needed:
+2) Edit it if needed:
 ```bash
 vim ryax_values.yaml # Or your favorite text editor
 ```
-4) Install:
+3) Install Ryax:
 ```bash
-ryax-adm apply --values volume/ryax_values.yaml --suppress-diff
+ryax-adm apply --values ryax_values.yaml --suppress-diff
 ```
-5) Get the external IP of Ryax, and connect to it on your browser:
+4) Get the external IP of Ryax, and connect to it on your browser:
 ```bash
 kubectl -n kube-system get svc traefik
 ```
