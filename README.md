@@ -119,20 +119,19 @@ ryax-adm --help
 Inside a container :
 
 ```{bash}
-# Create a folder to pass down the kubeconfig and tweak its permissions
-mkdir $TMP_RYAX=$(mktemp -d)
-sudo chown 1200 $TMP_RYAX
-
-# Copy you kubeconfig in it, change its permissions too
+# Create a folder to pass down the kubeconfig.
+TMP_RYAX=$(mktemp -d)
 cp $KUBECONFIG $TMP_RYAX
-sudo chown 1200 $TMP_RYAX/$(basename $KUBECONFIG)
+
+# Tweak their permissions so it's accessible in the container
+sudo chown -R 1200 $TMP_RYAX
 
 # Run the container interactively.
 docker run -v $TMP_RYAX:/data/volume -e KUBECONFIG=/data/volume/$(basename $KUBECONFIG) --entrypoint /bin/sh -ti ryaxtech/ryax-adm
 ryax-adm --help
 ```
 
-Once you are logged to your cluster, you are ready ton install Ryax.
+Once you are logged to your cluster, you are ready to install Ryax.
 
 1) Get a basic configuration for your new cluster
 ```bash
