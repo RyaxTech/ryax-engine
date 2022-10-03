@@ -7,7 +7,7 @@
   <h3 align="center">Ryax</h3>
 
   <p align="center">
-    Ryax is an open-source platform that streamlines the design, deployment, and monitoring of Cloud automations and APIs.
+    Developers, build your backends in record time; deploy at scale with serverless technology; self-host, install on any cloud or use our hosted platform; Open source, low code.
     <br />
     <a href="https://docs.ryax.tech/"><strong>Explore the docs »</strong></a>
     <br />
