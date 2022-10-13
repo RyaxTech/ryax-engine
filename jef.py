@@ -238,8 +238,8 @@ def command_pull_all(args) -> None:
         subprocess.run(
             "git submodule foreach git checkout master", shell=True, check=True
         )
-    print(f"{TCOLOR.OKBLUE}$ git submodule foreach git pull{TCOLOR.ENDC}")
-    subprocess.run("git submodule foreach git pull", shell=True, check=True)
+    print(f"{TCOLOR.OKBLUE}$ git submodule foreach git pull --tags -f{TCOLOR.ENDC}")
+    subprocess.run("git submodule foreach git pull --tags -f", shell=True, check=True)
 
 
 def get_last_pipe(projgit, tag) -> Dict:
@@ -394,7 +394,7 @@ if __name__ == "__main__":
 
     description = "Update API: generate from the running server <SERVER> a swagger doc, put it on the public doc and generate the SDK for the CLI. Do not commit anything."
     sp = subparsers.add_parser("update_API", description=description, help=description)
-    sp.add_argument("server", type=str, default="https://staging-1.ryax.tech")
+    sp.add_argument("server", type=str, default="https://staging.ryax.io")
     sp.add_argument("version", type=str)
     sp.add_argument(
         "-s",
