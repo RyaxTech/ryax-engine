@@ -11,3 +11,4 @@ ci
 .isort.cfg
 _build
 public
+/.venv
