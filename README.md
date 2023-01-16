@@ -22,6 +22,8 @@
   </p>
 </div>
 
+**WARNING: We use GitLab for our development, if you want to see the whole application code see https://gitlab.com/ryax-tech/ryax/**
+
 ## ⭐ About the project
 
 ![screenshots](https://user-images.githubusercontent.com/104617518/167607552-44354081-c7d7-4f65-bc25-fca4aec65967.png)
@@ -62,16 +64,32 @@ Deploying Ryax: [Kubernetes](https://kubernetes.io/), [Terraform](https://www.te
 
 ## ⚡ Getting started with Ryax
 
+### Requirements
+
+All you need to install Ryax is a Kubernetes cluster. Supported versions are:
+
+* kubernetes > 1.19; <1.25
+
+Hardware:
+
+* At least 2 CPU core
+* 4GB or memory
+* 40GB of disk available
+
+Note that depending on the Actions that you run on your cluster you might need
+more resources.
+
+
 ### On a local machine
 
 We recommend this option if you wish to test our product with a minimal amount of configuration steps, and if you have enough RAM (~3GB) available.
 
 You need the following dependencies :
+- Python 3.9+
 - [Helm](https://helm.sh/)
 - [Helmfile](https://github.com/roboll/helmfile)
 - [Helm-diff](https://github.com/databus23/helm-diff) plugin: `helm plugin add https://github.com/databus23/helm-diff`
-- [Poetry](https://python-poetry.org/) (Or `nix-shell`, although poetry is
-  substantially faster)
+- [Poetry](https://python-poetry.org/)
 - [Kind](https://github.com/kubernetes-sigs/kind)
 
 Once these are available on your machine:
@@ -88,7 +106,8 @@ poetry shell
 ```
 4) Run `./local_ryax/local-ryax.sh` to deploy a Ryax instance on
   your machine with `kind`. It takes a while.
-5) Connect to `http://localhost` on your web browser and *voilà*.
+5) Connect to `http://localhost` on your web browser, default credentials are
+user1/pass1.
 
 **/!\ Warning** To make it easier for you to access the cluster from your
 browser, we expose the ports 80 (http) and 443 (https) on your local machine.
@@ -137,7 +156,8 @@ Once you are logged to your cluster, you are ready to install Ryax.
 ```bash
 ryax-adm init
 ```
-2) Edit it if needed:
+2) Edit the configuration file to set the [https://github.com/RyaxTech/ryax/releases](latest Ryax release) version and your
+cluster name:
 ```bash
 vim ryax_values.yaml # Or your favorite text editor
 ```
