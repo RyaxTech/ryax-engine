@@ -70,14 +70,17 @@ All you need to install Ryax is a Kubernetes cluster. Supported versions are:
 
 * kubernetes > 1.19; <1.25
 
+You can download Kubernetes easily from <a href="https://kubernetes.io/releases/"> here </a>. Please download correct version as this is crucial
+
 Hardware:
 
 * At least 2 CPU core
 * 4GB or memory
 * 40GB of disk available
 
-Note that depending on the Actions that you run on your cluster you might need
-more resources.
+
+**Note that depending on the Actions that you run on your cluster you might need
+more resources.**
 
 
 ### On a local machine
@@ -87,27 +90,31 @@ We recommend this option if you wish to test our product with a minimal amount o
 You need the following dependencies :
 - Python 3.9+
 - [Helm](https://helm.sh/)
-- [Helmfile](https://github.com/roboll/helmfile)
+- [Helmfile](https://github.com/helmfile/helmfile)
 - [Helm-diff](https://github.com/databus23/helm-diff) plugin: `helm plugin add https://github.com/databus23/helm-diff`
 - [Poetry](https://python-poetry.org/)
 - [Kind](https://github.com/kubernetes-sigs/kind)
 
 Once these are available on your machine:
 
-1) Clone [ryax-adm](https://gitlab.com/ryax-tech/ryax/ryax-adm/) and
+1. Clone [ryax-adm](https://gitlab.com/ryax-tech/ryax/ryax-adm/) and
   `cd` into the repo's root.
-2) Generate a virtual environment for python
-```bash
-poetry install
-```
-3) Activate this virtual environment
-```bash
-poetry shell
-```
-4) Run `./local_ryax/local-ryax.sh` to deploy a Ryax instance on
+  ```bash
+  git clone https://gitlab.com/ryax-tech/ryax/ryax-adm.git
+  cd ryax
+  ```
+2. Generate a virtual environment for python
+  ```bash
+  poetry install
+  ```
+3. Activate this virtual environment
+  ```bash
+  poetry shell
+  ```
+4. Run `./local_ryax/local-ryax.sh` to deploy a Ryax instance on
   your machine with `kind`. It takes a while.
-5) Connect to `http://localhost` on your web browser, default credentials are
-user1/pass1.
+5. Connect to `http://localhost` on your web browser, default credentials are
+  *user1/pass1*.
 
 **/!\ Warning** To make it easier for you to access the cluster from your
 browser, we expose the ports 80 (http) and 443 (https) on your local machine.
