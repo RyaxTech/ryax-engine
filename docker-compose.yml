@@ -17,7 +17,6 @@ services:
     image: "rancher/k3s:v1.24.10-k3s1"
     command:
       - server
-      - --disable=traefik
       - --disable=metrics-server
     tmpfs:
       - /run
@@ -30,7 +29,7 @@ services:
     privileged: true
     restart: always
     environment:
-      - K3S_TOKEN=${K3S_TOKEN:?err}
+      - K3S_TOKEN=InsecureTokEn=ChangeME
       - K3S_KUBECONFIG_OUTPUT=/output/kubeconfig.yaml
       - K3S_KUBECONFIG_MODE=666
     volumes:
@@ -56,10 +55,7 @@ services:
     restart: always
     environment:
       - K3S_URL=https://k3s-server:6443
-      - K3S_TOKEN=${K3S_TOKEN:?err}
-    ports:
-      - 30000:30000
-      - 30001:30001
+      - K3S_TOKEN=InsecureTokEn=ChangeME
 
 volumes:
   k3s-server-vol: { }
