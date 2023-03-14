@@ -2,8 +2,8 @@ version: '3'
 
 services:
   install-ryax:
-    image: "ryaxtech/ryax-adm:latest"
-    entrypoint: /data/local_ryax/k3s-install-ryax.sh
+    image: registry.ryax.org/dev/ryax-adm:local-install-on-docker-compose
+    entrypoint: /data/local_ryax/k3s-ryax-install.sh
       #entrypoint:
       #  - sleep
       #  - inf
