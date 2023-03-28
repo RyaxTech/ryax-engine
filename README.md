@@ -188,9 +188,9 @@ A more complete roadmap will be published soon.
 - [x] Support actions and triggers made in python
 - [x] User and project management
 - [x] Create HTTP API with Ryax
-- [ ] Manage credentials for the integrations
+- [x] Manage credentials for the integrations with shared variables
+- [x] Support actions made in Javascript(Nodejs) and C#
 - [ ] Integrate a data store for users
-- [ ] Support actions and triggers made in javascript
 
 ## 🤗 Contributing
 
