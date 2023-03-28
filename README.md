@@ -83,99 +83,39 @@ Hardware:
 more resources.**
 
 
-### On a local machine
+### On a local machine with Docker
 
-We recommend this option if you wish to test our product with a minimal amount of configuration steps, and if you have enough RAM (~3GB) available.
+We recommend this option if you wish to test our product with a minimal amount of configuration steps, and if you have enough RAM (~3GB) and disk (25GB) available.
 
-You need the following dependencies :
-- Python 3.9+
-- [Helm](https://helm.sh/)
-- [Helmfile](https://github.com/helmfile/helmfile)
-- [Helm-diff](https://github.com/databus23/helm-diff) plugin: `helm plugin add https://github.com/databus23/helm-diff`
-- [Poetry](https://python-poetry.org/)
-- [Kind](https://github.com/kubernetes-sigs/kind)
+Copy the [docker-compose.yml](https://gitlab.com/ryax-tech/ryax/ryax-main/-/blob/master/docker-compose.yml) file form this repository and run:
+```sh
+docker-compose up -d
+```
 
-Once these are available on your machine:
-
-1. Clone [ryax-adm](https://gitlab.com/ryax-tech/ryax/ryax-adm/) and
-  `cd` into the repo's root.
-  ```bash
-  git clone https://gitlab.com/ryax-tech/ryax/ryax-adm.git
-  cd ryax
-  ```
-2. Generate a virtual environment for python
-  ```bash
-  poetry install
-  ```
-3. Activate this virtual environment
-  ```bash
-  poetry shell
-  ```
-4. Run `./local_ryax/local-ryax.sh` to deploy a Ryax instance on
-  your machine with `kind`. It takes a while.
-5. Connect to `http://localhost` on your web browser, default credentials are
-  *user1/pass1*.
+Wait for the installation to finish by checking for the install container
+state with:
+```sh
+docker-compose ps
+```
+ One its done you should see that it completed succesfuly with `exited (0)`:
+```
+NAME                       COMMAND                  SERVICE             STATUS              PORTS
+ryax-main-install-ryax-1   "/data/local_ryax/k3…"   install-ryax        exited (0)
+```
 
 **/!\ Warning** To make it easier for you to access the cluster from your
 browser, we expose the ports 80 (http) and 443 (https) on your local machine.
 Make sure these aren't already used!
 
+
+```sh
+docker-compose down -v
+```
+
 ### On an existing Kubernetes cluster
 
 This is the standard and recommended approach.
 It works on most managed Kubernetes, like AWS EKS, Azure AKS, GCP GKE.
-
-There are two ways of running ryax-adm, our administration tool.
-
-Using poetry shell :
-
-```{bash}
-# Clone ryax-adm
-git clone https://gitlab.com/ryax-tech/ryax/ryax-adm/
-cd ryax-adm
-
-# Generate ryax-adm's virtual environment
-poetry install
-
-# Activate it
-poetry shell
-ryax-adm --help
-```
-
-Inside a container :
-
-```{bash}
-# Create a folder to pass down the kubeconfig.
-TMP_RYAX=$(mktemp -d)
-cp $KUBECONFIG $TMP_RYAX
-
-# Tweak their permissions so it's accessible in the container
-sudo chown -R 1200 $TMP_RYAX
-
-# Run the container interactively.
-docker run -v $TMP_RYAX:/data/volume -e KUBECONFIG=/data/volume/$(basename $KUBECONFIG) --entrypoint /bin/sh -ti ryaxtech/ryax-adm
-ryax-adm --help
-```
-
-Once you are logged to your cluster, you are ready to install Ryax.
-
-1) Get a basic configuration for your new cluster
-```bash
-ryax-adm init
-```
-2) Edit the configuration file to set the [https://github.com/RyaxTech/ryax/releases](latest Ryax release) version and your
-cluster name:
-```bash
-vim ryax_values.yaml # Or your favorite text editor
-```
-3) Install Ryax:
-```bash
-ryax-adm apply --values ryax_values.yaml --suppress-diff
-```
-4) Get the external IP of Ryax, and connect to it on your browser:
-```bash
-kubectl -n kube-system get svc traefik
-```
 
 For more details on the configuration, see [our documentation](https://docs.ryax.tech/howto/install_ryax_kubernetes.html).
 
@@ -190,7 +130,8 @@ A more complete roadmap will be published soon.
 - [x] Create HTTP API with Ryax
 - [x] Manage credentials for the integrations with shared variables
 - [x] Support actions made in Javascript(Nodejs) and C#
-- [ ] Integrate a data store for users
+- [ ] Integrate a database and object store for users
+- [ ] Support any docker based services
 
 ## 🤗 Contributing
 
