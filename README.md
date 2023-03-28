@@ -70,8 +70,6 @@ All you need to install Ryax is a Kubernetes cluster. Supported versions are:
 
 * kubernetes > 1.19; <1.25
 
-You can download Kubernetes easily from <a href="https://kubernetes.io/releases/"> here </a>. Please download correct version as this is crucial
-
 Hardware:
 
 * At least 2 CPU core
@@ -86,6 +84,10 @@ more resources.**
 ### On a local machine with Docker
 
 We recommend this option if you wish to test our product with a minimal amount of configuration steps, and if you have enough RAM (~3GB) and disk (25GB) available.
+
+**/!\ Warning** To make it easier for you to access the cluster from your
+browser, we expose the ports 80 (http) and 443 (https) on your local machine.
+Make sure these aren't already used!
 
 Copy the [docker-compose.yml](https://gitlab.com/ryax-tech/ryax/ryax-main/-/blob/master/docker-compose.yml) file form this repository and run:
 ```sh
@@ -103,11 +105,14 @@ NAME                       COMMAND                  SERVICE             STATUS  
 ryax-main-install-ryax-1   "/data/local_ryax/k3…"   install-ryax        exited (0)
 ```
 
-**/!\ Warning** To make it easier for you to access the cluster from your
-browser, we expose the ports 80 (http) and 443 (https) on your local machine.
-Make sure these aren't already used!
+Access to your cluster with:
+[http://localhost]()
 
+Default credentials are:
+- user: `user1`
+- password: `pass1`
 
+To uninstall your cluster stop it with:
 ```sh
 docker-compose down -v
 ```
