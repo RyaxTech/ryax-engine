@@ -83,9 +83,10 @@ more resources.**
 
 ### On a local machine with Docker
 
-We recommend this option if you wish to test our product with a minimal amount of configuration steps, and if you have enough RAM (~3GB) and disk (25GB) available.
+We recommend this option if you wish to test our product with a minimal amount of configuration steps, and if you have enough RAM (~3GB) and disk (20GB) available.
 
-**/!\ Warning** To make it easier for you to access the cluster from your
+**/!\ Warning**: **Do not use this setup in production!**
+**/!\ Warning**: To make it easier for you to access the cluster from your
 browser, we expose the ports 80 (http) and 443 (https) on your local machine.
 Make sure these aren't already used!
 
@@ -97,22 +98,19 @@ docker-compose up -d
 Wait for the installation to finish by checking for the install container
 state with:
 ```sh
-docker-compose ps
+docker logs $(basename $PWD)-install-ryax-1 -f
 ```
- One its done you should see that it completed succesfuly with `exited (0)`:
-```
-NAME                       COMMAND                  SERVICE             STATUS              PORTS
-ryax-main-install-ryax-1   "/data/local_ryax/k3…"   install-ryax        exited (0)
-```
+Be patient, this may take around 15 minutes (or more depending on your internet
+connection).
 
-Access to your cluster with:
-[http://localhost]()
+Once its done you can access to your cluster with:
+[http://localhost/app/login]()
 
 Default credentials are:
 - user: `user1`
 - password: `pass1`
 
-To uninstall your cluster stop it with:
+To uninstall your cluster, stop it with:
 ```sh
 docker-compose down -v
 ```
@@ -132,11 +130,13 @@ A more complete roadmap will be published soon.
 - [x] Create workflows
 - [x] Support actions and triggers made in python
 - [x] User and project management
-- [x] Create HTTP API with Ryax
+- [x] HTTP API automatic creation (with OpenAPI interactive UI!)
 - [x] Manage credentials for the integrations with shared variables
 - [x] Support actions made in Javascript(Nodejs) and C#
-- [ ] Integrate a database and object store for users
+- [ ] Backend as a Service with on-demand with dedicated database, object store, message
+  broker...
 - [ ] Support any docker based services
+- And much more!
 
 ## 🤗 Contributing
 
