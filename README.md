@@ -2,7 +2,8 @@
 <div align="center">
 
   <a href="https://ryax.tech">
-    <img src="https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd2-460a-b263-2e4c79b69196.png" alt="Logo" height="80">
+    <img src="img/dashboard.png" alt="dashboard" height="80">
+    <img src="img/run.png" alt="run" height="80">
   </a>
   <h3 align="center">Ryax</h3>
 
@@ -29,16 +30,16 @@
 ![screenshots](https://user-images.githubusercontent.com/104617518/167607552-44354081-c7d7-4f65-bc25-fca4aec65967.png)
 
 Ryax is an open-source platform that streamlines the design, deployment, and
-monitoring of Cloud automations and APIs.
+monitoring of backend automations and APIs.
 
 ## ⚙ The source code
 
 Ryax is composed of multiple micro-services and tools. To learn more about the internal architecture, see [the documentation](https://docs.ryax.tech/reference/architecture.html). The main components are:
 
 **User interfaces**
- - [cli](https://gitlab.com/ryax-tech/ryax/ryax-cli.git): The CLI to command Ryax
  - [front](https://gitlab.com/ryax-tech/ryax/ryax-front.git): The WebUI.
  - [adm](https://gitlab.com/ryax-tech/ryax/ryax-adm.git): The Ryax ADMinistrationn tool. To install, update, backup and more.
+ - [cli](https://gitlab.com/ryax-tech/ryax/ryax-cli.git): The CLI to command Ryax
 
 **Micro-services**
  - [authorization](https://gitlab.com/ryax-tech/ryax/ryax-authorization.git): Answer to the question: "do you have the rights to do so?".
