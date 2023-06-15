@@ -13,7 +13,7 @@
 	url = git@gitlab.com:ryax-tech/ryax/ryax-runner.git
 [submodule "front"]
 	path = front
-	url = ./front
+	url = https://gitlab.com/ryax-tech/ryax/ryax-front.git
 [submodule "webui"]
 	path = webui
 	url = git@gitlab.com:ryax-tech/ryax/ryax-webui.git
