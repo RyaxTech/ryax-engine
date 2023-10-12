@@ -13,8 +13,8 @@ services:
     environment:
       - KUBECONFIG=/inout/kubeconfig.yaml
 
-  k3s-server:
-    image: "rancher/k3s:v1.24.10-k3s1"
+  kubernetes:
+    image: "rancher/k3s:v1.28.2-k3s1"
     command:
       - server
       - --disable=metrics-server
@@ -41,8 +41,8 @@ services:
       - 80:80      # Ingress controller port 80
       - 443:443    # Ingress controller port 443
 
-  k3s-agent:
-    image: "rancher/k3s:v1.24.10-k3s1"
+  kubernetes-node:
+    image: "rancher/k3s:v1.28.2-k3s1"
     tmpfs:
       - /run
       - /var/run
@@ -54,7 +54,7 @@ services:
     privileged: true
     restart: always
     environment:
-      - K3S_URL=https://k3s-server:6443
+      - K3S_URL=https://kubernetes:6443
       - K3S_TOKEN=InsecureTokEn=ChangeME
 
 volumes:

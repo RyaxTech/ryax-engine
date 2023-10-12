@@ -41,15 +41,15 @@ monitoring of Cloud automations and APIs.
 Ryax is composed of multiple micro-services and tools. To learn more about the internal architecture, see [the documentation](https://docs.ryax.tech/reference/architecture.html). The main components are:
 
 **User interfaces**
- - [cli](https://gitlab.com/ryax-tech/ryax/ryax-cli.git): The CLI to command Ryax
  - [front](https://gitlab.com/ryax-tech/ryax/ryax-front.git): The WebUI.
  - [adm](https://gitlab.com/ryax-tech/ryax/ryax-adm.git): The Ryax ADMinistrationn tool. To install, update, backup and more.
+ - [cli](https://gitlab.com/ryax-tech/ryax/ryax-cli.git): The CLI to command Ryax
 
 **Micro-services**
+ - [studio](https://gitlab.com/ryax-tech/ryax/ryax-studio.git): Handles the edition of workflows.
+ - [runner](https://gitlab.com/ryax-tech/ryax/ryax-runner.git): A trigger or an action run? It handles it.
  - [authorization](https://gitlab.com/ryax-tech/ryax/ryax-authorization.git): Answer to the question: "do you have the rights to do so?".
  - [repository](https://gitlab.com/ryax-tech/ryax/ryax-repository.git): Scan git repositories to find actions.
- - [runner](https://gitlab.com/ryax-tech/ryax/ryax-runner.git): A trigger or an action run? It handles it.
- - [studio](https://gitlab.com/ryax-tech/ryax/ryax-studio.git): Handles the edition of workflows.
  - [action-builder](https://gitlab.com/ryax-tech/ryax/ryax-action-builder.git): Builds actions and triggers.
  - [ryax-action-wrappers](https://gitlab.com/ryax-tech/ryax/ryax-action-wrappers.git): The code between the action code and Ryax.
 
@@ -73,7 +73,7 @@ Deploying Ryax: [Kubernetes](https://kubernetes.io/), [Terraform](https://www.te
 
 All you need to install Ryax is a Kubernetes cluster. Supported versions are:
 
-* kubernetes > 1.19; <1.25
+* kubernetes > 1.19
 
 Hardware:
 
@@ -105,8 +105,7 @@ state with:
 ```sh
 docker logs $(basename $PWD)-install-ryax-1 -f
 ```
-Be patient, this may take around 15 minutes (or more depending on your internet
-connection).
+Be patient, this may take some minutes depending on your internet connection.
 
 Once its done you can access to your cluster with:
 [http://localhost/app/login]()
