@@ -43,7 +43,6 @@ Ryax is composed of multiple micro-services and tools. To learn more about the i
 **User interfaces**
  - [front](https://gitlab.com/ryax-tech/ryax/ryax-front.git): The WebUI.
  - [adm](https://gitlab.com/ryax-tech/ryax/ryax-adm.git): The Ryax ADMinistrationn tool. To install, update, backup and more.
- - [cli](https://gitlab.com/ryax-tech/ryax/ryax-cli.git): The CLI to command Ryax
 
 **Micro-services**
  - [studio](https://gitlab.com/ryax-tech/ryax/ryax-studio.git): Handles the edition of workflows.
@@ -51,18 +50,20 @@ Ryax is composed of multiple micro-services and tools. To learn more about the i
  - [authorization](https://gitlab.com/ryax-tech/ryax/ryax-authorization.git): Answer to the question: "do you have the rights to do so?".
  - [repository](https://gitlab.com/ryax-tech/ryax/ryax-repository.git): Scan git repositories to find actions.
  - [action-builder](https://gitlab.com/ryax-tech/ryax/ryax-action-builder.git): Builds actions and triggers.
- - [ryax-action-wrappers](https://gitlab.com/ryax-tech/ryax/ryax-action-wrappers.git): The code between the action code and Ryax.
 
-**Other**
- - [default-actions](https://gitlab.com/ryax-tech/workflows/default-actions.git): Some open-source actions and triggers.
- - [errored-actions](https://gitlab.com/ryax-tech/ryax/errored-actions.git): Actions with errors, very useful to test the robustness of Ryax.
+**Ryax Actions**
+ - [default-actions](https://gitlab.com/ryax-tech/workflows/default-actions.git): Useful open-source actions and triggers.
+ - [hpc-actions](https://gitlab.com/ryax-tech/ryax/hpc-actions.git): Actions dedicated to HPC use case.
+
+**Others**
  - [common-helm-charts](https://gitlab.com/ryax-tech/ryax/common-helm-charts): Set of common templates for Ryax services library charts
+ - [action-wrappers](https://gitlab.com/ryax-tech/ryax/ryax-action-wrappers.git): Nix based building tool for Ryax actions that inject the Ryax a wrapper.
 
 **Main technologies used by Ryax**
 
 The code: **[Python](https://www.python.org/)**, [dependency-injector](https://python-dependency-injector.ets-labs.org/index.html), [SQLalchemy](https://docs.sqlalchemy.org), [GRPC](https://grpc.io/).
 
-Around the code: [Nix](nixos.org/), [poetry](https://python-poetry.org/), [black](https://black.readthedocs.io/en/stable/), [mypy](https://mypy.readthedocs.io/).
+Around the code: [Nix](nixos.org/), [poetry](https://python-poetry.org/), [ruff](https://docs.astral.sh/ruff/), [mypy](https://mypy.readthedocs.io/).
 
 Deploying Ryax: [Kubernetes](https://kubernetes.io/), [Terraform](https://www.terraform.io/), [Helm](https://helm.sh/).
 
@@ -137,10 +138,12 @@ A more complete roadmap will be published soon.
 - [x] HTTP API automatic creation (with OpenAPI interactive UI!)
 - [x] Manage credentials for the integrations with shared variables
 - [x] Support actions made in Javascript(Nodejs) and C#
+- [x] Offloading of demanding actions to an HPC cluster
+- [ ] Multi Kubernetes cluster support
 - [ ] Backend as a Service with on-demand with dedicated database, object store, message
   broker...
-- [ ] Support any docker based services
-- And much more!
+- [ ] Support any container based services
+- [ ] Ryax in Ryax!
 
 ## 🤗 Contributing
 

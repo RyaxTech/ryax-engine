@@ -27,13 +27,6 @@
 	path = action-wrappers
 	url = git@gitlab.com:ryax-tech/ryax/ryax-action-wrappers.git
 
-[submodule "cli"]
-	path = cli
-	url = git@gitlab.com:ryax-tech/ryax/ryax-cli.git
-[submodule "sdk/ryax-python-sdk"]
-	path = sdk/ryax-python-sdk
-	url = git@gitlab.com:ryax-tech/ryax/ryax-sdk/ryax-python-sdk.git
-
 [submodule "errored-actions"]
 	path = errored-actions
 	url = git@gitlab.com:ryax-tech/ryax/errored-actions.git
@@ -54,3 +47,6 @@
 [submodule "common-helm-charts"]
 	path = common-helm-charts
 	url = git@gitlab.com:ryax-tech/ryax/common-helm-charts.git
+[submodule "hpc-actions"]
+	path = hpc-actions
+	url = https://gitlab.com/ryax-tech/workflows/hpc-actions.git
