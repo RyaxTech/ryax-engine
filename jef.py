@@ -38,9 +38,6 @@ REPOS_TO_BE_RELEASED = {
     "authorization": {
         "gitlab_project": "ryax-tech/ryax/ryax-authorization",
     },
-    "cli": {
-        "gitlab_project": "ryax-tech/ryax/ryax-cli",
-    },
     "common-helm-charts": {
         "gitlab_project": "ryax-tech/ryax/common-helm-charts",
     },
@@ -65,9 +62,6 @@ REPOS_TO_BE_RELEASED = {
     "front": {
         "gitlab_project": "ryax-tech/ryax/ryax-front",
     },
-    "studio": {
-        "gitlab_project": "ryax-tech/ryax/ryax-studio",
-    },
     "webui": {
         "gitlab_project": "ryax-tech/ryax/ryax-webui",
     },
@@ -78,8 +72,6 @@ MAIN_RELEASE_REPO = {
 }
 
 MAX_REPO_NAME_LEN = max([len(r) for r in REPOS_TO_BE_RELEASED.keys()])
-
-
 
 
 class Version:
