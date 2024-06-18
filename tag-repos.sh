@@ -1,14 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-source ./wait-for-pipeline.sh
+set -x
+set -u
+set -e
 
-# Variables
+# Required variables are
 #
 # CI_COMMIT_TAG
 # GITLAB_TOKEN
-# GITLAB_ID
-# RYAX_PROJECTS
-
+# RYAX_PROJECTS (loaded from ./ryax_projects.json if not defined)
 CURL_HEADER="Authorization: Bearer $GITLAB_TOKEN"
 RYAX_PROJECTS=${RYAX_PROJECTS-./ryax_projects.json}
 
