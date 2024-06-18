@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-set -x
-set -u
-set -e
+#set -u
+#set -e
+#set -x
 
 # Required variables are
 #
