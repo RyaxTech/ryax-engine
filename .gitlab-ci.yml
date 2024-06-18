@@ -14,7 +14,7 @@ stages:
 variables:
   RYAX_VALUES: ryax_values.yaml
   RYAX_PROJECTS: ryax_projects.json
-  RYAX_CLUSTER_NAME: pre-release
+  RYAX_CLUSTER_NAME: prerelease
   GITLAB_ID: cicd-ryax # id of the bot. It matters for the API scripts
   GITLAB_TOKEN: $RYAX_CI_ACCESS_TOKEN
   KUBECONFIG: /data/kubeconfig.yaml

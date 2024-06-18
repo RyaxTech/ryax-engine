@@ -1,4 +1,4 @@
-We are proud to announce the release of
+We are proud to announce the release of:
 
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
 # Ryax 24.06.0
