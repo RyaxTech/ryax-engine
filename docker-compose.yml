@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   install-ryax:
     image: ryaxtech/ryax-adm:latest
