@@ -1,25 +1,33 @@
 We are proud to announce the release of:
 
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
-# Ryax 24.06.0
+# Ryax 24.10.0
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
 
-Control and stability.
+Multi-site full power!
 
 ## New features
 
-- Add a Kubernetes Addon to customize action deployment (label, nodeSelector, annotations, serviceAccount)
+- A new service called Ryax Worker can now be used to attached any Slurm or Kubernetes cluster resources
+- Ryax can now run any action on SLURM and Kubernetes seamlessly
+- Action are now scheduled according to user defined constraints and objectives
+- Add the possibility to pin Ryax services to a dedicated resources (nodeSelector)
+- Enhance Ryax documentation with updated content ([](https://docs.ryax.tech))
+- New Jupyter Notebook action with GPU support [in default actions] (https://gitlab.com/ryax-tech/workflows/default-actions/-/tree/master/triggers/jupyterlab)
+- Action builds might now be canceled if necessary
+- Kubernetes addon now support injection of service
 
 ## Bug fixes and Improvements
 
-- Fix impossible to add dynamic output enum Values
-- Fix addon default values from ryax_metadata.yaml no available in UI
-- Better error handling for action deployments
-- Fix hpc addon support of files in custom script
-- Fix python-cuda build fails in some case
-- Fix UID overlap when using NFS CSI Driver
-- Fix OutOfMemory during git scan lead to inconsistent state
+- Fix volume permission for NFS based storage volumes (defaults to 1200 now)
+- Fix fail properly when a pip install fails during builds
 
 ## Upgrade to this version
 
 Usual process: update the version in the config file and apply!
+
+After the apply remove the old loki service that was moved into the ryaxns
+namespace with:
+```sh
+helm uninstall -n ryaxns-monitoring loki
+```
