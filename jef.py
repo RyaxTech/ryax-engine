@@ -3,12 +3,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-## ## ## ##
-# Jef, a tool to help you release Ryax.
-## ## ## ##
+"""
+Jef, a tool to help you release and maintain Ryax.
+"""
 
-import glob
-import json
+import yaml
 import os
 import re
 import subprocess
@@ -234,6 +233,48 @@ def command_pull_all(args) -> None:
     subprocess.run("git submodule foreach git pull --tags -f", shell=True, check=True)
 
 
+def command_update_ryax_adm_version(args):
+    """
+    Update the RYAX_ADM_VERSION in the .gitlab-ci.yml file for each submodule.
+
+    Parameters:
+    submodules (list of str): List of submodule directories to update.
+    new_version (str): The new RYAX_ADM_VERSION to set.
+    """
+    version = args.version
+    try:
+        # Run the sed command to replace the RYAX_ADM_VERSION in the .gitlab-ci.yml file
+        sed_command = f"git submodule foreach 'sed -i \"s/RYAX_ADM_VERSION: .*/RYAX_ADM_VERSION: {version}/\" .gitlab-ci.yml && git diff  || true'"
+
+        subprocess.run(sed_command, shell=True, check=True)
+
+        print(f"Updated RYAX_ADM_VERSION to {version} in all submodules .gitlab-ci.yml")
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error updating ref in submodules: {e}")
+
+
+def command_update_ci_common_version(args):
+    """
+    Update the ref version in the include section of .gitlab-ci.yml for each submodule using `git submodule foreach` and `sed`.
+
+    Parameters:
+    submodules (list of str): List of submodule directories to update.
+    new_ref_version (str): The new ref version to set.
+    """
+    new_ref_version = args.version
+    try:
+        # Run the sed command to replace the ref in the .gitlab-ci.yml file
+        sed_command = f"git submodule foreach 'sed -i \"s/ref: .*/ref: {new_ref_version}/\" .gitlab-ci.yml && git diff || true'"
+
+        subprocess.run(sed_command, shell=True, check=True)
+
+        print(f"Updated ref to {new_ref_version} in all submodules .gitlab-ci.yml")
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error updating ref in submodules: {e}")
+
+
 def get_last_pipe(projgit, tag) -> Dict:
     for pipe in projgit.pipelines.list(get_all=False):
         if tag != pipe.ref:
@@ -383,6 +424,18 @@ if __name__ == "__main__":
     )
     sp.add_argument("tag", type=str)
     sp.set_defaults(func=command_wait_all_pipes)
+
+    description = "Update RYAX_ADM_VERSION in all Gitlab config"
+    sp = subparsers.add_parser("adm_update", description=description, help=description)
+    sp.add_argument("-v", "--version")
+    sp.set_defaults(func=command_update_ryax_adm_version)
+
+    description = "Update CI Common version in all Gitlab config"
+    sp = subparsers.add_parser(
+        "ci_common_update", description=description, help=description
+    )
+    sp.add_argument("-v", "--version")
+    sp.set_defaults(func=command_update_ci_common_version)
 
     description = "Update API: generate from the running server <SERVER> a swagger doc, put it on the public doc and generate the SDK for the CLI. Do not commit anything."
     sp = subparsers.add_parser("update_API", description=description, help=description)
