@@ -49,4 +49,4 @@
 	url = git@gitlab.com:ryax-tech/ryax/common-helm-charts.git
 [submodule "hpc-actions"]
 	path = hpc-actions
-	url = https://gitlab.com/ryax-tech/workflows/hpc-actions.git
+    url = git@gitlab.com:ryax-tech/workflows/hpc-actions.git

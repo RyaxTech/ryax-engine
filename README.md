@@ -7,7 +7,7 @@
   <h3 align="center">Ryax</h3>
 
   <p align="center">
-    Developers, build your backends in record time; deploy at scale with serverless technology; self-host, install on any cloud or use our hosted platform; Open source, low code.
+    Developers, build your AI workflows and Applications in record time; deploy at scale with serverless technology; self-host, install on any cloud and HPC or use our hosted platform; Open source, low code.
     <br />
     <a href="https://docs.ryax.tech/"><strong>Explore the docs »</strong></a>
     <br />
@@ -33,8 +33,8 @@
   <img src="img/openapi.png" height="300px">
 </div>
 
-Ryax is an open-source platform that streamlines the design, deployment, and
-monitoring of Cloud automations and APIs.
+RYAX is the new open-source Hybrid workflow orchestrator to optimize your AI workflows and applications.
+Create AI workflows and orchestrate them over hybrid infrastructure (multi-HPC and multi-Cloud)
 
 ## ⚙ The source code
 
@@ -132,14 +132,18 @@ For more details on the configuration, see [our documentation](https://docs.ryax
 
 A more complete roadmap will be published soon.
 
-- [x] Create workflows
-- [x] Support actions and triggers made in python
-- [x] User and project management
-- [x] HTTP API automatic creation (with OpenAPI interactive UI!)
-- [x] Manage credentials for the integrations with shared variables
-- [x] Support actions made in Javascript(Nodejs) and C#
-- [x] Offloading of demanding actions to an HPC cluster
-- [ ] Multi Kubernetes cluster support
+- [X] Create workflows
+- [X] Support actions and triggers made in python
+- [X] User and project management
+- [X] HTTP API automatic creation (with OpenAPI interactive UI!)
+- [X] Manage credentials for the integrations with shared variables
+- [X] Support actions made in Javascript(Nodejs) and C#
+- [X] Offloading of demanding actions to an HPC cluster
+- [X] Multi Kubernetes cluster support
+- [X] Workflows can run across multiple sites
+- [X] Spark Application support
+- [X] Jupyter Notebook support with GPU enabled
+- [ ] Support all kind of parallel application
 - [ ] Backend as a Service with on-demand with dedicated database, object store, message
   broker...
 - [ ] Support any container based services
@@ -149,8 +153,8 @@ A more complete roadmap will be published soon.
 
 If you want to say thank you and/or support the active development of Ryax:
 
-1. Add a [GitHub Star](https://github.com/RyaxTech/ryax/) to the project.
-2. Tweet about the project on your Twitter.
+1. Add a [GitHub Star](https://github.com/RyaxTech/ryax-engine/) to the project.
+2. Talk about the project on your favorite social network.
 3. Write a review or tutorial on Medium, Dev.to or personal blog.
 4. Share some triggers and actions with the [community](https://discord.gg/bg7s7Es8).
 5. Fix bugs and implement features to [our code](https://gitlab.com/ryax-tech/ryax/ryax-main).
