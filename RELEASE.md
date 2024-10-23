@@ -29,7 +29,7 @@ Multi-site full power!
 This release introduce a new service, the Worker. In order to define the nodes
 that will be used by your actions, the Worker requires a site configuration.
 Please, add a configuration in your Ryax installation configuration file using
-the following example: in your local cluster has a node pool named default with a label `k8s.scaleway.com/pool-name: default` on each node, it has 4 CPU and 8G of memory per node.
+the following example: in your local cluster has a node pool named default with a label `my.provider.com/pool-name: default` on each node, it has 4 CPU and 8G of memory per node.
 ```yaml
 worker:
   values:
