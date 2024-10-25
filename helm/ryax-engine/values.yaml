@@ -1,0 +1,56 @@
+# -- This field has to be a release version.
+global:
+  version: 24.10.0
+
+  clusterName: "example" # must be a valid dns adress
+  domainName: "ryax.io" # Valid dns domain name
+  environment: "production" # development, staging, production
+  chartRegistry:
+    url: "registry.ryax.org/release-charts"
+  appRegistry:
+    url: ryaxtech
+    user:
+    pass:
+
+  imagePullPolicy: IfNotPresent
+  logLevel: info
+  pvcSize: 10Gi
+  persistence:
+    enabled: true
+
+  nodeSelector:
+
+  # Leave empty to use the default storage class
+  storageClass: ""
+
+  tls:
+    enabled: true
+
+# TODO Finish reporting values from addm/helm-charts/***.yaml.gotpl
+action-builder:
+  image:
+    name: ryaxtech/action-builder
+    tag: 24.10.0
+  actionRegistrySecret: ryax-registry-creds-secret
+  brokerSecret: ryax-broker-secret
+  ryaxWrappersGitReference: 24.10.0
+
+authorization:
+  image:
+    name: ryaxtech/authorization
+    tag: 24.10.0
+  # Finish this
+  tls:
+    enabled: true
+    hostname: "cluster.ryax.io"
+    certSecret: "ryax-cert-development"
+
+datastore:
+  pvcSize: 2Gi
+
+minio:
+  pvcSize: 20Gi
+  fixVolumePermission: false
+
+rabbitmq:
+  pvcSize: 1Gi

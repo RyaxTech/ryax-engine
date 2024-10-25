@@ -58,3 +58,11 @@ After the apply, we have to remove the old deployment:
 helm uninstall -n ryaxns-monitoring loki
 kubectl delete pvc -n ryaxns-monitoring storage-loki-0
 ```
+
+If you use public IP with tls enbled, you will need to create a new DNS entry to support all sub domain for your cluster.
+This is used for example for external Worker to access internal container repository.
+Please add an entry in your DNS using star notation:
+`*.<clusterName>.<domainName>`
+
+See [installation doc](https://docs.ryax.tech/howto/install_ryax_kubernetes.html#configure-your-dns) for more details.
+
