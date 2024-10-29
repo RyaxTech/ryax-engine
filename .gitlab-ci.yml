@@ -8,8 +8,6 @@ variables:
   CHARTS: ./chart
   FILES_TO_PREPROCESS: "pyproject.toml chart/Chart.yaml chart/values.yaml"
 
-  POETRY_VERSION: 1.7.1
-
   SERVICE_VERSION: $CI_COMMIT_SHORT_SHA
   APP_VERSION: v$SERVICE_VERSION
   CHART_VERSION: 0.0.0-v$SERVICE_VERSION
