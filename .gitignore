@@ -12,3 +12,4 @@ ci
 _build
 public
 /.venv
+.idea
