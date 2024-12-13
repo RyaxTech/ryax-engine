@@ -1,60 +1,38 @@
 We are proud to announce the release of:
 
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
-# Ryax 24.10.0
+# Ryax 24.12.0
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
 
-Multi-site full power!
+Stability and better UI experience
 
 ## New features
 
-- A new service called Ryax Worker can now be used to attached any Slurm or Kubernetes cluster resources
-- Ryax can now run any action on SLURM and Kubernetes seamlessly
-- Action are now scheduled according to user defined constraints and objectives
-- Add the possibility to pin Ryax services to a dedicated resources (nodeSelector)
-- Enhance Ryax documentation with updated content ([](https://docs.ryax.tech))
-- New Jupyter Notebook action with GPU support [in default actions](https://gitlab.com/ryax-tech/workflows/default-actions/-/tree/master/triggers/jupyterlab)
-- Action builds now can be canceled
-- Kubernetes addon now support injection of service
-- Add VPA recommendation support (experimental)
-
+- GPU support for SSH SLURM with Singularity
+- Runtime Class support for the Kubernetes add-on
+- Action Builder now use a persistent cache (Nix Store)
 
 ## Bug fixes and Improvements
 
-- Fix volume permission for NFS based storage volumes (defaults to 1200 now)
-- Fix fail properly when a pip install fails during builds
+- Use PostgreSQL instead of SQLite as database by default for the Worker
+- Fix Dynamic Output edition form UI reload too often
+- Better deploy constraints settings site type filter
+- Fix CPU per task option for in Slurm execution mode
+- Fix Worker configuration update is now taken into account
+- Fix missing logs for very short execution
+- Avoid workflow error when double deploy
+- Avoid action stuck on Building in case of Action Builder failure
+- Fix RabbitMQ memory leaking due to dangling queues
 
 ## Upgrade to this version
 
-This release introduce a new service, the Worker. In order to define the nodes
-that will be used by your actions, the Worker requires a site configuration.
-Please, add a configuration in your Ryax installation configuration file using
-the following example: in your local cluster has a node pool named default with a label `my.provider.com/pool-name: default` on each node, it has 4 CPU and 8G of memory per node.
-```yaml
-worker:
-  values:
-     config:
-       site:
-         name: local
-         spec:
-           nodePools:
-           - cpu: 4
-             memory: 8G
-             name: default
-             selector:
-               my.provider.com/pool-name: default
-```
+Because the Worker changes database it, the Runner and all workers should be cleaned.
 
-See the Worker [configuration documentation](https://docs.ryax.tech/reference/configuration.html#worker-configuration) for more details.
-
-The users of HPC actions have to install a Worker dedicated to the each cluster
-following this [documentation](https://docs.ryax.tech/howto/worker-install.html).
-
-Once configured you can apply the configuration with `ryax-adm`.
-
-The log capture service, Loki, was moved into the ryaxns namespace. Thus, the old Loki deployment can be removed.
-After the apply, we have to remove the old deployment:
+After the applying the update with ryax-adm, runs:
 ```sh
-helm uninstall -n ryaxns-monitoring loki
-kubectl delete pvc -n ryaxns-monitoring storage-loki-0
+ryax-adm clean worker runner
+```
+For external workers run:
+```sh
+helm update -n ryaxns --reuse-values
 ```
