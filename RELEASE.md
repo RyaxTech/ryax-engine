@@ -1,28 +1,22 @@
 We are proud to announce the release of:
 
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
-# Ryax 24.12.0
+# Ryax 25.02.0
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
 
-Stability and better UI experience
+Optimize the Resources
 
 ## New features
 
-- GPU support for SSH SLURM with Singularity
+- Automatic Action resource scaling
+- Automatic Retries
+- Resources accounting (Preview)
 - Runtime Class support for the Kubernetes add-on
-- Action Builder now use a persistent cache (Nix Store)
 
 ## Bug fixes and Improvements
 
-- Use PostgreSQL instead of SQLite as database by default for the Worker
-- Fix Dynamic Output edition form UI reload too often
-- Better deploy constraints settings site type filter
-- Fix CPU per task option for in Slurm execution mode
-- Fix Worker configuration update is now taken into account
-- Fix missing logs for very short execution
-- Avoid workflow error when double deploy
-- Avoid action stuck on Building in case of Action Builder failure
-- Fix RabbitMQ memory leaking due to dangling queues
+- Fix: issue when enabling Action Builder Nix store persistence
+- Fix: enable deletion of workflow even when on error
 
 ## Upgrade to this version
 
