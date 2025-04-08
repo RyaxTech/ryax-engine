@@ -1,0 +1,86 @@
+apiVersion: v2
+home: https://ryax.tech
+keywords:
+  - Ryax
+  - Serverless
+  - Workflow
+  - GPU
+  - HPC
+  - Slurm
+  - Cloud
+  - Kubernetes
+sources:
+  - https://gitlab.com/ryax-tech/ryax/ryax-engine
+icon: https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd2-460a-b263-2e4c79b69196.png
+name: ryax-engine
+description: Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows and applications on multiple infrastructure.
+type: application
+version: 25.02.0
+appVersion: 25.02.0
+dependencies:
+  # Ryax core services
+  - name: runner
+    version: 25.02.0
+    repository: "oci://registry.ryax.org/release-charts"
+  - name: worker
+    version: 25.02.0
+    repository: "oci://registry.ryax.org/release-charts"
+  - name: authorization
+    version: 25.02.0
+    repository: "oci://registry.ryax.org/release-charts"
+  - name: action-builder
+    version: 25.02.0
+    repository: "oci://registry.ryax.org/release-charts"
+  - name: common-resources
+    version: 25.02.0
+    repository: "oci://registry.ryax.org/release-charts"
+  # Ryax UI services
+  - name: repository
+    version: 25.02.0
+    repository: "oci://registry.ryax.org/release-charts"
+  - name: studio
+    version: 25.02.0
+    repository: "oci://registry.ryax.org/release-charts"
+  - name: front
+    version: 25.02.0
+    repository: "oci://registry.ryax.org/release-charts"
+  - name: webui
+    version: 25.02.0
+    repository: "oci://registry.ryax.org/release-charts"
+  # Ryax external services: could be replaced with Cloud tools
+  # Docker registry
+  - name: registry
+    version: 25.02.0
+    repository: "oci://registry.ryax.org/release-charts"
+  # Postgres database
+  - name: datastore
+    version: 25.02.0
+    repository: "oci://registry.ryax.org/release-charts"
+  # S3 compatible storage
+  - name: minio
+    version: 16.x.x
+    repository: 'oci://registry-1.docker.io/bitnamicharts'
+  # Reverse proxy
+  - name: traefik
+    version: 34.x.x
+    repository: 'https://helm.traefik.io/traefik'
+  # rabbitmq message broker
+  - name: rabbitmq
+    version: 15.x.x
+    repository: 'oci://registry-1.docker.io/bitnamicharts'
+  # Observability
+  # Prometheus stack with grafana
+  - name: kube-prometheus-stack
+    version: 70.x.x
+    repository: 'https://prometheus-community.github.io/helm-charts'
+    tags:
+      - monitoring
+    condition: prometheus.enabled
+  # Tracing
+  - name: tempo
+    version: 1.x.x
+    repository: 'https://grafana.github.io/helm-charts'
+    condition: tempo.enabled
+    tags:
+      - monitoring
+

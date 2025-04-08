@@ -14,3 +14,4 @@ public
 /.venv
 .idea
 venv
+helm/ryax-engine/charts
