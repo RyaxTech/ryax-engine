@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+SELF_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+helm template ../chart --values $SELF_DIR/ryax-airgap-helm-values.yaml \
+  >  >(grep 'image: ' | sed 's/.*image: //' | sed 's/\"\(.*\)\"/\1/' | sort | uniq)
+  2> >(grep 'repo')
