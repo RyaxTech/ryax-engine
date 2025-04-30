@@ -1,163 +1,18 @@
 # -- This field has to be a release version.
 global:
-  ryax:
-    version: 25.02.0
-    logLevel: info
-    clusterName: "local" # must be a valid dns address
-    domainName: "ryax.io" # Valid dns domain name
-    environment: "development" # development, staging, production
-    userNamespace: ryaxns-execs
-
   imageRegistry: # "ryaxtech" or "registry.ryax.org/release"
   imagePullSecrets:
   imagePullPolicy: IfNotPresent
 
-  persistence:
-    enabled: true
-
   nodeSelector: {}
   # Leave empty to use the default storage class
-  storageClass: ""
+  # defaultStorageClass: ""
+  defaultStorageClass: local-path
 
   tls:
-    enabled: true
-
-# TODO Finish reporting values from addm/helm-charts/***.yaml.gotpl
-action-builder:
-  image:
-    name: docker.io/ryaxtech/action-builder
-  imagePullPolicy: IfNotPresent
-  internalRegistry: ryax-registry:5000
-  logLevel: warning
-  tls:
-    certSecret: ryax-cert-development
     enabled: false
-    hostname: local.ryax.io
-  actionRegistrySecret: ryax-registry-creds-secret
-  brokerSecret: ryax-broker-secret
-
-authorization:
-  image:
-    name: docker.io/ryaxtech/authorization
-  # TODO change default in the chart
-  imagePullPolicy: IfNotPresent
-  logLevel: warning
-  # Move to global ?
-  # environment: only needed for the cert name generation...
-  tls:
-    enabled: true
-    hostname: "example.ryax.io"
-    certSecret: "ryax-cert-development"
-
-common-resources:
-  brokerCookieName: ryax-broker-cookie
-  brokerName: broker
-  brokerSecret: ryax-broker-secret
-  brokerService: ryax-broker
-  brokerUser: ryaxmq
-  certManager:
-    enabled: false
-  environment: development
-  filestoreSecret: ryax-minio-secret
-  filestoreService: minio
-  grafanaSecret: grafana-cedentials
-  jwtSecret: api-jwt-secret-key
-  monitoringNamespace: ryaxns-monitoring
-  nameOverride: ryax
-  registries:
-    appregistry:
-      url: docker.io/ryaxtech
-  traefik:
-    monitoring:
-      enabled: false
-  userNamespace: ryaxns-execs
-
-front:
-  environment: development
-  image:
-    name: docker.io/ryaxtech/front
-  imagePullPolicy: IfNotPresent
-  logLevel: warning
-  tls:
-    certSecret: ryax-cert-development
-    enabled: false
-    hostname: local.ryax.io
-
-registry:
-  credentials:
-    enabled: true
-    htpasswd: 'ryax:$2a$12$L4zHsMG0d6UMcmum.egJ.OOP.UBP8pp9dntDWXIdsdST0X5x35wVy'
-    injectInNamespaces:
-    - ryaxns-execs
-    - ryaxns
-    password: 'R o93Wetj44yXAY9Rk-lWlklo0akQIYzp_Eg-UN721zA=='
-    pullSecretName: ryax-registry-creds-secret
-    username: ryax
-  imagePullPolicy: IfNotPresent
-  ingress:
-    enabled: false
-  monitoring:
-    enabled: false
-    namespace: ryaxns-monitoring
-  nodePort: 30012
-  pvcSize: 20Gi
-  servicePort: 5000
-  storageClass: local-path
-
-runner:
-  authorizationUrl: ryax-authorization:8080
-  brokerSecret: ryax-broker-secret
-  datastoreSecret: ryax-datastore-secret
-  environment: development
-  fernetEncryptionKey: R LP2kPn8z-r9WGcckcZHkWLMVLXwKbugfbQONus6bIg==
-  filestoreName: ryax-filestore
-  filestoreSecret: ryax-minio-secret
-  image:
-    name: docker.io/ryaxtech/runner
-  imagePullPolicy: IfNotPresent
-  internalRegistry: 127.0.0.1:30012
-  jwtSecret: api-jwt-secret-key
-  logLevel: warning
-  monitoring:
-    enabled: false
-  priorityClass: microservices
-  ryaxUserNamespace: ryaxns-execs
-  tls:
-    certSecret: ryax-cert-development
-    enabled: false
-    hostname: local.ryax.io
-
-studio:
-  authorizationUrl: ryax-authorization:8080
-  brokerSecret: ryax-broker-secret
-  datastoreSecret: ryax-datastore-secret
-  environment: development
-  filestoreName: ryax-filestore
-  filestoreSecret: ryax-minio-secret
-  image:
-    name: docker.io/ryaxtech/studio
-  imagePullPolicy: IfNotPresent
-  jwtSecret: api-jwt-secret-key
-  logLevel: warning
-  tls:
-    certSecret: ryax-cert-development
-    enabled: false
-    hostname: local.ryax.io
-
-webui:
-  environment: development
-  image:
-    name: docker.io/ryaxtech/webui
-  imagePullPolicy: IfNotPresent
-  logLevel: warning
-  tls:
-    certSecret: ryax-cert-development
-    enabled: false
-    hostname: local.ryax.io
 
 worker:
-  actionRegistrySecret: ryax-registry-creds-secret
-  brokerSecret: ryax-broker-secret
   config:
     site:
       name: local
@@ -170,13 +25,6 @@ worker:
           selector:
             node.kubernetes.io/instance-type: k3s
       type: KUBERNETES
-  environment: development
-  filestoreName: ryax-filestore
-  filestoreSecret: ryax-minio-secret
-  image:
-    name: docker.io/ryaxtech/worker
-  imagePullPolicy: IfNotPresent
-  logLevel: warning
   loki:
     monitoring:
       serviceMonitor:
@@ -191,10 +39,6 @@ worker:
   postgresql:
     auth:
       password: InsecurePassw0rd!
-    primary:
-      nodeSelector: {}
-
-  priorityClass: microservices
   promtail:
     serviceMonitor:
       additionalLabels:
@@ -202,74 +46,24 @@ worker:
         release: prometheus
       enabled: false
   vpa:
-    config:
-      MIG:
-        enabled: false
-    image:
-      pullPolicy: IfNotPresent
-      repository: docker.io/ryaxtech/vpa
+    enabled: false
     monitoring:
       enabled: false
-    priorityClass: microservices
-    ryax:
-      worker:
-        configMapName: ryax-worker-config
-        serviceName: ryax-worker
+
 repository:
-  authorizationUrl: ryax-authorization:8080
-  brokerSecret: ryax-broker-secret
-  datastoreSecret: ryax-datastore-secret
-  environment: development
-  fernetEncryptionKey: R tsPJX7WrANzevwwnhFJ-3YxwfSicrLzEEmRnXC9cXA==
-  image:
-    name: docker.io/ryaxtech/repository
-  imagePullPolicy: IfNotPresent
-  jwtSecret: api-jwt-secret-key
   logLevel: warning
-  passwordEncryptionKeySecret: ryax-repository-password-encryption-key
-  tls:
-    certSecret: ryax-cert-development
-    enabled: false
-    hostname: local.ryax.io
 
 datastore:
-  datastoreSecret: ryax-datastore-secret
-  imagePullPolicy: IfNotPresent
   monitoring:
     enabled: false
-  pvcName: ryax-datastore-pvc-0
   pvcSize: 2Gi
-  storageClass: local-path
 
 minio:
-  auth:
-    existingSecret: ryax-minio-secret
-  commonLabels:
-    ryax.tech/resource-name: minio
-  containerSecurityContext:
-    runAsUser: 1200
-  image:
-    debug: false
   metrics:
     enabled: false
-  mode: standalone
   persistence:
-    enabled: true
     size: 20Gi
     storageClass: local-path
-  podSecurityContext:
-    fsGroup: 1200
-  priorityClassName: backbone
-  resources:
-    limits:
-      memory: 1000Mi
-    requests:
-      cpu: 100m
-      memory: 1000Mi
-  serviceAccount:
-    create: false
-  volumePermissions:
-    enabled: false
 
 rabbitmq:
   auth:
@@ -286,31 +80,18 @@ rabbitmq:
       autoGenerated: false
       enabled: false
     username: ryaxmq
-  clustering:
-    enabled: false
-  extraPlugins: ""
-  fullnameOverride: ryax-broker
-  image:
-    debug: false
   metrics:
     enabled: false
-    serviceMonitor:
-      enabled: true
-      namespace: ryaxns-monitoring
   persistence:
     enabled: true
     size: 1Gi
     storageClass: local-path
-  plugins: rabbitmq_management
-  priorityClassName: backbone
-  rbac:
-    create: false
-  serviceAccount:
-    create: false
-  ulimitNofiles: ""
 
 prometheus:
   enabled: false
 
 tempo:
+  enabled: false
+
+traefik:
   enabled: false

@@ -6,10 +6,12 @@ set -e
 SELF_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 # params
-IMAGES="${1:-$(cat $SELF_DIR/images-list.txt)}"
+IMAGES_FILE="${1:-$SELF_DIR/images-list.txt}"
 ARCH=${2:-"amd64"}
 # TODO support private registry
 #PRIVATE_REGISTRY_PREFIX="$3"
+
+IMAGES=$(cat $IMAGES_FILE)
 
 set -u
 
