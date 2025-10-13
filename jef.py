@@ -34,7 +34,9 @@ REPOS_TO_BE_RELEASED = {
     "adm": {
         "gitlab_project": "ryax-tech/ryax/ryax-adm",
     },
-    "vpa": {"gitlab_project": "ryax-tech/ryax/ryax-vpa", "branch": "main"},
+    "intelliscale": {
+        "gitlab_project": "ryax-tech/ryax/ryax-intelliscale"
+    },
     "authorization": {
         "gitlab_project": "ryax-tech/ryax/ryax-authorization",
     },
