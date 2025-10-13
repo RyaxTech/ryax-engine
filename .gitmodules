@@ -49,6 +49,6 @@
 [submodule "hpc-actions"]
 	path = hpc-actions
     url = git@gitlab.com:ryax-tech/workflows/hpc-actions.git
-[submodule "ryax-intelliscale"]
-	path = ryax-intelliscale
+[submodule "intelliscale"]
+	path = intelliscale
 	url = git@gitlab.com:ryax-tech/ryax/ryax-intelliscale.git

@@ -16,7 +16,7 @@ import shutil
 from typing import Any, Dict, List
 import argparse
 
-from git import Repo
+from git import Repo, BadName
 
 
 class TCOLOR:
@@ -187,26 +187,28 @@ def get_last_3_version(repo):
 
 
 def print_last_versions_order(repo) -> None:
-    v = [
-        ("master", repo.commit("master")),
-        ("staging", repo.commit("staging")),
-    ]
-    for ver in get_last_3_version(repo):
-        v.append((ver["tag"], repo.commit(ver["tag"])))
+    try:
+        v = [
+            ("master", repo.commit("master")),
+            ("staging", repo.commit("staging")),
+        ]
+        for ver in get_last_3_version(repo):
+            v.append((ver["tag"], repo.commit(ver["tag"])))
 
-    v = sorted(v, key=lambda x: x[1].committed_datetime, reverse=True)
+        v = sorted(v, key=lambda x: x[1].committed_datetime, reverse=True)
 
-    prev_commit = None
-    for c in v:
-        if prev_commit is not None:
-            if prev_commit == c[1]:
-                print(f" {TCOLOR.OKGREEN}=={TCOLOR.ENDC} ", end="")
-            else:
-                print(f" {TCOLOR.OKBLUE}>>{TCOLOR.ENDC} ", end="")
-        print(c[0], end="")
-        prev_commit = c[1]
-    print("")
-
+        prev_commit = None
+        for c in v:
+            if prev_commit is not None:
+                if prev_commit == c[1]:
+                    print(f" {TCOLOR.OKGREEN}=={TCOLOR.ENDC} ", end="")
+                else:
+                    print(f" {TCOLOR.OKBLUE}>>{TCOLOR.ENDC} ", end="")
+            print(c[0], end="")
+            prev_commit = c[1]
+        print("")
+    except BadName:
+        print(f"{TCOLOR.WARNING}no staging or master tag found on repo{TCOLOR.ENDC} ")
 
 def command_check_stagings(args) -> None:
     print(
@@ -235,6 +237,11 @@ def command_pull_all(args) -> None:
     print(f"{TCOLOR.OKBLUE}$ git submodule foreach git pull --tags -f{TCOLOR.ENDC}")
     subprocess.run("git submodule foreach git pull --tags -f", shell=True, check=True)
 
+def command_force_staging(args) -> None:
+    print(f"{TCOLOR.OKBLUE}$ git submodule foreach git tag -f staging{TCOLOR.ENDC}")
+    subprocess.run("git submodule foreach git tag -f staging", shell=True, check=True)
+    print(f"{TCOLOR.OKBLUE}$ git submodule foreach git push -f origin staging{TCOLOR.ENDC}")
+    subprocess.run("git submodule foreach git push -f origin staging", shell=True, check=True)
 
 def command_update_ryax_adm_version(args):
     """
@@ -439,6 +446,13 @@ if __name__ == "__main__":
     )
     sp.add_argument("-v", "--version")
     sp.set_defaults(func=command_update_ci_common_version)
+
+    description = "Force all submodule staging branch to align with current version"
+    sp = subparsers.add_parser(
+        "force_staging", description=description, help=description
+    )
+    sp.add_argument("-v", "--version")
+    sp.set_defaults(func=command_force_staging)
 
     description = "Update API: generate from the running server <SERVER> a swagger doc, put it on the public doc and generate the SDK for the CLI. Do not commit anything."
     sp = subparsers.add_parser("update_API", description=description, help=description)
