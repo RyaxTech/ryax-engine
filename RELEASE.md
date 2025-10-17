@@ -8,13 +8,21 @@ Optimize the Resources, make Build Simple
 
 ## New features
 
-- Intelliscale replaces vpa
-- Improved monitoring of memory kill events
+- More robust intelliscale, enhanced detection mechanism
+- Improved monitoring
+- Built-in action resource usage monitoring
+- Track cpu and memory usage per execution
+- Several features to support multi objective scheduling
 
 ## Bug fixes and Improvements
 
 - Bug that made worker create queues indefinitely in some situations
-- 
+- Fix sudden decomissioning of bitnami repo
+- Prevent builder failure when the wrapper git reference is unavailable
+- Fix builder persitency that was making automatically garbage collection fails
+- Fixed bug that let actions build stuck on starting state
+- Switch to uv for python packaging
+- Upgrade to traefik 3
 
 ## Upgrade to this version
 
@@ -36,3 +44,4 @@ Remove the vpa helm installation.
 ```shell
 helm uninstall -n ryaxns ryax-vpa
 ```
+
