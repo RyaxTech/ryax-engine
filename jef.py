@@ -315,7 +315,7 @@ def print_pipe(reponame, pipe) -> None:
     else:
         status = f"{TCOLOR.WARNING}{status}{TCOLOR.ENDC} "
 
-    print(f"{reponame: <15} {pipe['ref']: <7} {pipe['sha'][:6]} {status} {pipe['url']}")
+    print(f"{reponame: <15} {pipe['ref']: <7} v{pipe['sha'][:8]} {status} {pipe['url']}")
 
 
 def command_wait_all_pipes(args) -> None:

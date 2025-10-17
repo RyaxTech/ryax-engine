@@ -1,27 +1,38 @@
 We are proud to announce the release of:
 
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
-# Ryax 25.02.0
+# Ryax 25.10.0
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
 
 Optimize the Resources, make Build Simple
 
 ## New features
 
-- Reproducible Action Build with lockfile support
-- Automatic Action resource scaling
-- Automatic Retries
-- Resources accounting (Preview)
+- Intelliscale replaces vpa
+- Improved monitoring of memory kill events
 
 ## Bug fixes and Improvements
 
-- Fix: issue when enabling Action Builder Nix store persistence
-- Fix: enable deletion of workflow even when on error
-- Fix: only use GPU node if asked
-- Fix: state inconsistency in Execution and Deployment in some cases
-- Fix: optional inputs on SSH_SLURM
-- Fix: disable deploy triggers on SSH_SLURM
+- Bug that made worker create queues indefinitely in some situations
+- 
 
 ## Upgrade to this version
 
-Then apply the update as usual.
+### Before you start
+
+First delete the ryax-studio-scale-down job to avoid imagePullBackOff due the 
+sudden decommissioning of bitnami.
+
+```shell
+kubectl delete job -n ryaxns ryax-studio-scale-down
+```
+
+### Upgrade
+
+Apply the upgrade with adm by changing version to `25.10.0` on values files.
+Update all external workers installed by editing the values to use `25.10.0`.
+Remove the vpa helm installation.
+
+```shell
+helm uninstall -n ryaxns ryax-vpa
+```
