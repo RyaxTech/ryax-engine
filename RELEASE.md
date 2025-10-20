@@ -12,7 +12,7 @@ Optimize the Resources, make Build Simple
 - Improved monitoring
 - Built-in action resource usage monitoring
 - Track cpu and memory usage per execution
-- Several features to support multi objective scheduling
+- Several features to enhance multi objective scheduling
 
 ## Bug fixes and Improvements
 
