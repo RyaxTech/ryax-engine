@@ -237,11 +237,19 @@ def command_pull_all(args) -> None:
     print(f"{TCOLOR.OKBLUE}$ git submodule foreach git pull --tags -f{TCOLOR.ENDC}")
     subprocess.run("git submodule foreach git pull --tags -f", shell=True, check=True)
 
+def _force_tag(tag: str) -> None:
+    assert tag
+    print(f"{TCOLOR.OKBLUE}$ git submodule foreach git tag -f {tag}{TCOLOR.ENDC}")
+    subprocess.run(f"git submodule foreach git tag -f {tag}", shell=True, check=True)
+    print(f"{TCOLOR.OKBLUE}$ git submodule foreach git push -f origin {tag}{TCOLOR.ENDC}")
+    subprocess.run(f"git submodule foreach git push -f origin {tag}", shell=True, check=True)
+
 def command_force_staging(args) -> None:
-    print(f"{TCOLOR.OKBLUE}$ git submodule foreach git tag -f staging{TCOLOR.ENDC}")
-    subprocess.run("git submodule foreach git tag -f staging", shell=True, check=True)
-    print(f"{TCOLOR.OKBLUE}$ git submodule foreach git push -f origin staging{TCOLOR.ENDC}")
-    subprocess.run("git submodule foreach git push -f origin staging", shell=True, check=True)
+    _force_tag("staging")
+
+def command_tag_release(args) -> None:
+    _force_tag(args.tag)
+
 
 def command_update_ryax_adm_version(args):
     """
@@ -453,6 +461,14 @@ if __name__ == "__main__":
     )
     sp.add_argument("-v", "--version")
     sp.set_defaults(func=command_force_staging)
+
+    description = "Tag release in all projects, WARNING overwrites existing ones if so"
+    sp = subparsers.add_parser(
+        "tag_release", description=description, help=description
+    )
+    sp.add_argument("-t", "--tag")
+    sp.set_defaults(func=command_tag_release)
+
 
     description = "Update API: generate from the running server <SERVER> a swagger doc, put it on the public doc and generate the SDK for the CLI. Do not commit anything."
     sp = subparsers.add_parser("update_API", description=description, help=description)
