@@ -28,12 +28,12 @@ Optimize the Resources, make Build Simple
 
 ### Before you start
 
-First delete the ryax-studio-scale-down job to avoid imagePullBackOff due the 
 Install CRDs for traefik v3 migration.
 
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.5/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml
 ```
+
 First if you have a job on ryaxns named `ryax-studio-scale-down` delete the ryax-studio-scale-down job to avoid imagePullBackOff due the 
 sudden decommissioning of bitnami.
 
