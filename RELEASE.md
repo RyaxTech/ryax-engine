@@ -41,6 +41,9 @@ sudden decommissioning of bitnami.
 kubectl delete job -n ryaxns ryax-studio-scale-down
 ```
 
+If your ryax_values.yaml file has an empty `storageClass: """`, remove this entry
+and ensure you have one and only one as default.
+
 ### Upgrade
 
 Apply the upgrade with adm by changing version to `25.10.0` on values files.
