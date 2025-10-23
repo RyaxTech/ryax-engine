@@ -1,0 +1,19 @@
+[project]
+name = "ryax-engine"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "certifi",
+    "charset-normalizer",
+    "gitdb",
+    "gitpython",
+    "idna",
+    "python-gitlab",
+    "pyyaml",
+    "requests-toolbelt",
+    "requests",
+    "smmap",
+    "urllib3",
+]
