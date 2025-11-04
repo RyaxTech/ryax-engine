@@ -250,6 +250,19 @@ def command_force_staging(args) -> None:
 def command_tag_release(args) -> None:
     _force_tag(args.tag)
 
+def _run_cmd(cmd) -> None:
+    print(f"{TCOLOR.OKBLUE}$ {cmd} {TCOLOR.ENDC}")
+    subprocess.run(cmd, shell=True, check=True)
+
+def command_remove_local_tags(args) -> None:
+    # Delete all tags on ryax-engine
+    _run_cmd("git tag -l | xargs git tag -d")
+    # Restore only remote tags
+    _run_cmd("git fetch --tags")
+    # Delete tags on each submodule
+    _run_cmd('git submodule foreach "git tag -l | xargs git tag -d "')
+    # Restore only remote tags for each submodule
+    _run_cmd('git submodule foreach "git fetch --tags"')
 
 def command_update_ryax_adm_version(args):
     """
@@ -469,6 +482,12 @@ if __name__ == "__main__":
     sp.add_argument("-t", "--tag")
     sp.set_defaults(func=command_tag_release)
 
+    description = "Remove all local tags"
+    sp = subparsers.add_parser(
+        "remove_local_tags", description=description, help=description
+    )
+    sp.add_argument("-v", "--version")
+    sp.set_defaults(func=command_remove_local_tags)
 
     description = "Update API: generate from the running server <SERVER> a swagger doc, put it on the public doc and generate the SDK for the CLI. Do not commit anything."
     sp = subparsers.add_parser("update_API", description=description, help=description)
