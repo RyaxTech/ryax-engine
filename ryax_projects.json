@@ -1,46 +1,57 @@
 [
   {
     "name": "webui",
-    "id": 8608060
+    "id": 8608060,
+    "staging_commit_sha": "53778e3c"
   },
   {
     "name": "repository",
-    "id": 21362741
+    "id": 21362741,
+    "staging_commit_sha": "46f38bf1"
   },
   {
     "name": "studio",
-    "id": 22056535
+    "id": 22056535,
+    "staging_commit_sha": "e7efb2e7"
   },
   {
     "name": "actionBuilder",
-    "id": 21796407
+    "id": 21796407,
+    "staging_commit_sha": "d040646c"
   },
   {
     "name": "authorization",
-    "id": 27412825
+    "id": 27412825,
+    "staging_commit_sha": "70cc3c82"
   },
   {
     "name": "commonResources",
-    "id": 27959318
+    "id": 27959318,
+    "staging_commit_sha": "85e54b7d"
   },
   {
     "name": "front",
-    "id": 32467701
+    "id": 32467701,
+    "staging_commit_sha": "71b56168"
   },
   {
     "name": "runner",
-    "id": 24995205
+    "id": 24995205,
+    "staging_commit_sha": "7a015b70"
   },
   {
     "name": "worker",
-    "id": 24995205
+    "id": 24995205,
+    "staging_commit_sha": "7a015b70"
   },
   {
     "name": "adm",
-    "id": 16990830
+    "id": 16990830,
+    "staging_commit_sha": "6c828ce4"
   },
   {
     "name": "vpa",
-    "id": 60950044
+    "id": 60950044,
+    "staging_commit_sha": "3644e1f9"
   }
 ]
