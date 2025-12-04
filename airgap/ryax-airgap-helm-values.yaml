@@ -59,6 +59,8 @@ datastore:
   pvcSize: 2Gi
 
 minio:
+  image:
+    repository: bitnamilegacy/minio
   metrics:
     enabled: false
   persistence:
