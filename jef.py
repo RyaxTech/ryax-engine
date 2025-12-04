@@ -16,7 +16,7 @@ import shutil
 from typing import Any, Dict, List
 import argparse
 
-from git import Repo
+from git import Repo, BadName
 
 
 class TCOLOR:
@@ -34,7 +34,9 @@ REPOS_TO_BE_RELEASED = {
     "adm": {
         "gitlab_project": "ryax-tech/ryax/ryax-adm",
     },
-    "vpa": {"gitlab_project": "ryax-tech/ryax/ryax-vpa", "branch": "main"},
+    "intelliscale": {
+        "gitlab_project": "ryax-tech/ryax/ryax-intelliscale"
+    },
     "authorization": {
         "gitlab_project": "ryax-tech/ryax/ryax-authorization",
     },
@@ -185,26 +187,28 @@ def get_last_3_version(repo):
 
 
 def print_last_versions_order(repo) -> None:
-    v = [
-        ("master", repo.commit("master")),
-        ("staging", repo.commit("staging")),
-    ]
-    for ver in get_last_3_version(repo):
-        v.append((ver["tag"], repo.commit(ver["tag"])))
+    try:
+        v = [
+            ("master", repo.commit("master")),
+            ("staging", repo.commit("staging")),
+        ]
+        for ver in get_last_3_version(repo):
+            v.append((ver["tag"], repo.commit(ver["tag"])))
 
-    v = sorted(v, key=lambda x: x[1].committed_datetime, reverse=True)
+        v = sorted(v, key=lambda x: x[1].committed_datetime, reverse=True)
 
-    prev_commit = None
-    for c in v:
-        if prev_commit is not None:
-            if prev_commit == c[1]:
-                print(f" {TCOLOR.OKGREEN}=={TCOLOR.ENDC} ", end="")
-            else:
-                print(f" {TCOLOR.OKBLUE}>>{TCOLOR.ENDC} ", end="")
-        print(c[0], end="")
-        prev_commit = c[1]
-    print("")
-
+        prev_commit = None
+        for c in v:
+            if prev_commit is not None:
+                if prev_commit == c[1]:
+                    print(f" {TCOLOR.OKGREEN}=={TCOLOR.ENDC} ", end="")
+                else:
+                    print(f" {TCOLOR.OKBLUE}>>{TCOLOR.ENDC} ", end="")
+            print(c[0], end="")
+            prev_commit = c[1]
+        print("")
+    except BadName:
+        print(f"{TCOLOR.WARNING}no staging or master tag found on repo{TCOLOR.ENDC} ")
 
 def command_check_stagings(args) -> None:
     print(
@@ -233,6 +237,32 @@ def command_pull_all(args) -> None:
     print(f"{TCOLOR.OKBLUE}$ git submodule foreach git pull --tags -f{TCOLOR.ENDC}")
     subprocess.run("git submodule foreach git pull --tags -f", shell=True, check=True)
 
+def _force_tag(tag: str) -> None:
+    assert tag
+    print(f"{TCOLOR.OKBLUE}$ git submodule foreach git tag -f {tag}{TCOLOR.ENDC}")
+    subprocess.run(f"git submodule foreach git tag -f {tag}", shell=True, check=True)
+    print(f"{TCOLOR.OKBLUE}$ git submodule foreach git push -f origin {tag}{TCOLOR.ENDC}")
+    subprocess.run(f"git submodule foreach git push -f origin {tag}", shell=True, check=True)
+
+def command_force_staging(args) -> None:
+    _force_tag("staging")
+
+def command_tag_release(args) -> None:
+    _force_tag(args.tag)
+
+def _run_cmd(cmd) -> None:
+    print(f"{TCOLOR.OKBLUE}$ {cmd} {TCOLOR.ENDC}")
+    subprocess.run(cmd, shell=True, check=True)
+
+def command_remove_local_tags(args) -> None:
+    # Delete all tags on ryax-engine
+    _run_cmd("git tag -l | xargs git tag -d")
+    # Restore only remote tags
+    _run_cmd("git fetch --tags")
+    # Delete tags on each submodule
+    _run_cmd('git submodule foreach "git tag -l | xargs git tag -d "')
+    # Restore only remote tags for each submodule
+    _run_cmd('git submodule foreach "git fetch --tags"')
 
 def command_update_ryax_adm_version(args):
     """
@@ -306,7 +336,7 @@ def print_pipe(reponame, pipe) -> None:
     else:
         status = f"{TCOLOR.WARNING}{status}{TCOLOR.ENDC} "
 
-    print(f"{reponame: <15} {pipe['ref']: <7} {pipe['sha'][:6]} {status} {pipe['url']}")
+    print(f"{reponame: <15} {pipe['ref']: <7} v{pipe['sha'][:8]} {status} {pipe['url']}")
 
 
 def command_wait_all_pipes(args) -> None:
@@ -437,6 +467,27 @@ if __name__ == "__main__":
     )
     sp.add_argument("-v", "--version")
     sp.set_defaults(func=command_update_ci_common_version)
+
+    description = "Force all submodule staging branch to align with current version"
+    sp = subparsers.add_parser(
+        "force_staging", description=description, help=description
+    )
+    sp.add_argument("-v", "--version")
+    sp.set_defaults(func=command_force_staging)
+
+    description = "Tag release in all projects, WARNING overwrites existing ones if so"
+    sp = subparsers.add_parser(
+        "tag_release", description=description, help=description
+    )
+    sp.add_argument("-t", "--tag")
+    sp.set_defaults(func=command_tag_release)
+
+    description = "Remove all local tags"
+    sp = subparsers.add_parser(
+        "remove_local_tags", description=description, help=description
+    )
+    sp.add_argument("-v", "--version")
+    sp.set_defaults(func=command_remove_local_tags)
 
     description = "Update API: generate from the running server <SERVER> a swagger doc, put it on the public doc and generate the SDK for the CLI. Do not commit anything."
     sp = subparsers.add_parser("update_API", description=description, help=description)
