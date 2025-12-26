@@ -12,6 +12,9 @@ global:
     enabled: false
     environment: "development" # development, staging, production
     hostname: "local.ryax.io" # must be a valid dns address
+  # Needed by bitnami to avoid https://github.com/bitnami/charts/issues/30850
+  security:
+    allowInsecureImages: true
 
 # TODO put this directly in this chart
 common-resources:
@@ -136,19 +139,20 @@ worker:
         app: prometheus-operator
         release: prometheus
       enabled: false
-  vpa:
+  intelliscale:
     enabled: false
-vpa:
+    
+intelliscale:
+  image:
+    registry: registry.ryax.org
+    repository: dev/intelliscale
+    tag: helm-chart-globals
   enabled: true
   priorityClass: microservices
   ryax:
     worker:
       configMapName: ryax-worker-config
       serviceName: ryax-worker
-  image:
-    registry: registry.ryax.org
-    repository: dev/vpa
-    tag: helm-with-globals
   config:
     MIG:
       enabled: false
@@ -170,8 +174,12 @@ repository:
 datastore:
   datastoreSecret: ryax-datastore-secret
   pvcSize: 2Gi
+  monitoring:
+    enabled: false
 
 minio:
+  image:
+    repository: bitnamilegacy/minio
   auth:
     existingSecret: ryax-minio-secret
   commonLabels:
@@ -199,6 +207,8 @@ minio:
     enabled: false
 
 rabbitmq:
+  image:
+    repository: bitnamilegacy/rabbitmq
   auth:
     existingErlangSecret: ryax-broker-cookie
     existingPasswordSecret: ryax-broker-secret

@@ -37,7 +37,7 @@ dependencies:
     version: 0.0.0-dev
     #version: 24.04.0-rc0
     #repository: "oci://registry.ryax.org/dev-charts"
-    condition: vpa.enabled
+    condition: intelliscale.enabled
   - name: authorization
     # For local dev
     repository: file://../authorization/chart
@@ -46,7 +46,7 @@ dependencies:
     #repository: "oci://registry.ryax.org/dev-charts"
   - name: action-builder
     # For local dev
-    repository: file://../action-builder/chart
+    repository: file://../runner/charts/actionBuilder
     version: 0.0.0-dev
     #version: 24.04.0-rc0
     #repository: "oci://registry.ryax.org/dev-charts"

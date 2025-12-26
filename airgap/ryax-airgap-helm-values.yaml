@@ -1,14 +1,7 @@
 # -- This field has to be a release version.
 global:
-  imageRegistry: # "ryaxtech" or "registry.ryax.org/release"
-  imagePullSecrets:
   imagePullPolicy: IfNotPresent
-
-  nodeSelector: {}
-  # Leave empty to use the default storage class
-  # defaultStorageClass: ""
   defaultStorageClass: local-path
-
   tls:
     enabled: false
 
@@ -26,41 +19,28 @@ worker:
             node.kubernetes.io/instance-type: k3s
       type: KUBERNETES
   loki:
-    monitoring:
-      serviceMonitor:
-        additionalLabels:
-          app: prometheus-operator
-          release: prometheus
-        enabled: false
     singleBinary:
       persistence:
         size: 10Gi
         storageClass: local-path
   postgresql:
     auth:
+      # WARNING: Change this!
       password: InsecurePassw0rd!
-  promtail:
-    serviceMonitor:
-      additionalLabels:
-        app: prometheus-operator
-        release: prometheus
-      enabled: false
-  vpa:
+  intelliscale:
     enabled: false
-    monitoring:
-      enabled: false
-
+    
 repository:
-  logLevel: warning
+  # WARNING: Change this!
+  fernetEncryptionKey: RtsPJX7WrANzevwwnhFJ-3YxwfSicrLzEEmRnXC9cXA==
 
 datastore:
   monitoring:
     enabled: false
-  pvcSize: 2Gi
+  # WARNING: Change this!
+  datastoreSecret: ryax-datastore-secret
 
 minio:
-  image:
-    repository: bitnamilegacy/minio
   metrics:
     enabled: false
   persistence:
@@ -71,6 +51,7 @@ rabbitmq:
   auth:
     existingErlangSecret: ryax-broker-cookie
     existingPasswordSecret: ryax-broker-secret
+  # WARNING: Change this!
     password: InsecurePassw0rd!
     resources:
       limits:
