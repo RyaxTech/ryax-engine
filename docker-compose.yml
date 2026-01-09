@@ -1,6 +1,6 @@
 services:
   install-ryax:
-    image: ryaxtech/ryax-adm:latest
+    image: ryax-adm:latest
     entrypoint: /data/local_ryax/k3s-ryax-install.sh
       #entrypoint:
       #  - sleep
@@ -12,7 +12,7 @@ services:
       - KUBECONFIG=/inout/kubeconfig.yaml
 
   kubernetes:
-    image: rancher/k3s:v1.31.6-k3s1
+    image: rancher/k3s:v1.35.0-k3s1
     command:
       - server
       - --disable=metrics-server
@@ -40,7 +40,7 @@ services:
       - 443:443    # Ingress controller port 443
 
   kubernetes-node:
-    image: rancher/k3s:v1.31.6-k3s1
+    image: rancher/k3s:v1.35.0-k3s1
     tmpfs:
       - /run
       - /var/run

@@ -18,41 +18,45 @@ global:
     monitoringNamespace: "ryaxns-monitoring"
 
   monitoring:
-    enabled: true
+    enabled: false
+    otlpEndpoint: "tempo.ryaxns-monitoring:4317"
 
   tls:
     enabled: false
-    environment: "production" # development or production
-    hostname: "" # must be a valid FQDN like "local.ryax.io", leave empty for local install
-    
+    environment: "development" # development or production
+    hostname: "local.ryax.io" # must be a valid dns address
+    # Shared but static:
+    # datastoreSecret: ryax-datastore-secret
+    # internalRegistry: ryax-registry:5000
+    # actionRegistrySecret: ryax-registry-creds-secret
+    # brokerSecret: ryax-broker-secret
+    # authorizationUrl: ryax-authorization:8080
+    # filestoreName: ryax-filestore
+    # filestoreSecret: ryax-minio-secret
+    # internalRegistry: 127.0.0.1:30012
+   #  jwtSecret: api-jwt-secret-key
+
   # -- Needed by bitnami to avoid https://github.com/bitnami/charts/issues/30850
   security:
     allowInsecureImages: true
 
-  # Be aware that the folowing values are shared amoung the services,
-  # but they are defined as static values to avoid unnecessary configuration overhead:
-  # 
-  # datastoreSecret: ryax-datastore-secret
-  # internalRegistry: ryax-registry:5000
-  # actionRegistrySecret: ryax-registry-creds-secret
-  # brokerSecret: ryax-broker-secret
-  # authorizationUrl: ryax-authorization:8080
-  # filestoreName: ryax-filestore
-  # filestoreSecret: ryax-minio-secret
-  # internalRegistry: 127.0.0.1:30012
-  # jwtSecret: api-jwt-secret-key
-
 # -- All common configuration and secrets are created here
 common-resources:
   certManager:
-    enabled: true
+    enabled: false
 
 registry:
   credentials:
     enabled: true
+    # WARNING: Unsecure ! Change this and regenrate the htpasswd
+    password: 'Ro93Wetj44yXAY9Rk-lWlklo0akQIYzp_Eg-UN721zA=='
+    username: ryax
+    # Need to be Generated 
+    # htpasswd -Bbn <VALUE OF THE USERNAME FIELD> "<VALUE OF THE PASSWORD FIELD"
+    htpasswd: 'ryax:$2a$12$L4zHsMG0d6UMcmum.egJ.OOP.UBP8pp9dntDWXIdsdST0X5x35wVy'
     pullSecretName: ryax-registry-creds-secret
   ingress:
-    enabled: true
+    enabled: false
   persistence:
     enabled: true
     pvcSize: 20Gi
@@ -71,39 +75,88 @@ action-builder:
   actionRegistrySecret: ryax-registry-creds-secret
 
 runner:
+  fernetEncryptionKey: RLP2kPn8z-r9WGcckcZHkWLMVLXwKbugfbQONus6bIg==
   priorityClass: microservices
 
 studio:
-  priorityClass: microservices
-
-repository:
-  priorityClass: microservices
+  authorizationUrl: ryax-authorization:8080
+  brokerSecret: ryax-broker-secret
+  datastoreSecret: ryax-datastore-secret
+  filestoreName: ryax-filestore
+  filestoreSecret: ryax-minio-secret
+  jwtSecret: api-jwt-secret-key
+  logLevel: warning
 
 worker:
-  # -- WARNING this is the worker config and the node pool resources and selector have to be set according to your infrastructure
+  # -- Only necessary if registry.credentials.enabled=true
+  actionRegistrySecret: ryax-registry-creds-secret
   config:
     site:
       name: local
-      type: KUBERNETES
       spec:
         namespace: "{{ .Values.global.ryax.userNamespace }}"
         nodePools:
-        - name: default
-          cpu: 4
+        - cpu: 4
           memory: 8G
+          name: default
           selector:
             node.kubernetes.io/instance-type: k3s
-  # -- Only necessary if registry.credentials.enabled=true
-  actionRegistrySecret: ryax-registry-creds-secret
+      type: KUBERNETES
+  filestoreName: ryax-filestore
+  filestoreSecret: ryax-minio-secret
+  logLevel: warning
+  loki:
+    monitoring:
+      serviceMonitor:
+        additionalLabels:
+          app: prometheus-operator
+          release: prometheus
+        enabled: false
+    singleBinary:
+      persistence:
+        size: 10Gi
+        storageClass: local-path
+  postgresql:
+    auth:
+      password: InsecurePassw0rd!
   priorityClass: microservices
+  promtail:
+    serviceMonitor:
+      additionalLabels:
+        app: prometheus-operator
+        release: prometheus
+      enabled: false
   intelliscale:
     enabled: false
     
 intelliscale:
+  image:
+    registry: registry.ryax.org
+    repository: dev/intelliscale
+    tag: helm-chart-globals
+  enabled: true
   priorityClass: microservices
+  ryax:
+    worker:
+      configMapName: ryax-worker-config
+      serviceName: ryax-worker
+  config:
+    MIG:
+      enabled: false
 
 repository:
-  priorityClass: microservices
+  image:
+    registry: registry.ryax.org
+    repository: dev/repository
+    tag: helm-with-globals
+  authorizationUrl: ryax-authorization:8080
+  brokerSecret: ryax-broker-secret
+  datastoreSecret: ryax-datastore-secret
+  environment: development
+  fernetEncryptionKey: RtsPJX7WrANzevwwnhFJ-3YxwfSicrLzEEmRnXC9cXA==
+  jwtSecret: api-jwt-secret-key
+  logLevel: warning
+  passwordEncryptionKeySecret: ryax-repository-password-encryption-key
 
 minio:
   image:
@@ -115,7 +168,7 @@ minio:
   containerSecurityContext:
     runAsUser: 1200
   metrics:
-    enabled: true
+    enabled: false
   mode: standalone
   persistence:
     enabled: true
@@ -170,8 +223,9 @@ rabbitmq:
     create: false
   ulimitNofiles: ""
 
+
 prometheus:
-  enabled: true
+  enabled: false
 
 tempo:
-  enabled: true
+  enabled: false
