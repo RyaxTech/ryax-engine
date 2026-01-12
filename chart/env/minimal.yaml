@@ -11,8 +11,6 @@ global:
   ryax:
     # -- Global log level, can be overriden locally
     logLevel: error
-    # -- Namespace where user's actions are deployed
-    userNamespace: "ryaxns-execs"
 
   monitoring:
     enabled: false
@@ -72,8 +70,8 @@ worker:
         enabled: false
     singleBinary:
       persistence:
-        enabled: false
-        # size: 10Gi
+        enabled: true
+        size: 1Gi
         # storageClass: local-path
   promtail:
     serviceMonitor:
