@@ -2,7 +2,6 @@ global:
   # -- Override the container registry globaly. Useful to use development using registry.ryax.org/dev or for airgapped env
   imageRegistry: 
   imagePullSecrets: []
-  imagePullPolicy: IfNotPresent
 
   nodeSelector: {}
   # -- Leave empty to use the default storage class
@@ -53,6 +52,7 @@ registry:
     pullSecretName: ryax-registry-creds-secret
   ingress:
     enabled: true
+    hostname: registry-{{ . Values.global.tls.hostname }}
   persistence:
     enabled: true
     pvcSize: 20Gi
@@ -96,6 +96,21 @@ worker:
   # -- Only necessary if registry.credentials.enabled=true
   actionRegistrySecret: ryax-registry-creds-secret
   priorityClass: microservices
+  promtail:
+    serviceMonitor:
+      enabled: true
+  loki:
+    monitoring:
+      serviceMonitor:
+        enabled: true
+  postgresql:
+    image:
+      registry: docker.io
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+  # -- install intelliscale in a separated helm chart instead
   intelliscale:
     enabled: false
     
@@ -155,13 +170,13 @@ rabbitmq:
   extraPlugins: ""
   fullnameOverride: ryax-broker
   metrics:
-    enabled: false
+    enabled: true
     serviceMonitor:
       enabled: true
   persistence:
     enabled: true
     size: 1Gi
-    storageClass: local-path
+    # storageClass: local-path
   plugins: rabbitmq_management
   priorityClassName: backbone
   rbac:

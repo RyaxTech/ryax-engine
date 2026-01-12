@@ -29,6 +29,10 @@ worker:
       password: InsecurePassw0rd!
   intelliscale:
     enabled: false
+
+registry:
+  ingress:
+    enabled: false
     
 repository:
   # WARNING: Change this!

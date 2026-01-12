@@ -1,10 +1,11 @@
 global:
-  # -- Override the container registry globaly. Useful to use development using registry.ryax.org/dev or for airgapped env
-  imageRegistry: registry.ryax.org/dev
+  # -- Override the container registry globaly. Useful for airgapped env
+  imageRegistry: ""
+  # -- Inject the pull secret:
+  # https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
   imagePullSecrets:
     - ryax-dev-pull-secret
-  imagePullPolicy: IfNotPresent
-
+    
   nodeSelector: {}
   # -- Leave empty to use the default storage class
   defaultStorageClass: ""
@@ -12,19 +13,20 @@ global:
   # -- Ryax specific configuration
   ryax:
     # -- Global log level, can be overriden locally
-    logLevel: debugryax-dev-pull-secret
+    logLevel: debug
     # -- Namespace where user's actions are deployed
     userNamespace: "ryaxns-execs"
     # -- Where the monitoring stack goes
     monitoringNamespace: "ryaxns-monitoring"
 
   monitoring:
-    enabled: false
+    enabled: true
 
   tls:
-    enabled: false
-    # environment: "development" # development or production
-    # hostname: "local.ryax.io" # must be a valid dns address
+    enabled: true
+    environment: "development" # development or production
+    hostname: "local.ryax.io" # must be a valid dns address
+
     # Shared but static:
     # datastoreSecret: ryax-datastore-secret
     # internalRegistry: ryax-registry:5000
@@ -40,79 +42,73 @@ global:
   security:
     allowInsecureImages: true
 
-# -- All common configuration and secrets are created here
-common-resources:
-  certManager:
-    enabled: false
-
-registry:
-  ingress:
-    enabled: false
-  persistence:
-    enabled: true
-    pvcSize: 20Gi
-  priorityClass: backbone
-  
-datastore:
-  pvcSize: 2Gi
-  priorityClass: backbone
-  
+ 
 front:
-  enabled: true
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
 
 action-builder:
-  priorityClass: "microservices"
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
 
 runner:
-  priorityClass: microservices
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+
+authorization:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+
+webui:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+
+repository:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+    
+studio:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+    
+intelliscale:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
 
 worker:
-  config:
-    site:
-      name: local
-      spec:
-        namespace: "{{ .Values.global.ryax.userNamespace }}"
-        nodePools:
-        - cpu: 4
-          memory: 8G
-          name: default
-          selector:
-            node.kubernetes.io/instance-type: k3s
-      type: KUBERNETES
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
   loki:
-    monitoring:
-      serviceMonitor:
-        enabled: false
     singleBinary:
       persistence:
         size: 10Gi
-        storageClass: local-path
-  priorityClass: microservices
-  promtail:
-    serviceMonitor:
-      enabled: false
+        # storageClass: local-path
   intelliscale:
     enabled: false
     
-intelliscale:
-  enabled: true
-  priorityClass: microservices
-
 minio:
-  metrics:
-    enabled: false
-  priorityClassName: backbone
+  persistence:
+    enabled: true
+    size: 100Gi
 
 rabbitmq:
-  metrics:
-    enabled: false
-    serviceMonitor:
-      enabled: false
   persistence:
     enabled: false
 
-prometheus:
-  enabled: false
-
-tempo:
-  enabled: false
+registry:
+  persistence:
+    enabled: true
+    pvcSize: 200Gi
+  
+datastore:
+  pvcSize: 2Gi
+ 

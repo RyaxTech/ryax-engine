@@ -1,10 +1,8 @@
 global:
   # -- Override the container registry globaly. Useful to use development using registry.ryax.org/dev or for airgapped env
-  imageRegistry: registry.ryax.org/dev
-  imagePullSecrets:
-    - name: ryax-dev-pull-secret
-  imagePullPolicy: IfNotPresent
-
+  # imageRegistry:
+  # imagePullSecrets:
+  
   nodeSelector: {}
   # -- Leave empty to use the default storage class
   defaultStorageClass: ""
@@ -12,11 +10,9 @@ global:
   # -- Ryax specific configuration
   ryax:
     # -- Global log level, can be overriden locally
-    logLevel: debugryax-dev-pull-secret
+    logLevel: error
     # -- Namespace where user's actions are deployed
     userNamespace: "ryaxns-execs"
-    # -- Where the monitoring stack goes
-    monitoringNamespace: "ryaxns-monitoring"
 
   monitoring:
     enabled: false
@@ -54,18 +50,9 @@ registry:
   priorityClass: backbone
   
 datastore:
-  pvcSize: 2Gi
+  pvcSize: 1Gi
   priorityClass: backbone
   
-front:
-  enabled: true
-
-action-builder:
-  priorityClass: "microservices"
-
-runner:
-  priorityClass: microservices
-
 worker:
   config:
     site:
@@ -85,29 +72,25 @@ worker:
         enabled: false
     singleBinary:
       persistence:
-        size: 10Gi
-        storageClass: local-path
-  priorityClass: microservices
+        enabled: false
+        # size: 10Gi
+        # storageClass: local-path
   promtail:
     serviceMonitor:
+      enabled: false
+  postgresql:
+    metrics:
       enabled: false
   intelliscale:
     enabled: false
     
-intelliscale:
-  enabled: true
-  priorityClass: microservices
-
 minio:
   metrics:
     enabled: false
-  priorityClassName: backbone
 
 rabbitmq:
   metrics:
     enabled: false
-    serviceMonitor:
-      enabled: false
   persistence:
     enabled: false
 
