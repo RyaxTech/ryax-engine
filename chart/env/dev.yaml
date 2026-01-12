@@ -2,7 +2,7 @@ global:
   # -- Override the container registry globaly. Useful to use development using registry.ryax.org/dev or for airgapped env
   imageRegistry: registry.ryax.org/dev
   imagePullSecrets:
-    - name: ryax-dev-pull-secret
+    - ryax-dev-pull-secret
   imagePullPolicy: IfNotPresent
 
   nodeSelector: {}
