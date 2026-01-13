@@ -69,6 +69,11 @@ action-builder:
   priorityClass: "microservices"
   # -- Only necessary if registry.credentials.enabled=true
   actionRegistrySecret: ryax-registry-creds-secret
+  persitence:
+    enabled: true
+  nix:
+    storeSize: 100Gi
+    
 
 runner:
   priorityClass: microservices

@@ -42,51 +42,60 @@ global:
   security:
     allowInsecureImages: true
 
- 
+# Ryax Services
 front:
   image:
     tag: master
     registry: registry.ryax.org/dev
+    pullPolicy: Always
 
 action-builder:
   image:
     tag: master
     registry: registry.ryax.org/dev
+    pullPolicy: Always
 
 runner:
   image:
     tag: master
     registry: registry.ryax.org/dev
+    pullPolicy: Always
 
 authorization:
   image:
     tag: master
     registry: registry.ryax.org/dev
+    pullPolicy: Always
 
 webui:
   image:
     tag: master
     registry: registry.ryax.org/dev
+    pullPolicy: Always
 
 repository:
   image:
     tag: master
     registry: registry.ryax.org/dev
+    pullPolicy: Always
     
 studio:
   image:
     tag: master
     registry: registry.ryax.org/dev
+    pullPolicy: Always
     
 intelliscale:
   image:
     tag: master
     registry: registry.ryax.org/dev
+    pullPolicy: Always
 
 worker:
   image:
     tag: master
     registry: registry.ryax.org/dev
+    pullPolicy: Always
   loki:
     singleBinary:
       persistence:

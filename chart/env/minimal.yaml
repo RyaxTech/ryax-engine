@@ -81,6 +81,15 @@ worker:
       enabled: false
   intelliscale:
     enabled: false
+
+action-builder:
+  persitence:
+    enabled: false
+  nix:
+    storeSize: 4Gi
+  extraEnv:
+    - name: RYAX_NIX_GARBAGE_COLLECT_ENABLED
+      value: ""
     
 minio:
   metrics:
