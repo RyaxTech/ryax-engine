@@ -1,0 +1,23 @@
+# -- Special config for k3s
+global:
+  imagePullPolicy: IfNotPresent
+  defaultStorageClass: local-path
+  tls:
+    enabled: false
+
+worker:
+  config:
+    site:
+      name: local
+      spec:
+        namespace: ryaxns-execs
+        nodePools:
+        - cpu: 4
+          memory: 8G
+          name: default
+          selector:
+            node.kubernetes.io/instance-type: k3s
+      type: KUBERNETES
+
+traefik:
+  enabled: false

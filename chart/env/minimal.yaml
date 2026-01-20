@@ -1,0 +1,108 @@
+global:
+  # -- Override the container registry globaly. Useful to use development using registry.ryax.org/dev or for airgapped env
+  # imageRegistry:
+  # imagePullSecrets:
+  
+  nodeSelector: {}
+  # -- Leave empty to use the default storage class
+  defaultStorageClass: ""
+
+  # -- Ryax specific configuration
+  ryax:
+    # -- Global log level, can be overriden locally
+    logLevel: error
+
+  monitoring:
+    enabled: false
+
+  tls:
+    enabled: false
+    # environment: "development" # development or production
+    # hostname: "local.ryax.io" # must be a valid dns address
+    # Shared but static:
+    # datastoreSecret: ryax-datastore-secret
+    # internalRegistry: ryax-registry:5000
+    # actionRegistrySecret: ryax-registry-creds-secret
+    # brokerSecret: ryax-broker-secret
+    # authorizationUrl: ryax-authorization:8080
+    # filestoreName: ryax-filestore
+    # filestoreSecret: ryax-minio-secret
+    # internalRegistry: 127.0.0.1:30012
+    # jwtSecret: api-jwt-secret-key
+
+  # -- Needed by bitnami to avoid https://github.com/bitnami/charts/issues/30850
+  security:
+    allowInsecureImages: true
+
+# -- All common configuration and secrets are created here
+common-resources:
+  certManager:
+    enabled: false
+
+registry:
+  ingress:
+    enabled: false
+  persistence:
+    enabled: true
+    pvcSize: 20Gi
+  priorityClass: backbone
+  
+datastore:
+  pvcSize: 1Gi
+  priorityClass: backbone
+  
+worker:
+  config:
+    site:
+      name: local
+      spec:
+        namespace: "{{ .Values.global.ryax.userNamespace }}"
+        nodePools:
+        - cpu: 4
+          memory: 8G
+          name: default
+          selector:
+            node.kubernetes.io/instance-type: k3s
+      type: KUBERNETES
+  loki:
+    monitoring:
+      serviceMonitor:
+        enabled: false
+    singleBinary:
+      persistence:
+        enabled: true
+        size: 1Gi
+        # storageClass: local-path
+  promtail:
+    serviceMonitor:
+      enabled: false
+  postgresql:
+    metrics:
+      enabled: false
+  intelliscale:
+    enabled: false
+
+action-builder:
+  persitence:
+    enabled: false
+  nix:
+    storeSize: 4Gi
+  extraEnv:
+    - name: RYAX_NIX_GARBAGE_COLLECT_ENABLED
+      value: ""
+    
+minio:
+  metrics:
+    enabled: false
+
+rabbitmq:
+  metrics:
+    enabled: false
+  persistence:
+    enabled: false
+
+prometheus:
+  enabled: false
+
+tempo:
+  enabled: false
