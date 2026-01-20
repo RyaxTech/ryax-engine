@@ -34,9 +34,7 @@ REPOS_TO_BE_RELEASED = {
     "adm": {
         "gitlab_project": "ryax-tech/ryax/ryax-adm",
     },
-    "intelliscale": {
-        "gitlab_project": "ryax-tech/ryax/ryax-intelliscale"
-    },
+    "intelliscale": {"gitlab_project": "ryax-tech/ryax/ryax-intelliscale"},
     "authorization": {
         "gitlab_project": "ryax-tech/ryax/ryax-authorization",
     },
@@ -45,9 +43,6 @@ REPOS_TO_BE_RELEASED = {
     },
     "default-actions": {
         "gitlab_project": "ryax-tech/workflows/default-actions",
-    },
-    "action-builder": {
-        "gitlab_project": "ryax-tech/ryax/ryax-action-builder",
     },
     "action-wrappers": {
         "gitlab_project": "ryax-tech/ryax/ryax-action-wrappers",
@@ -210,6 +205,7 @@ def print_last_versions_order(repo) -> None:
     except BadName:
         print(f"{TCOLOR.WARNING}no staging or master tag found on repo{TCOLOR.ENDC} ")
 
+
 def command_check_stagings(args) -> None:
     print(
         f"'{TCOLOR.OKGREEN}=={TCOLOR.ENDC}' if it is the same commit; '{TCOLOR.OKBLUE}>>{TCOLOR.ENDC}' if the left commit is more recent than the right one."
@@ -237,22 +233,31 @@ def command_pull_all(args) -> None:
     print(f"{TCOLOR.OKBLUE}$ git submodule foreach git pull --tags -f{TCOLOR.ENDC}")
     subprocess.run("git submodule foreach git pull --tags -f", shell=True, check=True)
 
+
 def _force_tag(tag: str) -> None:
     assert tag
     print(f"{TCOLOR.OKBLUE}$ git submodule foreach git tag -f {tag}{TCOLOR.ENDC}")
     subprocess.run(f"git submodule foreach git tag -f {tag}", shell=True, check=True)
-    print(f"{TCOLOR.OKBLUE}$ git submodule foreach git push -f origin {tag}{TCOLOR.ENDC}")
-    subprocess.run(f"git submodule foreach git push -f origin {tag}", shell=True, check=True)
+    print(
+        f"{TCOLOR.OKBLUE}$ git submodule foreach git push -f origin {tag}{TCOLOR.ENDC}"
+    )
+    subprocess.run(
+        f"git submodule foreach git push -f origin {tag}", shell=True, check=True
+    )
+
 
 def command_force_staging(args) -> None:
     _force_tag("staging")
 
+
 def command_tag_release(args) -> None:
     _force_tag(args.tag)
+
 
 def _run_cmd(cmd) -> None:
     print(f"{TCOLOR.OKBLUE}$ {cmd} {TCOLOR.ENDC}")
     subprocess.run(cmd, shell=True, check=True)
+
 
 def command_remove_local_tags(args) -> None:
     # Delete all tags on ryax-engine
@@ -263,6 +268,7 @@ def command_remove_local_tags(args) -> None:
     _run_cmd('git submodule foreach "git tag -l | xargs git tag -d "')
     # Restore only remote tags for each submodule
     _run_cmd('git submodule foreach "git fetch --tags"')
+
 
 def command_update_ryax_adm_version(args):
     """
@@ -336,7 +342,9 @@ def print_pipe(reponame, pipe) -> None:
     else:
         status = f"{TCOLOR.WARNING}{status}{TCOLOR.ENDC} "
 
-    print(f"{reponame: <15} {pipe['ref']: <7} v{pipe['sha'][:8]} {status} {pipe['url']}")
+    print(
+        f"{reponame: <15} {pipe['ref']: <7} v{pipe['sha'][:8]} {status} {pipe['url']}"
+    )
 
 
 def command_wait_all_pipes(args) -> None:
@@ -476,9 +484,7 @@ if __name__ == "__main__":
     sp.set_defaults(func=command_force_staging)
 
     description = "Tag release in all projects, WARNING overwrites existing ones if so"
-    sp = subparsers.add_parser(
-        "tag_release", description=description, help=description
-    )
+    sp = subparsers.add_parser("tag_release", description=description, help=description)
     sp.add_argument("-t", "--tag")
     sp.set_defaults(func=command_tag_release)
 

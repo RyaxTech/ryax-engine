@@ -1,0 +1,123 @@
+global:
+  # -- Override the container registry globaly. Useful for airgapped env
+  imageRegistry: ""
+  # -- Inject the pull secret:
+  # https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  imagePullSecrets:
+    - name: ryax-dev-pull-secret
+    
+  nodeSelector: {}
+  # -- Leave empty to use the default storage class
+  defaultStorageClass: ""
+
+  # -- Ryax specific configuration
+  ryax:
+    # -- Global log level, can be overriden locally
+    logLevel: debug
+    # -- Namespace where user's actions are deployed
+    userNamespace: "ryaxns-execs"
+    # -- Where the monitoring stack goes
+    monitoringNamespace: "ryaxns-monitoring"
+
+  monitoring:
+    enabled: true
+
+  tls:
+    enabled: true
+    environment: "development" # development or production
+    hostname: "local.ryax.io" # must be a valid dns address
+
+    # Shared but static:
+    # datastoreSecret: ryax-datastore-secret
+    # internalRegistry: ryax-registry:5000
+    # actionRegistrySecret: ryax-registry-creds-secret
+    # brokerSecret: ryax-broker-secret
+    # authorizationUrl: ryax-authorization:8080
+    # filestoreName: ryax-filestore
+    # filestoreSecret: ryax-minio-secret
+    # internalRegistry: 127.0.0.1:30012
+    # jwtSecret: api-jwt-secret-key
+
+  # -- Needed by bitnami to avoid https://github.com/bitnami/charts/issues/30850
+  security:
+    allowInsecureImages: true
+
+# Ryax Services
+front:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+    pullPolicy: Always
+
+action-builder:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+    pullPolicy: Always
+
+runner:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+    pullPolicy: Always
+
+authorization:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+    pullPolicy: Always
+
+webui:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+    pullPolicy: Always
+
+repository:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+    pullPolicy: Always
+    
+studio:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+    pullPolicy: Always
+    
+intelliscale:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+    pullPolicy: Always
+
+worker:
+  image:
+    tag: master
+    registry: registry.ryax.org/dev
+    pullPolicy: Always
+  loki:
+    singleBinary:
+      persistence:
+        size: 10Gi
+        # storageClass: local-path
+  intelliscale:
+    enabled: false
+    
+minio:
+  persistence:
+    enabled: true
+    size: 100Gi
+
+rabbitmq:
+  persistence:
+    enabled: false
+
+registry:
+  persistence:
+    enabled: true
+    pvcSize: 200Gi
+  
+datastore:
+  pvcSize: 2Gi
+ 

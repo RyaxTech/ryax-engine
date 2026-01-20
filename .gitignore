@@ -14,3 +14,10 @@ public
 /.venv
 .idea
 venv
+helm/ryax-engine/charts
+chart/charts
+.poetry
+airgap/ryax-airgap-images-*.tar.gz
+airgap/ryax-engine-*.tgz
+chart/Chart.lock
+chart/secrets.yaml
