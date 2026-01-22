@@ -15,71 +15,71 @@ icon: https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd
 name: ryax-engine
 description: Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows and applications on multiple infrastructure.
 type: application
-version: 26.01.0
-appVersion: 26.01.0
+version: 0.0.0-staging
+appVersion: 0.0.0-staging
 dependencies:
   # Ryax core services
   - name: runner
     # For local dev
     # repository: file://../runner/charts/runner
     # version: 0.0.0-dev
-    version: 26.01.0
+    version: 0.0.0-staging
     repository: "oci://registry.ryax.org/release-charts"
   - name: worker
     # For local dev
     # repository: file://../runner/charts/worker
     # version: 0.0.0-dev
-    version: 26.01.0
+    version: 0.0.0-staging
     repository: "oci://registry.ryax.org/release-charts"
   - name: intelliscale
     # For local dev
     # repository: file://../intelliscale/chart
     # version: 0.0.0-dev
-    version: 26.01.0
+    version: 0.0.0-staging
     repository: "oci://registry.ryax.org/release-charts"
     condition: intelliscale.enabled
   - name: authorization
     # For local dev
     # repository: file://../authorization/chart
     # version: 0.0.0-dev
-    version: 26.01.0
+    version: 0.0.0-staging
     repository: "oci://registry.ryax.org/release-charts"
   - name: action-builder
     # For local dev
     # repository: file://../runner/charts/actionBuilder
     # version: 0.0.0-dev
-    version: 26.01.0
+    version: 0.0.0-staging
     repository: "oci://registry.ryax.org/release-charts"
   - name: common-resources
     # For local dev
     # repository: file://../common-helm-charts/common-resources
     # version: 0.0.0-dev
-    version: 26.01.0
+    version: 0.0.0-staging
     repository: "oci://registry.ryax.org/release-charts"
   # Ryax UI services
   - name: repository
     # For local dev
     # repository: file://../repository/chart
     # version: 0.0.0-dev
-    version: 26.01.0
+    version: 0.0.0-staging
     repository: "oci://registry.ryax.org/release-charts"
   - name: studio
     # For local dev
     # repository: file://../studio/chart
     # version: 0.0.0-dev
-    version: 26.01.0
+    version: 0.0.0-staging
     repository: "oci://registry.ryax.org/release-charts"
   - name: front
     # For local dev
     # repository: file://../front/chart
     # version: 0.0.0-dev
-    version: 26.01.0
+    version: 0.0.0-staging
     repository: "oci://registry.ryax.org/release-charts"
   - name: webui
     # For local dev
     # repository: file://../webui/chart
     # version: 0.0.0-dev
-    version: 26.01.0
+    version: 0.0.0-staging
     repository: "oci://registry.ryax.org/release-charts"
 
   # Ryax external services: could be replaced with Cloud tools
@@ -88,14 +88,14 @@ dependencies:
     # For local dev
     # version: 0.0.0-dev
     # repository: file://../common-helm-charts/registry
-    version: 26.01.0
+    version: 0.0.0-staging
     repository: "oci://registry.ryax.org/release-charts"
   # Postgres database
   - name: datastore
     # For local dev
     # version: 0.0.0-dev
     # repository: file://../common-helm-charts/datastore
-    version: 26.01.0
+    version: 0.0.0-staging
     repository: "oci://registry.ryax.org/release-charts"
   # S3 compatible storage
   - name: minio
