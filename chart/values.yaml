@@ -57,7 +57,6 @@ registry:
     enabled: true
     pvcSize: 20Gi
   priorityClass: backbone
-  fullnameOverride: registry
 
 datastore:
   pvcSize: 2Gi
