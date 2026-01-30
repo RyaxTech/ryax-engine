@@ -44,7 +44,7 @@ global:
 # -- All common configuration and secrets are created here
 common-resources:
   certManager:
-    enabled: true
+    enabled: false
 
 registry:
   credentials:
