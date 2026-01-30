@@ -22,7 +22,7 @@ global:
   tls:
     enabled: false
     environment: "production" # development or production
-    hostname: "" # must be a valid FQDN like "local.ryax.io", leave empty for local install
+    hostname: "dev-1.ryax.io" # must be a valid FQDN like "local.ryax.io", leave empty for local install
     
   # -- Needed by bitnami to avoid https://github.com/bitnami/charts/issues/30850
   security:
@@ -44,7 +44,7 @@ global:
 # -- All common configuration and secrets are created here
 common-resources:
   certManager:
-    enabled: true
+    enabled: false
 
 registry:
   credentials:
@@ -52,12 +52,12 @@ registry:
     pullSecretName: ryax-registry-creds-secret
   ingress:
     enabled: true
-    hostname: registry-{{ . Values.global.tls.hostname }}
+    hostname: "registry-{{ .Values.global.tls.hostname }}"
   persistence:
     enabled: true
     pvcSize: 20Gi
   priorityClass: backbone
-  
+
 datastore:
   pvcSize: 2Gi
   priorityClass: backbone
@@ -112,7 +112,7 @@ worker:
     image:
       registry: docker.io
     metrics:
-      enabled: true
+      enabled: false
       serviceMonitor:
         enabled: true
   # -- install intelliscale in a separated helm chart instead
@@ -160,6 +160,8 @@ rabbitmq:
   auth:
     existingErlangSecret: ryax-broker-cookie
     existingPasswordSecret: ryax-broker-secret
+    # FIXME: Why is this needed ?
+    updatePassword: true
     resources:
       limits:
         memory: 1000Mi
