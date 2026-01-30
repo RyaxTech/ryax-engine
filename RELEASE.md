@@ -1,28 +1,23 @@
 We are proud to announce the release of:
 
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
-# Ryax 25.10.0
+# Ryax 26.01.0
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
 
 Optimize the Resources, make Build Simple
 
 ## New features
 
-- More robust intelliscale, enhanced detection mechanism
-- Improved monitoring
-- Built-in action resource usage monitoring
-- Track cpu and memory usage per execution
-- Several features to enhance multi objective scheduling
+- Ryax Airgap is finally out.
+- Ryax Saas version.
+- Ryax installation uses now a helm.
+- Project navigation has been improved, the ui has now a top bar that enables to switch between your projects.
+- For the platform administrators, the 
+- Deprecation of ryax-adm.
 
 ## Bug fixes and Improvements
 
-- Bug that made worker create queues indefinitely in some situations
-- Fix sudden decomissioning of bitnami repo
-- Prevent builder failure when the wrapper git reference is unavailable
-- Fix builder persitency that was making automatically garbage collection fails
-- Fixed bug that let actions build stuck on starting state
-- Switch to uv for python packaging
-- Upgrade to traefik 3
+- ryax-adm is now deprecated from this release in favor of using helm only.
 
 ## Upgrade to this version
 
@@ -53,4 +48,3 @@ Remove the vpa helm installation.
 ```shell
 helm uninstall -n ryaxns ryax-vpa
 ```
-
