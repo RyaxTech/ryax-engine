@@ -1,10 +1,10 @@
 stages:
-  - setup
-  - init
+  # - setup
+  # - init
   - deploy
-  - release
-  - release_artifacts
-  - release_saas
+  # - release
+  # - release_artifacts
+  # - release_saas
 
 # Conventions
 #
@@ -50,102 +50,102 @@ pages:
   #   - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
 
 
-get_staging_commit_sha:
-  stage: setup
-  image: ryaxtech/ryax-ci:25.11-0
-  tags:
-    - docker
-  artifacts:
-    paths:
-      - ./ryax_projects.json
-  before_script:
-    - ""
-  script:
-    - echo Retrieving staging commit shas
-    - ./get_project_versions.sh
-    - echo $RYAX_PROJECTS was updated
+# get_staging_commit_sha:
+#   stage: setup
+#   image: ryaxtech/ryax-ci:25.11-0
+#   tags:
+#     - docker
+#   artifacts:
+#     paths:
+#       - ./ryax_projects.json
+#   before_script:
+#     - ""
+#   script:
+#     - echo Retrieving staging commit shas
+#     - ./get_project_versions.sh
+#     - echo $RYAX_PROJECTS was updated
 
-get_cluster_values:
-  stage: setup
-  tags:
-    - docker
-    - kubernetes
-  image:
-    name: $DEV_REGISTRY_PATH/$RYAX_ADM_IMAGE
-    entrypoint: [""]
-  artifacts:
-    paths:
-      - ./ryax_values.yaml
-  script:
-    - *k8s_login
-    - >
-      ryax-adm init
-      --values $RYAX_VALUES
-      --from-cluster
-      --set appRegistry.url="$DEV_REGISTRY_PATH"
-      --set appRegistry.user="$REGISTRY_USER"
-      --set appRegistry.pass="$REGISTRY_PASS"
-      --set chartRegistry.url="$DEV_CHART_REPO"
-      --set chartRegistry.user="$REGISTRY_USER"
-      --set chartRegistry.pass="$REGISTRY_PASS"
+# get_cluster_values:
+#   stage: setup
+#   tags:
+#     - docker
+#     - kubernetes
+#   image:
+#     name: $DEV_REGISTRY_PATH/$RYAX_ADM_IMAGE
+#     entrypoint: [""]
+#   artifacts:
+#     paths:
+#       - ./ryax_values.yaml
+#   script:
+#     - *k8s_login
+#     - >
+#       ryax-adm init
+#       --values $RYAX_VALUES
+#       --from-cluster
+#       --set appRegistry.url="$DEV_REGISTRY_PATH"
+#       --set appRegistry.user="$REGISTRY_USER"
+#       --set appRegistry.pass="$REGISTRY_PASS"
+#       --set chartRegistry.url="$DEV_CHART_REPO"
+#       --set chartRegistry.user="$REGISTRY_USER"
+#       --set chartRegistry.pass="$REGISTRY_PASS"
 
-set_versions:
-  stage: init
-  tags:
-    - docker
-  image: ryaxtech/ryax-ci:25.11-0
-  artifacts:
-    name: $RYAX_CLUSTER_NAME-values-$CI_COMMIT_TAG
-    paths:
-      - ./ryax_values.yaml
-  before_script:
-    - ""
-  script:
-    - echo Updating service versions
-      # Everything except charts contained in common-helm-charts
-    - |
-      for service in $(jq -c '.[]' $RYAX_PROJECTS); do
-        name=$(echo $service | jq -r '.name')
-        commit_sha=$(echo $service | jq -r '.staging_commit_sha')
-        echo Updating $name version to $commit_sha
-        cat $RYAX_VALUES | yq -r -y ". * {\"$name\": {\"chartVersion\" : \"0.0.0-v$commit_sha\"}}" | sponge $RYAX_VALUES
-          # cat $RYAX_VALUES | yq -r -y ". * {\"$name\": {\"appVersion\" : \"v$commit_sha\"}}" | sponge $RYAX_VALUES
-      done
-      # Charts contained within common-helm-charts
-    - common_resources_sha="$(jq -r '.[] | select(.name=="commonResources") | .staging_commit_sha' $RYAX_PROJECTS)"
-    - |
-      for service in datastore registry; do
-        echo Updating $service version to $common_resources_sha
-        cat $RYAX_VALUES | yq -r -y ". * {\"$service\": {\"chartVersion\" : \"0.0.0-v$common_resources_sha\"}}" | sponge $RYAX_VALUES
-      done
-    - echo "Resulting $RYAX_VALUES:"
-    - cat $RYAX_VALUES
+# set_versions:
+#   stage: init
+#   tags:
+#     - docker
+#   image: ryaxtech/ryax-ci:25.11-0
+#   artifacts:
+#     name: $RYAX_CLUSTER_NAME-values-$CI_COMMIT_TAG
+#     paths:
+#       - ./ryax_values.yaml
+#   before_script:
+#     - ""
+#   script:
+#     - echo Updating service versions
+#       # Everything except charts contained in common-helm-charts
+#     - |
+#       for service in $(jq -c '.[]' $RYAX_PROJECTS); do
+#         name=$(echo $service | jq -r '.name')
+#         commit_sha=$(echo $service | jq -r '.staging_commit_sha')
+#         echo Updating $name version to $commit_sha
+#         cat $RYAX_VALUES | yq -r -y ". * {\"$name\": {\"chartVersion\" : \"0.0.0-v$commit_sha\"}}" | sponge $RYAX_VALUES
+#           # cat $RYAX_VALUES | yq -r -y ". * {\"$name\": {\"appVersion\" : \"v$commit_sha\"}}" | sponge $RYAX_VALUES
+#       done
+#       # Charts contained within common-helm-charts
+#     - common_resources_sha="$(jq -r '.[] | select(.name=="commonResources") | .staging_commit_sha' $RYAX_PROJECTS)"
+#     - |
+#       for service in datastore registry; do
+#         echo Updating $service version to $common_resources_sha
+#         cat $RYAX_VALUES | yq -r -y ". * {\"$service\": {\"chartVersion\" : \"0.0.0-v$common_resources_sha\"}}" | sponge $RYAX_VALUES
+#       done
+#     - echo "Resulting $RYAX_VALUES:"
+#     - cat $RYAX_VALUES
 
-upgrade_pre-release:
-  stage: deploy
-  tags:
-    - docker
-  environment:
-    name: $RYAX_CLUSTER_NAME
-    url: https://$RYAX_CLUSTER_NAME.ryax.io
-  image:
-    name: $DEV_REGISTRY_PATH/$RYAX_ADM_IMAGE
-    entrypoint: [""]
-  script:
-    - *k8s_login
-    - >
-      ryax-adm apply
-      --values $RYAX_VALUES
+# upgrade_pre-release:
+#   stage: deploy
+#   tags:
+#     - docker
+#   environment:
+#     name: $RYAX_CLUSTER_NAME
+#     url: https://$RYAX_CLUSTER_NAME.ryax.io
+#   image:
+#     name: $DEV_REGISTRY_PATH/$RYAX_ADM_IMAGE
+#     entrypoint: [""]
+#   script:
+#     - *k8s_login
+#     - >
+#       ryax-adm apply
+#       --values $RYAX_VALUES
 
-release_repositories:
-  stage: release
-  when: manual
-  allow_failure: false
-  image: ryaxtech/ryax-ci:25.11-0
-  tags:
-    - docker
-  before_script:
-    - ""
-  script:
-    # Tags all services with this pipeline tag
-    - ./tag-repos.sh
+# release_repositories:
+#   stage: release
+#   when: manual
+#   allow_failure: false
+#   image: ryaxtech/ryax-ci:25.11-0
+#   tags:
+#     - docker
+#   before_script:
+#     - ""
+#   script:
+#     # Tags all services with this pipeline tag
+#     - ./tag-repos.sh
