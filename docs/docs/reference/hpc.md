@@ -3,9 +3,8 @@
 Ryax is able to offload part of a workflow to a High Performance Computing (HPC) cluster. It is especially useful when you need to automate pre and post processing for large simulation.
 It means that in the same workflow, some actions will run on Ryax Kubernetes cluster and some will run on an external HPC site through SSH.
 
-``` ..note::
-  Only the SLURM orchestrator is supported for now.
-```
+!!! note
+    Only the SLURM orchestrator is supported for now.
 
 ## Requirements
 

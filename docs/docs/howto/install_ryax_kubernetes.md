@@ -1,7 +1,7 @@
 # Install Ryax on Kubernetes
 
 !!! tip
-    For a local development installation please refers the `Getting Started Guide <https://gitlab.com/ryax-tech/ryax/ryax-engine#-getting-started-with-ryax>`_
+    For a local development installation please refers the [Getting Started Guide](https://gitlab.com/ryax-tech/ryax/ryax-engine#getting-started-with-ryax)
 
 !!! note
     Previous installation methode with `ryax-adm` is **deprecated**: You can still find the [documentation](./install_ryax_kubernetes_old.md)

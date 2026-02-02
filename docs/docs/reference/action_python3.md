@@ -62,9 +62,9 @@ spec:
       version: nixos-unstable
 ```
 
-``` ..note::
-    The website `https://lazama.co.uk/nix-versions <https://lazamar.co.uk/nix-versions/>`_ helps you find the nixpkgs version that contains the version of a package.
-```
+!!! note
+    The website [https://lazama.co.uk/nix-versions](https://lazamar.co.uk/nix-versions/) helps you find the nixpkgs version that contains the version of a package.
+
 
 #### Custom dependencies with Nix Overlays
 

@@ -236,8 +236,8 @@ After filling in your repo's information, you can click the **New Scan** button 
 Ryax will crawl the Git URL you provided and list all recognizable actions in the "Scan results" panel.
 
 
-``` note:: For more information on how to build recognizable actions for Ryax, please refer to the "How-to" section of this documentation.
-```
+!!! note
+    For more information on how to build recognizable actions for Ryax, please refer to the "How-to" section of this documentation.
 
 Reviewing the result list, we can for example see the "SQL Query" action.
 Let's say this is the one we've just developed and wants to add to our workflow!
