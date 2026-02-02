@@ -1,26 +1,12 @@
 #!/usr/bin/env python3
 import base64
 import os
-import subprocess
 import string
 import secrets
 
 
 def frenet_key():
     return base64.urlsafe_b64encode(os.urandom(32)).decode()
-
-
-def htpasswd(user, password):
-    return (
-        subprocess.run(
-            f"htpasswd -Bbn '{user}' '{password}'",
-            shell=True,
-            check=True,
-            capture_output=True,
-        )
-        .stdout.decode()
-        .strip()
-    )
 
 
 def password():
@@ -38,10 +24,10 @@ def password():
 
 if __name__ == "__main__":
     registry_pass = password()
-    registry_htpass = htpasswd("ryax", registry_pass)
     runner_frenet_key = frenet_key()
     repository_frenet_key = frenet_key()
     worker_pg_pass = password()
+    rabbitmq_pg_pass = password()
 
     print(
         f"""
@@ -53,11 +39,13 @@ worker:
   postgresql:
     auth:
       password: {worker_pg_pass}
+rabbitmq:
+  auth:
+    password: {rabbitmq_pg_pass}
 registry:
   credentials:
     password: "{registry_pass}"
     username: ryax
-    htpasswd: "{registry_htpass}"
     enabled: true
 """
     )

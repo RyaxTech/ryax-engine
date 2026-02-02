@@ -21,8 +21,10 @@ global:
 
   tls:
     enabled: false
-    environment: "production" # development or production
-    hostname: "dev-1.ryax.io" # must be a valid FQDN like "local.ryax.io", leave empty for local install
+    # -- development or production
+    environment: 
+    # -- must be a valid FQDN like "local.ryax.io", leave empty for local install
+    hostname: ""
     
   # -- Needed by bitnami to avoid https://github.com/bitnami/charts/issues/30850
   security:
@@ -42,9 +44,8 @@ global:
   # jwtSecret: api-jwt-secret-key
 
 # -- All common configuration and secrets are created here
-common-resources:
-  certManager:
-    enabled: false
+certManager:
+  enabled: false
 
 registry:
   credentials:
@@ -52,7 +53,6 @@ registry:
     pullSecretName: ryax-registry-creds-secret
   ingress:
     enabled: true
-    hostname: "registry-{{ .Values.global.tls.hostname }}"
   persistence:
     enabled: true
     pvcSize: 20Gi
