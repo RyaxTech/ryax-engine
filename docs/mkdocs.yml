@@ -1,0 +1,72 @@
+site_name: Ryax Documentation
+site_url: https://docs.ryax.tech
+repo_url: https://github.com/ryaxTech/ryax-engine
+extra:
+  homepage: https://ryax.tech
+  # TODO: add a version support
+  # version:
+  #   provider: mike
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - tables
+theme:
+  name: material
+  logo: assets/logo-ryax-white-110.png
+  favicon: _static/ryax-icon.png
+  features:
+    - navigation.footer
+  palette: 
+    # Palette toggle for light mode
+    - scheme: default
+      primary: deep purple
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7 
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+plugins:
+- search
+- autorefs
+
+nav:
+- Concepts:
+  - ./concepts/intro.md
+  - ./concepts/concepts.md
+  - ./concepts/comparisons.md
+  - ./concepts/use_cases.md
+- Tutorial:
+  - ./tutorials/quick_start_guide.md
+  - ./tutorials/multi-site-workflow.md
+  - ./reference/action_python3.md
+  - ./tutorials/action_csharp.md
+  - ./tutorials/action_nodejs.md
+  - ./tutorials/http_api_json.md
+  - ./tutorials/reproducible_action_build.md
+- Users How-to :
+  - ./howto/jupyter.md
+  - ./howto/text_classification_tutorial.md
+  - ./howto/spark_piloted_action.md
+  - ./howto/video_detection.md
+- Admin How-to:
+  - ./howto/install_ryax_kubernetes.md
+  - ./howto/worker-install.md
+  - ./howto/create-backups.md
+- References:
+  - ./reference/action_python3.md
+  - ./reference/configuration.md
+  - ./reference/architecture.md
+  - ./concepts/projects.md
+  - ./reference/glossary.md
+  - ./reference/basic_actions.md
+  - ./reference/ryax_lock.md
+  - ./reference/intelliscale.md
+  - ./reference/hpc.md
+

@@ -16,4 +16,6 @@ dependencies = [
     "requests",
     "smmap",
     "urllib3",
+    "mkdocs-material>=9.7.1",
+    "mkdocs-autorefs>=1.4.3",
 ]
