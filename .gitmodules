@@ -30,10 +30,10 @@
 	path = errored-actions
 	url = git@gitlab.com:ryax-tech/ryax/errored-actions.git
 [submodule "draft-actions"]
-	path = draft-actions
+	path = actions/draft-actions
 	url = git@gitlab.com:ryax-tech/workflows/draft-actions.git
 [submodule "default-modules"]
-	path = default-actions
+	path = actions/default-actions
 	url = git@gitlab.com:ryax-tech/workflows/default-actions.git
 
 [submodule "ryax-public-doc"]
@@ -47,7 +47,7 @@
 	path = common-helm-charts
 	url = git@gitlab.com:ryax-tech/ryax/common-helm-charts.git
 [submodule "hpc-actions"]
-	path = hpc-actions
+	path = actions/hpc-actions
     url = git@gitlab.com:ryax-tech/workflows/hpc-actions.git
 [submodule "intelliscale"]
 	path = intelliscale
