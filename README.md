@@ -99,13 +99,9 @@ Make sure these aren't already used!
 Copy the [docker-compose.yml](https://gitlab.com/ryax-tech/ryax/ryax-main/-/blob/master/docker-compose.yml) file form this repository and run:
 ```sh
 docker-compose up -d
+helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.01.0 -n ryaxns --create-namespace
 ```
 
-Wait for the installation to finish by checking for the install container
-state with:
-```sh
-docker logs $(basename $PWD)-install-ryax-1 -f
-```
 Be patient, this may take some minutes depending on your internet connection.
 
 Once its done you can access to your cluster with:
