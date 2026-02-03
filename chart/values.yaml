@@ -52,7 +52,7 @@ registry:
     enabled: true
     pullSecretName: ryax-registry-creds-secret
   ingress:
-    enabled: true
+    enabled: false
   persistence:
     enabled: true
     pvcSize: 20Gi
