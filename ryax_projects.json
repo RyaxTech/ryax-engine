@@ -1,9 +1,5 @@
 [
   {
-    "name": "webui",
-    "id": 8608060
-  },
-  {
     "name": "repository",
     "id": 21362741
   },
@@ -36,11 +32,7 @@
     "id": 24995205
   },
   {
-    "name": "adm",
-    "id": 16990830
-  },
-  {
-    "name": "vpa",
+    "name": "intelliscale",
     "id": 60950044
   }
 ]
