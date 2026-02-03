@@ -99,7 +99,7 @@ Make sure these aren't already used!
 Copy the [docker-compose.yml](https://gitlab.com/ryax-tech/ryax/ryax-main/-/blob/master/docker-compose.yml) file form this repository and run:
 ```sh
 docker-compose up -d
-helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.01.0 -n ryaxns --create-namespace
+helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.1.0 -n ryaxns --create-namespace
 ```
 
 Be patient, this may take some minutes depending on your internet connection.

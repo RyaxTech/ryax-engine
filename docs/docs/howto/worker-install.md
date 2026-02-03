@@ -97,7 +97,7 @@ Also, we will inject the SSH private key required to access the SSH cluster.
 ```sh
 helm upgrade --install worker-hpc-1 \
   oci://registry.ryax.org/release-charts/worker  \
-  --version 25.10.0-3 \
+  --version 26.1.0 \
   --namespace ryaxns \
   --values worker-hpc.yaml \
   --set-file hpcPrivateKeyFile=./my-ssh-private-key

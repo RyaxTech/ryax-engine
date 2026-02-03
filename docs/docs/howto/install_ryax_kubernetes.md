@@ -119,7 +119,7 @@ For more details about the Worker configuration please see the [Worker reference
 If you want to test Ryax you can run on any 
 We use Helm to install Ryax:
 ```sh
-helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.01.0 -n ryaxns --create-namespace
+helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.1.0 -n ryaxns --create-namespace
 ```
 
 !!! note
