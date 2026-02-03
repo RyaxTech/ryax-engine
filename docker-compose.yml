@@ -1,6 +1,6 @@
 services:
   install-ryax:
-    image: ryax-adm:latest
+    image: ryaxtech/ryax-adm:latest
     entrypoint: /data/local_ryax/k3s-ryax-install.sh
       #entrypoint:
       #  - sleep
