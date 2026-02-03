@@ -244,7 +244,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/web-hosting-static-dir.png">
+            <img src="../../_static/action_logos/web-hosting-static-dir.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Web hosting for static content</p>
@@ -258,7 +258,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/one-run.png">
+            <img src="../../_static/action_logos/one-run.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Run once</p>
@@ -272,7 +272,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/postgw.png">
+            <img src="../../_static/action_logos/postgw.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">HTTP POST</p>
@@ -286,7 +286,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/crongw.png">
+            <img src="../../_static/action_logos/crongw.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Cron source</p>
@@ -300,7 +300,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/mqttgw.png">
+            <img src="../../_static/action_logos/mqttgw.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">MQTT Source</p>
@@ -314,7 +314,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/default_logo.png">
+            <img src="../../_static/action_logos/default_logo.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Trigger workflow From Gitlab merge request</p>
@@ -328,7 +328,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/emitevery.png">
+            <img src="../../_static/action_logos/emitevery.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Emit Every</p>
@@ -342,7 +342,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/default_logo.png">
+            <img src="../../_static/action_logos/default_logo.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Trigger workflow From Gitlab pipeline</p>
@@ -356,7 +356,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/default_logo.png">
+            <img src="../../_static/action_logos/default_logo.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Trigger workflow From Gitlab release</p>
@@ -371,7 +371,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/send-email.png">
+            <img src="../../_static/action_logos/send-email.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Send e-mail</p>
@@ -385,7 +385,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/default_logo.png">
+            <img src="../../_static/action_logos/default_logo.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Publish alert on slack channel</p>
@@ -399,7 +399,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/dir-archive.png">
+            <img src="../../_static/action_logos/dir-archive.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Archive a directory</p>
@@ -413,7 +413,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/default_logo.png">
+            <img src="../../_static/action_logos/default_logo.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Publish a tweet on twitter</p>
@@ -427,7 +427,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/floattoinfluxdb.png">
+            <img src="../../_static/action_logos/floattoinfluxdb.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Push a float into influxdb</p>
@@ -441,7 +441,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/print-env.jpg">
+            <img src="../../_static/action_logos/print-env.jpg">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Print Environment</p>
@@ -455,7 +455,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/upload-to-bucket.png">
+            <img src="../../_static/action_logos/upload-to-bucket.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Upload file to aws</p>
@@ -469,7 +469,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/default_logo.png">
+            <img src="../../_static/action_logos/default_logo.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Unpack zipfile</p>
@@ -483,7 +483,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/default_logo.png">
+            <img src="../../_static/action_logos/default_logo.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">String to Text File</p>
@@ -497,7 +497,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/send-email-attachment.png">
+            <img src="../../_static/action_logos/send-email-attachment.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Send e-mail with attachment file</p>
@@ -511,7 +511,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/catfile.png">
+            <img src="../../_static/action_logos/catfile.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Cat content of a file</p>
@@ -525,7 +525,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/gcp-storage-writer.png">
+            <img src="../../_static/action_logos/gcp-storage-writer.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Google cloud storage</p>
@@ -539,7 +539,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/sleep.jpg">
+            <img src="../../_static/action_logos/sleep.jpg">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Sleep</p>
@@ -553,7 +553,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/cliq-message.png">
+            <img src="../../_static/action_logos/cliq-message.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Send a message to cliq</p>
@@ -567,7 +567,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/download-from-bucket.png">
+            <img src="../../_static/action_logos/download-from-bucket.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Download an object from AWS S3 Bucket.</p>
@@ -581,7 +581,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/default_logo.png">
+            <img src="../../_static/action_logos/default_logo.png">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Echo inputs into outputs</p>
@@ -595,7 +595,7 @@ max-width: 500px;
 <nz-card  class="ant-card ant-card-bordered">
     <div class="ant-card-body">
         <div class="ryax-module-icon">
-            <img src="/_static/action_logos/sql-query.jpeg">
+            <img src="../../_static/action_logos/sql-query.jpeg">
         </div>
         <div class="ng-star-inserted">
             <p class="ryax-card-title">SQL Query</p>

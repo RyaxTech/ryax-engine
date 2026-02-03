@@ -6,19 +6,17 @@ To set a configuration value for a specific service, add a values section in thi
 
 ```yaml
 runner:
-  values:
-    # undeploy after 10s instead of 300s
-    userActionsRetentionTime: 10
+  # undeploy after 10s instead of 300s
+  userActionsRetentionTime: 10
 ```
 
-Then, apply the configuration using `ryax-adm`. See the [installation documentation](../howto/install_ryax_kubernetes.md#cluster-update)
+Then, apply the configuration using Helm. See the [installation documentation](../howto/install_ryax_kubernetes.md#cluster-update)
 
 Some configuration parameters are not exposed in the Helm charts directly. Thus, you can check at the source code in the `/ryax/<service name>/app.py` where all configuration environment variables are defines and add one using the `extraEnv` parameter. For example,
 ```yaml
 runner:
-  values:
-    extraEnv:
-      name: RYAX_SCHEDULER_MAX_ACTION_DEPLOYMENTS
+  extraEnv:
+    - name: RYAX_SCHEDULER_MAX_ACTION_DEPLOYMENTS
       value: "100"
 ```
 

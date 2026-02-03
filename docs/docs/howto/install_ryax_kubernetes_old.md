@@ -1,9 +1,11 @@
+!!! error
+    This installation method is deprecated and not supported anymore, use at your own risk !
 
 ## Install with `ryax-adm` **(DEPRECATED)**
 ### Initialize
 
 First create a directory to organize the Ryax installation and initialize it with the default configuration:
-```bash
+```sh
 mkdir ryax_install
 cd ryax_install
 docker run \
@@ -14,9 +16,8 @@ docker run \
 You are now in the `ryax_install` folder and the `values.yaml` containing the
 default config was created.
 
-``` note::
-All the following commands assume that you are in the `ryax_install` directory.
-```
+!!! note
+    All the following commands assume that you are in the `ryax_install` directory.
 
 To explain the configuration fields, here is an example of simple configuration file for Ryax:
 ```yaml
@@ -115,5 +116,5 @@ To customize your installation. You can set any configuration field using the `v
 
 ### Set the `version` field with the Ryax version, for example: `23.10.0`. The latest stable version can be found in the [releases page](https://gitlab.com/ryax-tech/ryax/ryax-main/-/releases).
 
-The `clusterName` and `domainName` defines the name you give to your cluster, which is used in various places. One of those places is the URL of your cluster that will be \<clusterName\>.\<domainName\>, therefore it has to be consistent with your DNS.
+The `clusterName` and `domainName` defines the name you give to your cluster, which is used in various places. One of those places is the URL of your cluster that will be **<clusterName>.<domainName>**, therefore it has to be consistent with your DNS.
 

@@ -54,6 +54,7 @@ In Ryax we have implemented a multi-objective scheduling technique to address ex
 as given by the user. Based on that Ryax offers the ability to configure different scheduling policies to perform the resources/actions matching (placement).
 
 Currently 3 objectives are defined and the user can configure them per action. These are the following:
+
 - **Cost**: Meaning cost minimization. The higher the percentage the bigger weight you give in cost minimization, hence the scheduler will favor sites and resources with lower cost.
 - **Energy**: Meaning energy efficiency improvement. The higher the percentage the bigger weight you give in energy efficiency, hence the scheduler will favor sites and resources with higher energy efficiency. 
 - **Performance**: Meaning performance increase. The higher the percentage the larger weight you give in performance, hence the scheduler will favor sites and resources with higher performance.

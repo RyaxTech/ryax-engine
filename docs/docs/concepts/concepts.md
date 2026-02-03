@@ -26,10 +26,10 @@ An action computing some data is called a **run**. In Ryax, a run holds everythi
 
 To create a Ryax workflow, answer these questions:
 
-1) *What triggers the workflow?* Many events in the outside world may trigger a Ryax workflow. It can be an email, a new file in a file share, submission of an online form, a new contact in a CRM or some IoT data, for example.
-2) *Who needs the results of the workflow?* What are the tools they can access? For instance, a salesperson may need this data to be attached to the company profiles in a CRM, or predictive maintenance results may need to be accessed by managers to plan actions and by workers to perform the recommended actions.
-3) *What data do you need to be able to run the required computations?* Where do you gather it? In what formats do they come?
-4) *Are my computations done in several steps?* Are there some steps that I can reuse in other workflows? Can I salvage actions from prior workflows?
+1. *What triggers the workflow?* Many events in the outside world may trigger a Ryax workflow. It can be an email, a new file in a file share, submission of an online form, a new contact in a CRM or some IoT data, for example.
+2. *Who needs the results of the workflow?* What are the tools they can access? For instance, a salesperson may need this data to be attached to the company profiles in a CRM, or predictive maintenance results may need to be accessed by managers to plan actions and by workers to perform the recommended actions.
+3. *What data do you need to be able to run the required computations?* Where do you gather it? In what formats do they come?
+4. *Are my computations done in several steps?* Are there some steps that I can reuse in other workflows? Can I salvage actions from prior workflows?
 
 The first question helps define triggers. The second one is for actions.
 Finally, 3 and 4 help define re-usable actions.
@@ -110,6 +110,7 @@ action on the `default-actions` repository.
 In Ryax, a **project** groups and controls the visibility of workflows, actions, runs, repositories, and users. All resources within a project are only visible to users that are associated with that project.
 
 Projects help you organize your resources allowing you to show only the relevant workflows, actions, and repositories for a group of people. This type of organisation can significantly improve the user experience and can be done in a variety of ways, for example:
+
 - split teams across different projects, so each team has only access to what is relevant to them.
 - group all your workflows by theme, client, or any relevant aspect you might think.
 - separate test and production-oriented projects so developers and users have more freedom to experiment.

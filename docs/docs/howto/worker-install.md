@@ -54,13 +54,14 @@ config:
         username: ryax
 ```
 Each field explained in details:
-* **site.name**: the name of the site that identifies the site in Ryax
-* **site.type**: the type of the site (can SLURM_SSH or KUBERNETES)
-* **site.spec.partitions**: the partition definitions. **Ryax only supports partition with homogeneous node for now.** Each resource value is given by node.
-  * **name**: name of the partition.
-  * **cpu**: amount of allocatable cpu core per node.
-  * **memory**: amount of allocatable memory in bytes per node.
-* **site.credentials**: Contains credential to SSH to HPC cluster login server.
+
+- **site.name**: the name of the site that identifies the site in Ryax
+- **site.type**: the type of the site (can SLURM_SSH or KUBERNETES)
+- **site.spec.partitions**: the partition definitions. **Ryax only supports partition with homogeneous node for now.** Each resource value is given by node.
+  - **name**: name of the partition.
+  - **cpu**: amount of allocatable cpu core per node.
+  - **memory**: amount of allocatable memory in bytes per node.
+- **site.credentials**: Contains credential to SSH to HPC cluster login server.
 
 To extract the partition information we provide a helper script to run on the Slurm login node:
 ```shell
@@ -170,6 +171,7 @@ config:
           eks.amazonaws.com/nodegroup: default
 ```
 let's exaplain each field:
+
 * **site.name**: the name of the site that identifies the site in Ryax
 * **site.spec.nodePools**: the node pools definitions (a node pool is a set of homogeneous node. Each resource value is given by node). 
   * **name**: name of the node pool.
@@ -209,35 +211,40 @@ For the worker to communicate securely to the main Ryax site, we need to create 
 In this How-To we will use [Skupper](https://skupper.io), but other multi-cluster network technology might work. 
 Make sure you have kubectl access to both clusters, we are going to reference as **main-site** the kubernetes that has all Ryax services including the UI and **worker-site** the kubernetes cluster that we will attach to run Ryax's actions.
 
-* Install skupper v2 cli, in your local machine
-
-```shell
-curl https://skupper.io/v2/install.sh | sh
-```
-
-**main-site & worker-site**
-* Remove skupper v1 in both sites if installed, if not you can skip this step
-```shell
-kubectl delete -n ryaxns deployment.apps/skupper-router deployment.apps/skupper-service-controller service/skupper-router service/skupper-router-local
-```
+**local machine**
+  
+* Install skupper v2 cli, in your local machine:
+  ```shell
+  curl https://skupper.io/v2/install.sh | sh
+  ```
 
 **main-site & worker-site**
-* Install skupper v2 custom resources definition CRDs, in both sites
-```shell
-helm install skupper oci://quay.io/skupper/helm/skupper --version 2.1.3
-```
+  
+* Remove skupper v1 in both sites if installed, if not you can skip this step:
+  ```shell
+  kubectl delete -n ryaxns deployment.apps/skupper-router deployment.apps/skupper-service-controller service/skupper-router service/skupper-router-local
+  ```
+
+**main-site & worker-site**
+  
+* Install skupper v2 custom resources definition CRDs, in both sites:
+  ```shell
+  helm install skupper oci://quay.io/skupper/helm/skupper --version 2.1.3
+  ```
 
 **worker-site**
-* Create namespaces `ryaxns` and `ryaxns-execs` required by Ryax on the **worker-site**.
-```yaml
-kubectl create namespace ryaxns
-kubectl create namespace ryaxns-execs
-```
+ 
+* Create namespaces `ryaxns` and `ryaxns-execs` required by Ryax on the worker-site:
+  ```yaml
+  kubectl create namespace ryaxns
+  kubectl create namespace ryaxns-execs
+  ```
 
 
 ### Configure skupper
 
 To resume we need the **worker-site** to access **main-site** services. More precisely, we need to expose the following services:
+
 - *registry*: to pull action images
 - *filestore*: to read and write files (actions static parameters, execution I/O)
 - *broker*: to communicate with other Ryax services
@@ -246,62 +253,71 @@ The registry is already exposed on the internet so only the secrets are required
 
 
 **worker-site**
+
 * On the **worker-site**, first create the skupper site, it is very important to enable link-access so it can have the services of the main site exposed later.
-```shell
-skupper -n ryaxns site create worker-site --enable-link-access
-```
+  ```shell
+  skupper -n ryaxns site create worker-site --enable-link-access
+  ```
 
 **main-site**
+
 * Second, create the skupper site resource.
-```shell
-skupper -n ryaxns site create main-site
-```
+  ```shell
+  skupper -n ryaxns site create main-site
+  ```
 
 **worker-site**
+
 * Now create the token to redeem on the main site, keep secret.token in a secure location it will work for the first attempt to connect and then be useless.
-```shell
-skupper -n ryaxns token issue ../secret.token
-```
+  ```shell
+  skupper -n ryaxns token issue ../secret.token
+  ```
 
 **main-site**
+
 * Redeem the created token to allow connection with the worker.
-```shell
-skupper -n ryaxns token redeem ../secret.token
-```
+  ```shell
+  skupper -n ryaxns token redeem ../secret.token
+  ```
 
 **worker-site**
+
 * The worker site must create a listener to have the main-site broker (ryax-broker-ext) and filestore (minio-ext) services exposed on its side.
-```shell
-skupper -n ryaxns listener create ryax-broker-ext 5672
-skupper -n ryaxns listener create minio-ext 9000
-```
+  ```shell
+  skupper -n ryaxns listener create ryax-broker-ext 5672
+  skupper -n ryaxns listener create minio-ext 9000
+  ```
 
 **main-site**
+
 * The main-site must create a connector to allow the listeners to reach its local services, note that we use `--workload` to specify the target service of the connector.
-```shell
-skupper -n ryaxns connector create ryax-broker-ext 5672 --workload service/ryax-broker
-skupper -n ryaxns connector create minio-ext 9000 --workload service/minio
-```
+  ```shell
+  skupper -n ryaxns connector create ryax-broker-ext 5672 --workload service/ryax-broker
+  skupper -n ryaxns connector create minio-ext 9000 --workload service/minio
+  ```
 
 **main-site**
+
 * Save the secrets to access Ryax services, the secrets include sensitive information please keep this file safe and delete it as after the next step. We provide a small helper script to inject the "-ext" suffix needed for remote services mapping.
-```shell
-wget "https://gitlab.com/ryax-tech/ryax/ryax-runner/-/raw/master/k8s-ryax-config.py"
-chmod +x ./k8s-ryax-config.py
-./k8s-ryax-config.py
-```
+  ```shell
+  wget "https://gitlab.com/ryax-tech/ryax/ryax-runner/-/raw/master/k8s-ryax-config.py"
+  chmod +x ./k8s-ryax-config.py
+  ./k8s-ryax-config.py
+  ```
 
 **worker site**
+
 * Install saved secrets from previous step on the **worker-site** (after this command it is safe to delete the secrets file):
-```shell
-kubectl apply -f ./secrets
-```
+  ```shell
+  kubectl apply -f ./secrets
+  ```
 
 **worker site**
+
 * Now that we have the configuration and a secure connection with the credentials we will use Helm to install the latest Ryax Worker:
-```sh
-helm upgrade --install ryax-worker oci://registry.ryax.org/release-charts/worker --version 25.10.0-3 --values worker.yaml -n ryaxns
-```
+  ```sh
+  helm upgrade --install ryax-worker oci://registry.ryax.org/release-charts/worker --values worker.yaml -n ryaxns
+  ```
 
 ---
 

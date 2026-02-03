@@ -11,12 +11,19 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.superfences
   - tables
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
 theme:
   name: material
   logo: assets/logo-ryax-white-110.png
   favicon: _static/ryax-icon.png
   features:
     - navigation.footer
+    - content.code.copy
   palette: 
     # Palette toggle for light mode
     - scheme: default
@@ -37,36 +44,38 @@ plugins:
 - autorefs
 
 nav:
+- ./index.md
+- ./concepts/intro.md
+- ./howto/install_ryax_kubernetes.md
+- ./tutorials/quick_start_guide.md
 - Concepts:
-  - ./concepts/intro.md
   - ./concepts/concepts.md
   - ./concepts/comparisons.md
   - ./concepts/use_cases.md
 - Tutorial:
-  - ./tutorials/quick_start_guide.md
-  - ./tutorials/multi-site-workflow.md
   - ./reference/action_python3.md
   - ./tutorials/action_csharp.md
   - ./tutorials/action_nodejs.md
   - ./tutorials/http_api_json.md
+  - ./tutorials/multi-site-workflow.md
   - ./tutorials/reproducible_action_build.md
-- Users How-to :
   - ./howto/jupyter.md
   - ./howto/text_classification_tutorial.md
   - ./howto/spark_piloted_action.md
   - ./howto/video_detection.md
-- Admin How-to:
+- Administration:
   - ./howto/install_ryax_kubernetes.md
   - ./howto/worker-install.md
   - ./howto/create-backups.md
+  - ./reference/configuration.md
+  - ./reference/intelliscale.md
 - References:
   - ./reference/action_python3.md
-  - ./reference/configuration.md
-  - ./reference/architecture.md
-  - ./concepts/projects.md
-  - ./reference/glossary.md
   - ./reference/basic_actions.md
+  - ./reference/architecture.md
   - ./reference/ryax_lock.md
   - ./reference/intelliscale.md
   - ./reference/hpc.md
+  - ./reference/configuration.md
+  - ./reference/glossary.md
 

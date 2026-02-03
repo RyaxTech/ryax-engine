@@ -8,7 +8,7 @@ It means that in the same workflow, some actions will run on Ryax Kubernetes clu
 
 ## Requirements
 
-First add a SLURM_SSH site to Ryax using this documentation: [configure and install a Ryax Worker](../howto/worker-install.md#hpc-worker).
+First add a SLURM_SSH site to Ryax using this documentation: [configure and install a Ryax Worker](../howto/worker-install.md#slurm_ssh-worker).
 
 Regarding the SLURM cluster, here is a list of requirements.
 
@@ -42,9 +42,8 @@ Then, you will be able to set the HPC offloading parameters when you instantiate
 
 Your actions will run just like regular Ryax Actions but using a Singularity containers inside the HPC cluster. Slurm runs the containers in parallel following the parameters of the sbatch header (typically setting number of nodes and number of tasks). As usual, Ryax will provide inputs and retrieve outputs upon execution completion.
 
-/// warning
+!!! warning
     If the `custom_script` parameter is set the advanced mode is automatically used. Be sur that this parameter is Null to stay in this mode.
-```
 
 
 If you want you action to run in parallel on multiple node, for example for an MPI application, you will need to define the `custom_script` parameter. This script will be injected in the sbatch script and run directly on the fronted node. Action inputs will be available as environment variables and outputs must be exported as environment variable at the end of the script. Also, the Singularity image that was built and deployed for you by Ryax is available in the `RYAX_ACTION_IMG` environment variable. The current working directory a temporary folder create for each run.

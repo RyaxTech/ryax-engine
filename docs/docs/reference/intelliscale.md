@@ -11,6 +11,7 @@ the past utilization in order to avoid wasting of resources and fit more pods on
 and automatically restarts the pod after increasing the memory, hence providing a resilient feature. 
 
 Ryax IntelliScale has been implemented in such a way to simply enable different recommendation algorithms. Currently, the following choices are available:
+
 - *Rule-based algorithm* : where the recommendation is done by a pre-defined statistics based on historical consumption. This algorithm is lightweight and currently more adapted for serverless-based actions.
 - *ML-driven algorithm* : where the recommendation is done by machine learning based on historical resource consumption. This algorithm gives more suitable and adaptive recommendation for long-running services, but is heavier than rule-based.
 
@@ -18,7 +19,7 @@ Only one algorithm from the above can be configured as the global recommendation
 
 ## How to install and configure Ryax IntelliScale
 Ryax IntelliScale is a deployment with 1 pod running in ryaxns namespace. 
-The installation of the service is done through ryax-adm and configured as part of the worker. More details on the installation and configuration of worker can be found here [Worker installation Howto](../howto/worker-install.md)
+The installation of the service is done through Helm and configured as part of the Worker installation. More details on the installation and configuration of worker can be found here [Worker installation Howto](../howto/worker-install.md)
 
 
 
@@ -199,6 +200,7 @@ Ryax IntelliScale component does not apply the recommendation to the pods. This 
 ## Ryax IntelliScale behaviour and architecture
 
 After Ryax IntelliScale is deployed, we can directly apply the deployments of the to-be-scaled workload, with the annotations as given above. They can be automatically detected and processed as:
+
 - **Every 1 second**, Ryax IntelliScale fetches current existing workload instances and their resource consumption data. 
 - **Every 5 minutes since Ryax IntelliScale started**, (either Rule or ML algorithm,) the recommendation is calculated and sent to Ryax Worker. So when a workload to be scaled is deployed, we should wait *at most 5 minutes* to get the first recommendation.
 

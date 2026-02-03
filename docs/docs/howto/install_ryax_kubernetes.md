@@ -1,10 +1,12 @@
-# Install Ryax on Kubernetes
+# Installation
 
 !!! tip
     For a local development installation please refers the [Getting Started Guide](https://gitlab.com/ryax-tech/ryax/ryax-engine#getting-started-with-ryax)
 
 !!! note
     Previous installation methode with `ryax-adm` is **deprecated**: You can still find the [documentation](./install_ryax_kubernetes_old.md)
+
+If you have any questions, please join our [Discord server](https://discord.gg/ctgBtx9QwB). We will be happy to help!
 
 ## Requirements
 
@@ -82,6 +84,7 @@ worker:
 ```
 
 Let's explain each field:
+
 - **site.name**: the name of the site that identifies the site in Ryax
 - **site.spec.nodePools**: the node pools definitions (a node pool is a set of homogeneous node. Each resource value is given by node). 
   - **name**: name of the node pool.
@@ -93,7 +96,7 @@ Let's explain each field:
 These fields might change depending on the cloud provider. Below an example of configuration for Azure.
 
 ```yaml
-          kubernetes.azure.com/agentpool: default
+kubernetes.azure.com/agentpool: default
 ```
 
 All node pool information can be obtained using a simple:
@@ -108,22 +111,26 @@ For more details about the Worker configuration please see the [Worker reference
 !!! note 
     For Multi-Site Installation see [Worker Installation Documentation](./worker-install.md)
 
-## Install with `helm`
+## Basic Installation
 
-Ryax needs secrets for internal service. We provide a python script to generate these secret.
+!!! tip
+    For a production cluster, please refer to the [Production Installation](#production-installation) section.
 
-Then, you can install Ryax with Helm:
+If you want to test Ryax you can run on any 
+We use Helm to install Ryax:
 ```sh
 helm install oci://registry.ryax.org/release-charts/ryax-engine ryax -n ryaxns --create-namespace
 ```
 
 !!! note
-    We propose a **minimal** and a **dev** version. You can find the values here: https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/chart/env
+    We also propose a **minimal** and a **dev** version. You can find the values here: https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/chart/env
 
+## Access to your Cluster
 
-## Access to your cluster
+Now you can access to you cluster with it's IP adress on your web browser.
 
-Now you can access to you cluster with `https://ryax.example.com` on your web browser.
+!!! tip
+    To get a DNS access with valid SSL certificate, please refer to the [Production Installation](#production-installation) section.
 
 Default credentials are *user1/pass1*
 
@@ -139,11 +146,11 @@ Default credentials are *user1/pass1*
 Run the upgrade with:
 ```sh
 helm upgrade oci://registry.ryax.org/release-charts/ryax-engine ryax -n ryaxns --reuse-values
-````
+```
 
-# Configure for Production
+## Production Installation
 
-## Enable TLS
+### Enable TLS
 
 If you do not intend to configure a DNS cluster, be aware that you will access Ryax through the IP address directly and https certificate will be self-signed.
 Else, you need to enable tls provided by certManager:
@@ -166,7 +173,7 @@ helm install oci://registry.ryax.org/release-charts/ryax-engine ryax -n ryaxns -
         enabled: false
     ```
 
-## Configure the DNS
+### Configure the DNS
 
 To get a valid SSL certificate and to allow other Kubernetes sites to be join your Ryax main site, you have to associate a valid domain name by setting `global.tls.hostname`.
 Then, you need to configure domain name resolution  pointing to the correct kubernetes cluster public IP address.
@@ -177,7 +184,7 @@ To retrieve the external IP of your cluster, run this one-liner
 
 ```bash
 kubectl -n kube-system get svc traefik -o jsonpath='{.status.loadBalancer.ingress[].ip}'
-# OR dpending on your provider
+# OR depending on your provider
 kubectl -n kube-system get svc traefik -o jsonpath='{.status.loadBalancer.ingress[].hostname}'
 ```
 
@@ -198,7 +205,7 @@ kubectl get certificates -n ryaxns
 
 The state should be `READY: true`.
 
-## Configure Storage Class
+### Configure Storage Class
 
 An important configuration is the `global.defaultStorageClass`. If not set, Ryax will use the
 default one provided by the Kubernetes cluster for all services. But, the
@@ -286,9 +293,9 @@ Ryax uses an internal registry to store actions' images.
 If you want Ryax to work on local site only (default), no external access to registry will be provided.
 Notice that with tls disabled, you cannot add external sites to Ryax outside your local network.
 
-/// warning
+!!! warning
     Some Kubernetes providers block access the nodePort or disable them entirly.
-    In this case use a DNS with a loadBalancer as described in this section: (Configure the DNS)[#configure-the-dns].
+    In this case use a DNS with a loadBalancer as described in this section: [Configure the DNS](#configure-the-dns).
 
 If your cluster is inaccessible from outside your private network, Ryax use a nodePort to connect to the registry.
 This will allow actions' pods to be deployed, however you will not be able to connect external kubernetes sites.

@@ -16,10 +16,6 @@ They communicate through the broker with each others using a specific message fo
 
 Each service's data share nothing with other services. Thus, if the data schema evolves, the service manages its data migration (or retro compatibility) itself. 
 
-
-
-
-
 ## Interfaces of micro-services
 
 ### HTTP API
@@ -30,13 +26,14 @@ We try to limit the use of these APIs between microservices as it creates a depe
 ### gRPC
 
 HTTP suffers from multiple limitations (no heartbeats, uni-directional communication, limit in size, limit in response time).
-Thus, we use gRPC between runners and the actions.
+Thus, we use gRPC instead between the Workers and the actions.
 
 ### RabbitMQ+protobuf
 
 It is used for asynchronous events.
 
 To manage these protocols more easily we use this set of rules:
+
 - Emitters are responsible for the definition of the Protobuf.
 - Emitters define up to the exchange (included).
 - Consumers define from the exchange (included) to their queue.
@@ -45,9 +42,9 @@ Thus, we need a way to define and share easily RMQ exchanges (and their paramete
 
 
 
-## Ryax code: our microservices
+## Ryax Code: Our Microservices
 
-### A common architecture
+### A Common Architecture
 
 These micro-services are internally divided into layers.
 The Domain layer defines business objects; ie. objects that also exist for users of the application ("PostgreSQL" is not such an object, however a "database" might, or a "candy" in an app about candies).
@@ -72,6 +69,7 @@ The Application layer contains all the services provided by the application usin
 These Application services "orchestrate" the Domain structures and the Infrastructure services so that they work together.
 
 Application data should not be modified here; it is the job of the methods of the classes of the Domain layer. Thus, you might find this kind of code in a domain class:
+
 ```python
 from myapp.domain.a_domain_object import ADomainObject
 
@@ -99,12 +97,12 @@ Most of the time they return nothing, or they return how well the command perfor
 
 
 
-### The micro-services
+### The Micro-Services
 
 This section contains the list of all Ryax services. 
 
-> If a action is *accessible by users*, the accessible endpoints require to be protected using the `authentification` microservice.
-
+!!! note
+    If a action is *accessible by users*, the accessible endpoints require to be protected using the `authentification` microservice.
 
 
 #### Authorization
@@ -120,14 +118,11 @@ It uses the Postgres datastore to persist its state using an ORM.
 Manage user authorization and projects in Ryax. It is called by all other user-facing services to get the current project and user authorization in this project. 
 
 **Responsibilities**:
+
 - Authentification
 - User management (through projects)
 
 **Accessible by users**: Yes
-
-
-
-
 
 #### Runner
 
@@ -147,6 +142,7 @@ https://gitlab.com/ryax-tech/dev/backend/runner
 This micro-service speaks gRPC (with the actions), RMQ with Studio, and HTTP for standalone usage.
 
 **Responsibilities**:
+
 - Deployment 
 	- Communicate with the worker to get computing resources
 	- Deploy/undeploy actions
@@ -193,10 +189,12 @@ To do so, we introduce a new public facing storage. In our case we make use of o
 Based on this the data can be shared between site using this public storage with the following policy:
 
 *Outputs:*
+
 - always push I/O files in local storage.
 - if one of the next execution is in the another site also push data to the global storage. This is done by the Worker.
 
 *Inputs:*
+
 - if an I/O file comes from an execution done on another site pull I/O files from global storage
 - otherwise pull I/O files from the local storage
 
@@ -210,6 +208,7 @@ It exposes an HTTP Rest API that is used by the WebUI and the CLI.
 It uses the Postgres datastore to persist its state using an ORM.
 
 **Responsibilities**:
+
 - Manage repositories
 - Command the action builder to build new actions
 - Detect some action errors
@@ -230,10 +229,10 @@ It uses the Postgres datastore to persist its state using an ORM.
 The Studio service permits Ryax users to create and deploy workflows.
 
 **Responsibilities**:
+
 - Create and edit workflows
 
 **Accessible by users**: Yes
-
 
 
 #### Action Builder
@@ -244,11 +243,10 @@ This service is stateless. It only receives action build orders from the Reposit
 It depends on the action wrapper to build actions.
 
 **Responsibilities**:
+
 - Build actions and push them to the registry
 
 **Accessible by users**: No
-
-
 
 
 #### WebUI
@@ -260,25 +258,21 @@ An NGINX server that serves our frontend written with Angular.
 Angular is based on the CQRS (Command Query Responsibility Segregation) with reactive programming. The application is split into DDD bounded contexts (BC). BC contains Domains that include business logic, Components for UI, Features, and shells. Shells are entry points to the BC: It maps features to HTTP endpoints.
 
 
-
-
-
-
-## The external services
+## External services
 
 They are used as infrastructure for message passing and storage.
 
 
-### External: Datastore (PostgreSQL)
+### Datastore (PostgreSQL)
 
 **Description:**
 It is a PostgreSQL database that stores the state of all stateful services. Each service has a different access credential and a separate database.
 
 **Responsibilities**:
 
+- Store micro-services states
+
 **Accessible by users**: No
-
-
 
 
 ### Filestore (Minio)
@@ -287,11 +281,10 @@ It is a PostgreSQL database that stores the state of all stateful services. Each
 It is a Minio file storage service that exposes an S3-compatible API. It stores execution I/O files and directories. 
 
 **Responsibilities**:
+
 - Store and serve execution IO
 
 **Accessible by users**: No
-
-
 
 
 ### Broker (RabbitMQ)
@@ -310,11 +303,10 @@ This is a RabbitMQ message broker. It enables internal communication between all
 A container registry where the users' actions are stored. It is populated by the action builder and the images are pulled from Kubernetes at deployment time.
 
 **Responsibilities**:
+
 - Store and serve containers of actions
 
 **Accessible by users**: No
-
-
 
 
 ### Kubernetes
@@ -322,28 +314,14 @@ A container registry where the users' actions are stored. It is populated by the
 **Description:**
 
 **Responsibilities**:
-- Run all Ryax services (except external Runners and actions)
+
+- Run all Ryax services (except external Workers and HPC Actions)
 - Abstract underlying infrastructure
 
 **Accessible by users**: No
 
 
 ## Tools and other
-### ADM
-
-**Description:**
-Our administration tool for Ryax.
-
-**Responsibilities**:
-- Deploy a ryax instance
-- Backup/restore a ryax instance
-- Update a ryax instance
-
-**Accessible by users**: No, only tech admins.
-
-### SDK and CLI
-An SDK is automatically built using the swagger definition. This SDK is then used to implement a command-line interface (CLI).
-
 
 ### Action wrapper
 
@@ -354,16 +332,17 @@ A small bit of code between our system and the user code to be able to run it.
 This is not an internal Ryax service but a wrapper that is put around user code to communicate with Ryax. It creates a gRPC server with a simple interface that initializes the action and then runs executions.
 This wrapper works for both processors and source actions with the same protocol: the source actions are streaming execution responses, while the processors are only sending one response and closing the connection.
 
+It also contains the Action builder code in Nix.
 
 **Responsibilities**:
+
+- Build Ryax actions
 - Run user code when asked to
 - Prepare data to be able to run user code
 - Get the resulting data and push it back
 - Clean the system so that it can start a new computation without old data being around
 
 **Accessible by users**: Not through an API, but the user code is tightly coupled to this.
-
-
 
 
 ## Infrastructure
@@ -374,4 +353,4 @@ Our monitoring stack is based on Prometheus for metrics, Loki for the logs aggre
 
 The Ingress Network is managed by Traefik which routes the requests depending on the path prefix, e.g.  **/runner** goes to the Runner service 
 
-
+We also use Cert-Manager for automatic Let's encrypt certificates
