@@ -94,7 +94,6 @@ more resources.**
 This is the standard and recommended approach.
 It works on most managed Kubernetes, like AWS EKS, Azure AKS, GCP GKE.
 
-
 For more details on the configuration, see [our documentation](https://docs.ryax.tech/howto/install_ryax_kubernetes.html).
 
 ## Test locally with kubernetes in docker
