@@ -117,7 +117,7 @@ dependencies:
     repository: 'https://prometheus-community.github.io/helm-charts'
     tags:
       - monitoring
-    condition: prometheus.enabled
+    condition: kube-prometheus-stack.enabled
   # Tracing
   - name: tempo
     version: 1.x.x
