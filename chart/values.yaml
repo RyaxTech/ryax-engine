@@ -192,8 +192,30 @@ rabbitmq:
     create: false
   ulimitNofiles: ""
 
+# Configuration for kube-prometheus-chart
 kube-prometheus-stack:
   enabled: true
+
+  # Configuration for grafana component
+  grafana:
+    enabled: true
+
+    grafana.ini:
+      users:
+        allow_sign_up: false
+        allow_org_create: false
+      auth.anonymous:
+        enabled: false
+      server:
+        domain: ""
+        root_url: "http://localhost/grafana"
+        serve_from_sub_path: true
+
+    ingress:
+      enabled: true
+      hosts:
+      - ""
+      path: "/grafana"
 
 tempo:
   enabled: true
