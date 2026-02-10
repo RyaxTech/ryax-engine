@@ -82,12 +82,21 @@ Hardware:
 * 4GB or memory
 * 40GB of disk available
 
+```bash
+helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.1.0 -n ryaxns --create-namespace
+```
 
 **Note that depending on the Actions that you run on your cluster you might need
 more resources.**
 
+### On an existing Kubernetes cluster
 
-### On a local machine with Docker
+This is the standard and recommended approach.
+It works on most managed Kubernetes, like AWS EKS, Azure AKS, GCP GKE.
+
+For more details on the configuration, see [our documentation](https://docs.ryax.tech/howto/install_ryax_kubernetes.html).
+
+## Test locally with kubernetes in docker
 
 We recommend this option if you wish to test our product with a minimal amount of configuration steps, and if you have enough RAM (~3GB) and disk (20GB) available.
 
@@ -99,13 +108,10 @@ Make sure these aren't already used!
 Copy the [docker-compose.yml](https://gitlab.com/ryax-tech/ryax/ryax-main/-/blob/master/docker-compose.yml) file form this repository and run:
 ```sh
 docker-compose up -d
+
+helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.1.0 -n ryaxns --create-namespace
 ```
 
-Wait for the installation to finish by checking for the install container
-state with:
-```sh
-docker logs $(basename $PWD)-install-ryax-1 -f
-```
 Be patient, this may take some minutes depending on your internet connection.
 
 Once its done you can access to your cluster with:
@@ -119,14 +125,6 @@ To uninstall your cluster, stop it with:
 ```sh
 docker-compose down -v
 ```
-
-### On an existing Kubernetes cluster
-
-This is the standard and recommended approach.
-It works on most managed Kubernetes, like AWS EKS, Azure AKS, GCP GKE.
-
-For more details on the configuration, see [our documentation](https://docs.ryax.tech/howto/install_ryax_kubernetes.html).
-
 
 ## 🛹 Roadmap
 
