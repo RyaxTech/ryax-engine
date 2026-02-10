@@ -609,11 +609,11 @@ max-width: 500px;
 ## And more to come…
 
 Here’s a not exhaustive/non-guaranteed list of the public actions & triggers we are currently working on… get in touch with us for updates!
+
 - Streamlit
 - Bubble
 - Waalaxy
 - Hubspot
 - Google Sheet
-
 
 
