@@ -106,3 +106,9 @@ kube-prometheus-stack:
 
 tempo:
   enabled: false
+
+traefik:
+  metrics:
+    prometheus:
+      serviceMonitor:
+        enabled: false
