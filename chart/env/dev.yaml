@@ -16,8 +16,6 @@ global:
     logLevel: debug
     # -- Namespace where user's actions are deployed
     userNamespace: "ryaxns-execs"
-    # -- Where the monitoring stack goes
-    monitoringNamespace: "ryaxns-monitoring"
 
   monitoring:
     enabled: true

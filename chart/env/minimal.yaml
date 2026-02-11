@@ -101,7 +101,7 @@ rabbitmq:
   persistence:
     enabled: false
 
-prometheus:
+kube-prometheus-stack:
   enabled: false
 
 tempo:

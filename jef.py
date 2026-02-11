@@ -31,9 +31,6 @@ class TCOLOR:
 
 
 REPOS_TO_BE_RELEASED = {
-    "adm": {
-        "gitlab_project": "ryax-tech/ryax/ryax-adm",
-    },
     "intelliscale": {"gitlab_project": "ryax-tech/ryax/ryax-intelliscale"},
     "authorization": {
         "gitlab_project": "ryax-tech/ryax/ryax-authorization",
@@ -43,6 +40,7 @@ REPOS_TO_BE_RELEASED = {
     },
     "default-actions": {
         "gitlab_project": "ryax-tech/workflows/default-actions",
+        "path": "./actions/",
     },
     "action-wrappers": {
         "gitlab_project": "ryax-tech/ryax/ryax-action-wrappers",
@@ -59,13 +57,10 @@ REPOS_TO_BE_RELEASED = {
     "front": {
         "gitlab_project": "ryax-tech/ryax/ryax-front",
     },
-    "webui": {
-        "gitlab_project": "ryax-tech/ryax/ryax-webui",
-    },
 }
 
 MAIN_RELEASE_REPO = {
-    "gitlab_project": "ryax-tech/ryax/ryax-release",
+    "gitlab_project": "ryax-tech/ryax/ryax-engine",
 }
 
 MAX_REPO_NAME_LEN = max([len(r) for r in REPOS_TO_BE_RELEASED.keys()])
@@ -211,7 +206,7 @@ def command_check_stagings(args) -> None:
         f"'{TCOLOR.OKGREEN}=={TCOLOR.ENDC}' if it is the same commit; '{TCOLOR.OKBLUE}>>{TCOLOR.ENDC}' if the left commit is more recent than the right one."
     )
     for repo_name, repo_d in REPOS_TO_BE_RELEASED.items():
-        repo = Repo(repo_name)
+        repo = Repo(repo_d.get("path", "") + repo_name)
         print(f"{repo_name: <19}", end="")
         print_last_versions_order(repo)
 
@@ -362,10 +357,11 @@ def command_wait_all_pipes(args) -> None:
     repo_temp.sort()
 
     repo_not_finished = []
-    REPOS_TO_BE_RELEASED["release"] = {
-        "gitlab_project": MAIN_RELEASE_REPO["gitlab_project"]
-    }
-    repo_not_finished.append("release")
+    # TODO: restore this went the pipeline is restored
+    # REPOS_TO_BE_RELEASED["engine"] = {
+    #     "gitlab_project": MAIN_RELEASE_REPO["gitlab_project"]
+    # }
+    # repo_not_finished.append("engine")
     repo_not_finished.extend(repo_temp)
     repo_not_finished.append("SLEEP")
 

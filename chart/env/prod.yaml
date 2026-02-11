@@ -1,0 +1,133 @@
+global:
+  tls:
+    # -- WARNING: You need to set this value with a valid FQDN
+    hostname: # ryax.example.com
+    enabled: true
+    environment: production
+  monitoring:
+    enabled: true
+    
+kube-prometheus-stack:
+  enabled: true
+  
+  alertmanager:
+    enabled: true
+    # -- Set this to force Ryax on a node pool
+    nodeSelector:
+      
+    alertmanagerSpec:
+      priorityClassName: monitoring
+      
+    config:
+      global:
+        resolve_timeout: 5m
+        # -- enable Slack alerting for the cluster
+        slack_api_url:
+      inhibit_rules:
+      - equal:
+        - namespace
+        - alertname
+        source_matchers:
+        - "severity = critical"
+        target_matchers:
+        - "severity =~ warning|info"
+      - equal:
+        - namespace
+        - alertname
+        source_matchers:
+        - "severity = warning"
+        target_matchers:
+        - "severity = info"
+      - equal:
+        - namespace
+        source_matchers:
+        - "alertname = InfoInhibitor"
+        target_matchers:
+        - "severity = info"
+
+      # -- Uncomment this for Slack monitoring
+      # route:
+      #   receiver: 'slack-notifications'
+      #   routes:
+      #     # Disabled this for testing
+      #     - match:
+      #         alertname: Watchdog
+      #       receiver: "null"
+      #     # These alerts are triggerd because the kube controller is hidden on
+      #     # most clouds
+      #     - match:
+      #         alertname: KubeControllerManagerDown
+      #       receiver: "null"
+      #     - match:
+      #         alertname: KubeSchedulerDown
+      #       receiver: "null"
+      #     # Not wanted on a 1 node kubernetes deployment
+      #     - match:
+      #         alertname: KubeCPUOvercommit
+      #       receiver: "null"
+      #     - match:
+      #         alertname: KubeMemoryOvercommit
+      #       receiver: "null"
+      #     # Avoid to much unseless alerts
+      #     - match:
+      #         alertname: InfoInhibitor
+      #       receiver: "null"
+      #     - match:
+      #         alertname: KubeProxyDown
+      #       receiver: "null"
+      # receivers:
+      #   - name: 'null' # Adding this to avoid misconfiguration due to merge with defaults
+      #   - name: 'slack-notifications'
+      #     slack_configs:
+      #       - channel: '#monitoring'
+      #         send_resolved: true
+      #         icon_url: 'https://ryax.tech/favicon.ico'
+      #     title: |-
+      #       [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }} for {{ .CommonLabels.job }}
+      #       {{- if gt (len .CommonLabels) (len .GroupLabels) -}}
+      #         {{" "}}(
+      #         {{- with .CommonLabels.Remove .GroupLabels.Names }}
+      #           {{- range $index, $label := .SortedPairs -}}
+      #             {{ if $index }}, {{ end }}
+      #             {{- $label.Name }}="{{ $label.Value -}}"
+      #           {{- end }}
+      #         {{- end -}}
+      #         )
+      #       {{- end }}
+      #     text: >-
+      #       {{ range .Alerts -}}
+
+      #       *Alert:* {{ .Annotations.summary }}{{ if .Labels.severity }} - *{{ .Labels.severity | toUpper }}*{{ end }}
+
+      #       *Description:* {{ .Annotations.description }}
+
+      #       *Cluster*: https://__PUT_CLUSTER_NAME_HERE__
+
+      #       *Dashboards*: {{ if .Annotations.dashboards }}{{ .Annotations.dashboards }} {{ else }}No related dashboard. {{ end }}
+
+      #       *Details:*
+      #         {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
+      #         {{ end }}
+      #       {{ end }}
+              
+
+  grafana:
+    enabled: true
+
+    grafana.ini:
+      server:
+        domain: "{{ .Values.global.tls.hostname }}"
+        root_url: "https://{{ .Values.global.tls.hostname }}/grafana"
+        serve_from_sub_path: true
+
+    ingress:
+      enabled: true
+      hosts: []
+      path: "/grafana"
+      annotations:
+        cert-manager.io/cluster-issuer: "letsencrypt-{{ .Values.global.tls.environment }}"
+      tls:
+        - hosts:
+          - "{{ .Values.global.tls.hostname }}"
+          secretName: "{{ .Values.global.tls.existingCertificatSecret | default (printf \"ryax-cert-%s\" .Values.global.tls.environment) }}"
+
