@@ -31,13 +31,6 @@ dependencies:
     # version: 0.0.0-dev
     version: 26.1.x
     repository: "oci://registry.ryax.org/release-charts"
-  - name: intelliscale
-    # For local dev
-    # repository: file://../intelliscale/chart
-    # version: 0.0.0-dev
-    version: 26.1.x
-    repository: "oci://registry.ryax.org/release-charts"
-    condition: intelliscale.enabled
   - name: authorization
     # For local dev
     # repository: file://../authorization/chart

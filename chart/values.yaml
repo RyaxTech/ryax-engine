@@ -110,8 +110,11 @@ worker:
   postgresql:
     metrics:
       enabled: true
+      prometheusRule:
+        enabled: true
       serviceMonitor:
         enabled: true
+
   # -- install intelliscale in a separated helm chart instead
   intelliscale:
     enabled: true
