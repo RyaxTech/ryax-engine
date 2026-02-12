@@ -16,6 +16,8 @@ global:
 
   monitoring:
     enabled: true
+    # -- TODO: use a tpl in sub chart to inject release name
+    otlpEndpoint: "ryax-tempo:4317"
 
   tls:
     enabled: false
@@ -82,19 +84,19 @@ repository:
   priorityClass: microservices
 
 worker:
-  # -- WARNING this is the worker config and the node pool resources and selector have to be set according to your infrastructure
   config:
     site:
       name: local
       type: KUBERNETES
       spec:
         namespace: "{{ .Values.global.ryax.userNamespace }}"
+        # -- WARNING this is the worker config and the node pool resources and selector have to be set according to your infrastructure
         nodePools:
         - name: default
           cpu: 4
           memory: 8G
           selector:
-            node.kubernetes.io/instance-type: k3s
+            kubernetes.io/os: linux
   # -- Only necessary if registry.credentials.enabled=true
   actionRegistrySecret: ryax-registry-creds-secret
   priorityClass: microservices
@@ -106,18 +108,14 @@ worker:
       serviceMonitor:
         enabled: true
   postgresql:
-    image:
-      registry: docker.io
     metrics:
-      enabled: false
+      enabled: true
       serviceMonitor:
         enabled: true
   # -- install intelliscale in a separated helm chart instead
   intelliscale:
-    enabled: false
-    
-intelliscale:
-  priorityClass: microservices
+    enabled: true
+    priorityClass: microservices
 
 repository:
   priorityClass: microservices

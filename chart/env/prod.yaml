@@ -6,6 +6,10 @@ global:
     environment: production
   monitoring:
     enabled: true
+
+registry:
+  ingress:
+    enabled: true
     
 kube-prometheus-stack:
   enabled: true
