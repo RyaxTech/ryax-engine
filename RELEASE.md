@@ -1,7 +1,7 @@
 We are proud to announce the release of:
 
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
-# Ryax 26.1.0
+# Ryax 26.2.0
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
 
 ## New features
@@ -16,9 +16,9 @@ Developing custom tools can be very exiting and enriching with the added cost to
 
 The new installation documentation is available here [TBD]().
 
-Furthermore, this has several implications, first we believe that it will ease the administration of ryax clusters since helm is a widely adopted tool that cluster administrators are accustomed to. Secondly, this change unfortunatelly breaks the retro-compatibility for cluster installed under ryax version 26.1.0, worfklows, images and data can be migrated but cluster installed with adm cannot be operated directly with helm and vice-versa.
+Furthermore, this has several implications, first we believe that it will ease the administration of ryax clusters since helm is a widely adopted tool that cluster administrators are accustomed to. Secondly, this change unfortunatelly breaks the retro-compatibility for cluster installed under ryax version 26.2.0, worfklows, images and data can be migrated but cluster installed with adm cannot be operated directly with helm and vice-versa.
 
-Follow the migration documentation [TBD]() to migrate from and older version to 26.1.0.
+Follow the migration documentation [TBD]() to migrate from and older version to 26.2.0.
 
 ### Air gap version of ryax
 
@@ -73,6 +73,6 @@ The second step is to import the data in the new cluster. For that you need to b
 
 
 <!--
-However, it is still possible to upgrade cluster to 26.1.0 with adm to install the latest bug fix and features (althoug you it is not possible to use the airgap version with this technique).
+However, it is still possible to upgrade cluster to 26.2.0 with adm to install the latest bug fix and features (althoug you it is not possible to use the airgap version with this technique).
 -->
 
