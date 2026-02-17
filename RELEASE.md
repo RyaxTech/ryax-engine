@@ -18,7 +18,9 @@ The new installation documentation is available here [TBD]().
 
 Furthermore, this has several implications, first we believe that it will ease the administration of ryax clusters since helm is a widely adopted tool that cluster administrators are accustomed to. Secondly, this change unfortunatelly breaks the retro-compatibility for cluster installed under ryax version 26.2.0, worfklows, images and data can be migrated but cluster installed with adm cannot be operated directly with helm and vice-versa.
 
-Follow the migration documentation [TBD]() to migrate from and older version to 26.2.0.
+For the moment, the moment cluster installed with versions prior to 26.2.x can still be managed with ryax-adm. We are planning on implementing migration tools to migrate clusters to pure-helm installation without data loss.
+
+<!-- Follow the migration documentation [TBD]() to migrate from and older version to 26.2.0. -->
 
 ### Air gap version of ryax
 
@@ -39,6 +41,7 @@ To access the saas version contact our marketing team or directly register from 
 - Complete rework of the installation: now use Helm (ryax-adm is deprecated)
 - Users and projects management is now in the top menu
 - Resource Usage data is now available in the UI for system administrators
+- We added an infrastructure view that shows the current topologie of the underlying infrastructure (including, workers, site and nodepools)
 
 ## Bug fixes and Improvements
 
@@ -48,8 +51,11 @@ To access the saas version contact our marketing team or directly register from 
 
 ## Upgrade to this version
 
-Unfortunatelly, as stated we deprecate the support of ryax-adm, and cluster installed with adm cannot be operated with the new helm charts. To upgrade this ryax version, we need to do a full data migration of the cluster to another cluster. Fortunatelly, we have ddesigned scripts that does exactly that.
+Unfortunatelly, as stated we deprecate the support of ryax-adm, and cluster installed with adm cannot be operated with the new helm charts. To upgrade this ryax version, we need to do a full data migration of the cluster to another cluster; __we are currently working on the migration process__.
 
+However, it is still possible to upgrade cluster to 26.2.0 with adm to install the latest bug fix and features (althoug you it is not possible to use the airgap version with this technique).
+
+<!--
 ### Requirements
 
 To process with the migration we need to have the following:
@@ -71,8 +77,9 @@ kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "ryax-b
 
 The second step is to import the data in the new cluster. For that you need to be able to run `kubectl` command on the __new__ cluster.
 
+-->
 
 <!--
-However, it is still possible to upgrade cluster to 26.2.0 with adm to install the latest bug fix and features (althoug you it is not possible to use the airgap version with this technique).
+
 -->
 
