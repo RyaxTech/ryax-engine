@@ -26,7 +26,22 @@ Hardware:
 !!! tip
     Depending on the Actions that you run on your cluster you might need more resources
 
-## Prepare Your Installation
+## Preparatory Steps
+
+!!! warning
+    This guide assume that you are comfortable with Kubernetes and Helm.
+
+- Make sure your configuration point to the intended cluster: `kubectl config current-context`.
+- Your Kubernetes cluster dedicated to Ryax: we offer no guarantee that Ryax runs smoothly alongside other applications.
+- Make sure you have complete admin access to the cluster. Try to run `kubectl auth can-i create ns` or `kubectl auth can-i create pc`, for instance.
+  ```sh
+  $ kubectl auth can-i create ns
+  Warning: resource 'namespaces' is not namespace scoped
+  yes
+  ```
+- Have access to a DNS server where you can add a new `A` or `CNAME` entry for your cluster.
+
+## Configure your Installation
 
 Installing Ryax is analogous to installing a Helm chart. To begin we will start
 with a default configuration, and make a few tweaks so that everything is
@@ -41,7 +56,7 @@ how to configure a kubernetes cluster before installing.
 * [AWS](kubernetes_aws.md) : requires tweaking so pods can have persistent volume claims (PVCs) and enable autoscaling support;
 * Scaleway : no specific tweaking for Ryax support is required.
 
-## Worker Configuration
+## Worker configuration
 
 In your configuration, you have to define at least one `worker` configuration.
 By default, a Worker is installed on the local Kubernetes cluster.
@@ -49,7 +64,12 @@ By default, a Worker is installed on the local Kubernetes cluster.
 In order to configure your Worker, you will need to select one or more node pools (set of homogeneous nodes) and give to the Worker some information about the nodes.
 
 !!! note
+    For Multi-Site Installation see [Worker Installation Documentation](./worker-install.md).
+
+<!--
+!!! note
     Why we use node pools? Because it allows Ryax to leverage the Kubernetes node **autoscaling with scale to zero !**
+-->
 
 Here is a simple example worker configuration using a AWS EKS managed cluster:
 ```yaml
@@ -92,32 +112,19 @@ Regarding the selector, you should find the label(s) that uniquely refers to you
 
 For more details about the Worker configuration please see the [Worker reference documentation](../reference/configuration.md#worker-configuration)
 
-!!! note
-    For Multi-Site Installation see [Worker Installation Documentation](./worker-install.md)
 
-## Basic Installation
-
-!!! tip
-    For a production cluster, please refer to the [Production Installation](#production-installation) section.
-
-If you want to test Ryax you can run this helm command to install Ryax:
-```sh
-helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.2.0 -n ryaxns --create-namespace
-```
+## Installation
 
 !!! note
-    We also propose a **minimal** and a **dev** version. You can find the values here: https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/chart/env
+    We also propose a **minimal** and a **dev** version. You can find the values here: https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/chart/env.
 
-## Production Installation
-
-For production installation, you can download the configuration file `prod.yaml` in this [repository](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/chart/env).
-
+First, download the configuration file `prod.yaml` in this [repository](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/chart/env).
 This file contains specific configuration with tls enabled and monitoring configured with tls.
 
 ### Enable TLS
 
-!!!
-    Note that, wihtout a DNS the ryax cluster will be accessed with the IP address directly and the https certificate will be self-signed.
+!!! note
+    That, wihtout a DNS the ryax cluster will be accessed with the IP address directly and the https certificate will be self-signed.
 
 If you intend to configure a DNS for your cluster the first step is to install [cert-manager](https://cert-manager.io/).
 For instance with the following command:
@@ -193,7 +200,7 @@ The default values give comfortable volume sizes to start working on the platfor
 
 If you have any questions, please join our [Discord server](https://discord.gg/ctgBtx9QwB). We will be happy to help!
 
-## Access to Your Cluster
+## Access to your Cluster
 
 Now you can access to you cluster with it's IP adress on your web browser.
 
@@ -313,7 +320,7 @@ The pod images for the Ryax actions in the namespace `ryaxns-execs` will pull im
 
 ## Troubleshooting
 
-### Cannot Upgrade, Bitnami Charts Password Error
+### Cannot upgrade, Bitnami charts password error
 
 When trying to change configuration you might experience rabbitmq, or postgresql errors like below.
 
@@ -340,7 +347,7 @@ rabbitmq:
     password: <MY SECRET>
 ```
 
-### All Actions' Pods on ryaxns-execs are in imagePullBackOff
+### All actions' pods on ryaxns-execs are in imagePullBackOff
 
 If you are getting imagePullBackOff for pods on ryaxns-execs.
 You are probably having trouble accessing the registry through the external domain name.

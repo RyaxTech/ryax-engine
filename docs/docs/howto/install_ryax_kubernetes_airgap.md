@@ -4,9 +4,7 @@
     If you are looking for **Proxy based installation**
     Setup proxy to download containers and helm charts. To enable image pull from the proxy see the [K3s proxy doc](https://docs.k3s.io/advanced#configuring-an-http-proxy).
 
-## Installation
-
-### Requirements
+## Requirements
 
 A kubernetes installed and running following the [Ryax requirements](https://docs.ryax.tech/howto/install_ryax_kubernetes.html#requirements).
 
@@ -14,20 +12,20 @@ If you don't have an airgapped kubernetes environment, we propose to use k3s ins
 
 A machine (with the same architecture of the airgap environment) and the package manager [nix](https://nixos.org/) installed.
 
-### Configuration
+## Configuration
 
 The first step, is to gather all the files needed by the installation of ryax airgap. Namely:
 
 - The ryax helm package (ryax-engine-{ryax-version}.tgz) that will be installed on the airgapped kubernetes cluster.
 - The list of container images containing ryax code (ryax-airgap-images-amd64.tar.gz).
 - The value files necessary to configure Ryax for airgap environment:
-  - minimal.yaml (the two last files are value file for the helm installation command);
-  - ryax-airgap-helm-values.yaml.
+    - minimal.yaml (the two last files are value file for the helm installation command);
+    - ryax-airgap-helm-values.yaml.
 - The closure of nix packages to build actions.
 
 <!-- *We propose the a simple Ryax config for a k3s environement already package for you in the release page **(TODO)**.* -->
 
-#### Generate the package helm and the archive containing the folder
+### Generate the package helm and the archive containing the folder
 
 To be able to install Ryax in an offline environment, you first need to create a package containing all container images and Helm charts required for your setup.
 
@@ -46,7 +44,7 @@ This script creates two file, one containing the images necessary to run ryax, a
 - [ryax-airgap -helm-values](https://raw.githubusercontent.com/RyaxTech/ryax-engine/refs/heads/master/airgap/ryax-airgap-helm-values.yaml)
 - [minimal.yaml](https://raw.githubusercontent.com/RyaxTech/ryax-engine/refs/heads/master/chart/env/minimal.yaml) 
 
-#### Generate the list of dependencies for the builder
+### Generate the list of dependencies for the builder
 
 For this step, you need a machine with the same architecture of the targeted cluster, and the package manager nix installed.
 
@@ -64,9 +62,9 @@ nix-store --export $(nix-store --query --requisites ./result) > ryax-build-deps.
 
 After this step, you should have a new file named `ryax-build-deps.nixexport` that is required for the airgap ryax installation.
 
-### Install
+## Installation
 
-On the offline k3s cluster, we will import the images and run the installation with Helm.
+On the offline k3s cluster, you need to import the images and run the installation with Helm.
 ```sh
 # Import the images in the k3s cluster
 sudo k3s ctr images import ./ryax-airgap-images-amd64.tar.gz
@@ -74,11 +72,11 @@ helm install ryax ./ryax-engine-*.tgz -n ryaxns --create-namespace -f ./minimal.
 ```
 
 !!! warning
-    TODO: The image import command works only with k3s ?
+    If you don't use k3s you need to manually import the images or setup an internal registry.
 
-## Runtime
+## Post-install: Configure the Running Cluster
 
-### Action Repository Import 
+### Action Repository Import
 
 Ryax gets Action definitions from Git repositories. To inject Ryax default actions you can **use a locally accessible Git server** where you can clone https://gitlab.com/ryax-tech/workflows/default-actions.git
 
