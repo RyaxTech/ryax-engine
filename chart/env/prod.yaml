@@ -7,21 +7,22 @@ global:
   monitoring:
     enabled: true
 
+certManager:
+  enabled: true
+
 registry:
   ingress:
     enabled: true
-    
+
 kube-prometheus-stack:
   enabled: true
-  
+
   alertmanager:
     enabled: true
     # -- Set this to force Ryax on a node pool
     nodeSelector:
-      
     alertmanagerSpec:
       priorityClassName: monitoring
-      
     config:
       global:
         resolve_timeout: 5m
@@ -113,7 +114,7 @@ kube-prometheus-stack:
       #         {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
       #         {{ end }}
       #       {{ end }}
-              
+
 
   grafana:
     enabled: true
