@@ -10,7 +10,7 @@ A kubernetes installed and running following the [Ryax requirements](https://doc
 
 If you don't have an airgapped kubernetes environment, we propose to use k3s inside a virutal machine, and disconnect it from internet. K3s features an airgap installation procedure that you can follow: [Air-Gap installation](https://docs.k3s.io/installation/airgap).
 
-A machine (with the same architecture of the airgap environment) and the package manager [nix](https://nixos.org/) installed.
+A machine with an internet connection, the same architecture as the airgap environment, and the package manager [nix](https://nixos.org/) installed.
 
 ## Configuration
 
