@@ -21,3 +21,4 @@ airgap/ryax-airgap-images-*.tar.gz
 airgap/ryax-engine-*.tgz
 chart/Chart.lock
 chart/secrets.yaml
+airgap/python-packages
