@@ -1,0 +1,54 @@
+global:
+  imagePullSecrets:
+    - name: ryax-dev-pull-secret
+  tls:
+    hostname: dev-1.ryax.io
+runner:
+  fernetEncryptionKey: gVLKwqTN1ux06jKW2U4Sn7xhFWKcpzlxuC4YgnepXSQ=
+repository:
+  fernetEncryptionKey: 6aXgrXKPL0KIisyPxmwOcmNK0NVAK_rt9zWAgeOMy2A=
+worker:
+  image:
+    tag: fix-metrics-summary-race-buffering
+    registry: registry.ryax.org/dev
+    pullPolicy: Always
+  loki:
+    singleBinary:
+      persistence:
+        size: 10Gi
+        # storageClass: local-path
+  postgresql:
+    auth:
+      password: wB432MbsDh1e
+  config:
+    site:
+      name: main
+      spec:
+        nodePools:
+        - name: default
+          cpu: 4
+          memory: 8G
+          selector:
+            k8s.scaleway.com/pool-name: default
+        - name: l40
+          cpu: 8
+          gpu: 1
+          memory: 86G
+          selector:
+            k8s.scaleway.com/pool-name: dev-1-gpu-l40-1
+action-builder:
+  ryaxWrappersGitReference: fix-nvidia-lib-path-for-nebius
+  extraEnv:
+    - name: RYAX_MAX_NIX_JOBS
+      value: "64"
+rabbitmq:
+  auth:
+    password: hv0xN30DPMdR
+registry:
+  credentials:
+    password: "fttOC2km0C39"
+    username: ryax
+    enabled: true
+  persistence:
+    pvcSize: 60Gi
+

@@ -20,4 +20,4 @@ worker:
       type: KUBERNETES
 
 traefik:
-  enabled: false
+  enabled: true

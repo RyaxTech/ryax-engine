@@ -5,7 +5,7 @@ global:
   # https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
   imagePullSecrets:
     - name: ryax-dev-pull-secret
-    
+
   nodeSelector: {}
   # -- Leave empty to use the default storage class
   defaultStorageClass: ""

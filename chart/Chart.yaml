@@ -23,14 +23,14 @@ dependencies:
     # For local dev
     # repository: file://../runner/charts/runner
     # version: 0.0.0-dev
-    version: 26.2.0-rc0
+    version: 26.2.0-rc1
     repository: "oci://registry.ryax.org/release-charts"
   - name: worker
     # For local dev
     # repository: file://../runner/charts/worker
     # version: 0.0.0-dev
-    version: 26.2.0-rc0
-    repository: "oci://registry.ryax.org/release-charts"
+    version: 0.0.0-fix-metrics-summary-race-buffering
+    repository: "oci://registry.ryax.org/dev-charts"
   - name: authorization
     # For local dev
     # repository: file://../authorization/chart
@@ -41,7 +41,7 @@ dependencies:
     # For local dev
     # repository: file://../runner/charts/actionBuilder
     # version: 0.0.0-dev
-    version: 26.2.0-rc0
+    version: 26.2.0-rc5
     repository: "oci://registry.ryax.org/release-charts"
   - name: common-resources
     # For local dev

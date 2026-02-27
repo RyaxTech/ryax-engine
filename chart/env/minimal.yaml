@@ -108,6 +108,8 @@ tempo:
   enabled: false
 
 traefik:
+  deployment:
+    enabled: true
   metrics:
     prometheus:
       serviceMonitor:
