@@ -83,7 +83,7 @@ Hardware:
 * 40GB of disk available
 
 ```bash
-helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.1.0 -n ryaxns --create-namespace
+helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.2.0 -n ryaxns --create-namespace
 ```
 
 **Note that depending on the Actions that you run on your cluster you might need
@@ -109,7 +109,7 @@ Copy the [docker-compose.yml](https://gitlab.com/ryax-tech/ryax/ryax-main/-/blob
 ```sh
 docker-compose up -d
 
-helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.1.0 -n ryaxns --create-namespace
+helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.2.0 -n ryaxns --create-namespace
 ```
 
 Be patient, this may take some minutes depending on your internet connection.

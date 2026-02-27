@@ -65,6 +65,7 @@ nav:
   - ./howto/video_detection.md
 - Administration:
   - ./howto/install_ryax_kubernetes.md
+  - ./howto/install_ryax_kubernetes_airgap.md
   - ./howto/worker-install.md
   - ./howto/create-backups.md
   - ./reference/configuration.md
