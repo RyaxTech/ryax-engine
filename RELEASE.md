@@ -9,7 +9,7 @@ We are proud to announce the release of:
 ### Fully Compatible Helm Installation
 
 Starting from 26.2.0 release installation is done using helm and ryax-adm must not be used anymore.
-The new installation documentation is available here [TBD]().
+The new installation documentation is available [here](https://docs.ryax.tech/howto/install_ryax_kubernetes/).
 
 The switch from ryax-adm to helm breaks the retro-compatibility for clusters installed under Ryax version 26.2.0. Worfklows, images and data can be migrated, but clusters installed with adm cannot be operated directly with Helm and vice versa.
 
@@ -19,7 +19,7 @@ The switch from ryax-adm to helm breaks the retro-compatibility for clusters ins
 
 Ryax now supports air-gapped clusters, where one can build and run workflows in a completely isolated environment.
 
-More information in our installation documentation related to air-gapped clusters [TBD]().
+More information in our installation documentation related to air-gapped clusters [here](https://docs.ryax.tech/howto/install_ryax_kubernetes_airgap).
 
 ### Navigation and UI
 
