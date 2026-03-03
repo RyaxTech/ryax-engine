@@ -41,12 +41,12 @@ cd ryax-engine && git submodule update --init
 
 This script creates two file, one containing the images necessary to run ryax, and the helm package required for the installation. Additionnaly, you need to copy the two following file for your aigap installation:
 
-- [ryax-airgap -helm-values](https://raw.githubusercontent.com/RyaxTech/ryax-engine/refs/heads/master/airgap/ryax-airgap-helm-values.yaml)
+- [ryax-airgap-helm-values](https://raw.githubusercontent.com/RyaxTech/ryax-engine/refs/heads/master/airgap/ryax-airgap-helm-values.yaml)
 - [minimal.yaml](https://raw.githubusercontent.com/RyaxTech/ryax-engine/refs/heads/master/chart/env/minimal.yaml) 
 
 ### Generate the list of dependencies for the builder
 
-For this step, you need a machine with the same architecture of the targeted cluster, and the package manager nix installed.
+For this step, you need a machine **with the same architecture of the targeted cluster**, and the package manager nix installed.
 
 First you need to clone the repository [ryax-wrappers](https://gitlab.com/ryax-tech/ryax/ryax-action-wrappers).
 For airgapped environment, you can pre-build and package all build dependencies with:
@@ -80,63 +80,107 @@ helm install ryax ./ryax-engine-*.tgz -n ryaxns --create-namespace -f ./minimal.
 
 Ryax gets Action definitions from Git repositories. To inject Ryax default actions you can **use a locally accessible Git server** where you can clone https://gitlab.com/ryax-tech/workflows/default-actions.git
 
-> Other Ryax actions that might interest you depending on your use case are available in https://gitlab.com/ryax-tech/workflows 
-{.is-info}
+!!! info
+    Other Ryax actions that might interest you depending on your use case are available in https://gitlab.com/ryax-tech/workflows 
 
-If you don't have a git server accessible withing the airgap installation, you can directly copy the repository into the ryax-repository pod with `kubectl cp`.
+**If you have a git server accessible withing the airgap installation, you can directly go to following section.**
+
+If you don't have a git server, you can directly copy the repository into the ryax-repository pod with `kubectl cp`.
 
 ```bash
 # Find the name of the ryax-repository pod
-$ kubectl -n ryaxns get pod  | grep repository
-ryax-repository-97c5554db-jzhdp
-
-# Create an archive for the repogit (assuming the repo containing the actions is names default-actions)
-tar cvf default-actions.tar default-actions
+REPOSITORY_POD=$(kubectl -n ryaxns get pod -l ryax.tech/resource-name=repository -o jsonpath='{.items[0].metadata.name}')
 
 # Inject the action repository into /tmp
-kubectl cp default-actions.tar -n ryaxns ryax-repository-97c5554db-jzhdp:/tmp/
+kubectl cp default-actions -n ryaxns ${REPOSITORY_POD}:/tmp/
 
-# Use kubectl exec to untar the copied repository inside the pod
+# Use kubectl exec to check the content of the copied repository inside the pod
+kubectl exec -ti -n ryaxns ${REPOSITORY_POD} -- ls /tmp/default-actions
 ```
-
-<!--
-I (adfaure) tested without success:
-
-**Only if you do not have a local Git server** you can inject the actions repository directly into the Ryax Repository service. For example, you import the default action git repository in your `/home/example/myrepos` on the hosting node of your Ryax installation and expose it with a `hostPath` in the `ryax-repository` service using these options in the helm values:
-```yaml
-repository:
-	extraVolumes:
-	- name: repos 
-  	hostPath:
-    	path: /home/example/myrepos
-    	type: DirectoryOrCreate
-	extraVolumeMounts:
-	- mountPath: /data/repos
- 		name: repos
-```
--->
 
 Now in the web UI Library, create a new repository with this URL: `file:///tmp/default-action`. You can run a scan and see the available actions.
 
 ### Build Actions
 
-In order to build Ryax actions, the Ryax Action Builder requires an access to external mirror for Python packages and Nix packages.
+In order to build Ryax actions, the Ryax Action Builder requires an access to software packages inside you airgapped environment.
+Depending on the action type you use you need to configure package servers and/or import packages in the Builder
 
-Pypi mirror:
+You can configure the build using environement variables in the Builder: All variables prefixed by `RYAX_BUILD_ENV_` are exposed during the build phase.
 
-- [Morgan](https://github.com/ido50/morgan) open source offline 
+!!! warning
+    The support of action build in airgapped is in **TECHNOLOGICAL PREVIEW**.
+    Only the `python3` action type is supported for now.
+    You can follow the futur developement here: https://gitlab.com/groups/ryax-tech/ryax/-/epics/33
+    
+
+#### Python packages
+
+To support python packages, the builder need to access to a Pypi compatible server.
+If don't have one in your environment, here is examples of tools that you can install :
+
+- [pypiserver](https://github.com/pypiserver/pypiserver) minimal pypi server 
+- [Morgan](https://github.com/ido50/morgan) open source offline repo
 - [Nexus](https://www.sonatype.com/products/sonatype-nexus-repository) a popular proprietary tool to host packages
-Nixpkgs mirror:
+
+To use your internal Pypi server, you need to configure the following env variable in the Ryax action builder.
+In the Helm chart add the extra env in the `action-builder` section (Change with your server host name):
+```yaml
+action-builder:
+  extraEnv:
+    - name: RYAX_BUILD_ENV_UV_INDEX_URL
+      value: http://mypipy-server.example.com
+    - name: RYAX_BUILD_ENV_UV_TRUSTED_HOST
+      value: mypipy-server.example.com
+    - name: RYAX_EXTRA_NIX_ARGS
+      value: --no-net
+```
+
+### Nix packages
+
+To have access to Nix packages inside you airgapped environment you can either use an internal package binary cache or import packages directly in the Builder
+
+#### Using a binary cache:
+
+Install a Nix Binary cache, for example:
+
 - [nix serve](https://github.com/edolstra/nix-serve) a basic nix binary cache server
-- [Attic](https://github.com/zhaofengli/attic) more advanced
+- [Attic](https://github.com/zhaofengli/attic) more advanced with access rights and storage optimisation
 
+Then configure the Builder to use it as a substituer (Change with server host name): 
+```yaml
+action-builder:
+  extraEnv:
+    - name: RYAX_EXTRA_NIX_ARGS
+      value: --option substituters my-nix-cache.example.com
+```
 
-#### Nix Build dependencies bundle
+Now you need to inject, in you cache the bundle created at the end of the configuration step: `ryax-build-deps.nixexport`
+
+#### Inject packages in the Builder
+
+!!! info
+   If you have Nix binary cache you can directly import the packages created in the configuration step, and skip the following
+
+If you don't have a server, you can directly import packages into the Ryax Action Builder Nix store with `kubectl cp`.
 
 Transfert the bundle into the airgapped environment, and inject the bundle into the action builder local store with:
-```shell
-nix-store --import < ryax-build-deps.nixexport
+```bash
+# Find the name of the pod
+BUILDER_POD=$(kubectl -n ryaxns get pod -l ryax.tech/resource-name=action-builder -o jsonpath='{.items[0].metadata.name}')
+
+# Inject the nix bundle into the builder
+kubectl exec -ti -n ryaxns ${BUILDER_POD} -- nix-store --import < ryax-build-deps.nixexport
 ```
+
+!!! tip
+    If you need extra packages for actions that define `spec.dependencies` in the `ryax_metadata.yaml` create a bundle and import it using the same process:
+    ```bash
+    # build something and get a ./result link
+    # then export it with its dependencies
+    nix-store --export $(nix-store --query --requisites ./result) > action-deps.nixexport
+    # copy it into the builder and run
+    nix-store --import < action-deps.nixexport
+    ```
 
 ## Offline Updates
 
@@ -148,14 +192,13 @@ To trigger an update of Ryax in n offline environment, you  can reuse the instal
 sudo k3s ctr images import ./ryax-airgap-images-amd64.tar.gz
 helm upgrade --install ryax ./ryax-engine-*.tgz -n ryaxns --reuse-values
 ```
+Don't forget to update Nix build dependencies with the process defined in the configuration.
 
-### With a private registry
+<!-- ### With a private registry
 
 You'll also need to have a private registry that can host both container images and Helm charts.
 Example tools:
-
 - [Hauler](https://github.com/hauler-dev/hauler)
 - [Harbor](https://goharbor.io/)
-
-TODO: explain how to overrride image repo with k3s mirror or helm chart override
+TODO: explain how to overrride image repo with k3s mirror or helm chart override -->
 
