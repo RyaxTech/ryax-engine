@@ -76,13 +76,13 @@ repository:
     tag: master
     registry: registry.ryax.org/dev
     pullPolicy: Always
-    
+
 studio:
   image:
     tag: master
     registry: registry.ryax.org/dev
     pullPolicy: Always
-    
+
 intelliscale:
   image:
     tag: master
@@ -101,7 +101,7 @@ worker:
         # storageClass: local-path
   intelliscale:
     enabled: false
-    
+
 minio:
   persistence:
     enabled: true
@@ -115,7 +115,7 @@ registry:
   persistence:
     enabled: true
     pvcSize: 200Gi
-  
+
 datastore:
   pvcSize: 2Gi
  

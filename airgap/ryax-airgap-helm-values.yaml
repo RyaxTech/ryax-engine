@@ -5,6 +5,11 @@ global:
   tls:
     enabled: false
 
+action-builder:
+  extraEnv:
+    - name: RYAX_NIX_GARBAGE_COLLECT_ENABLED
+      value: "false"
+
 worker:
   config:
     site:
@@ -20,4 +25,6 @@ worker:
       type: KUBERNETES
 
 traefik:
-  enabled: false
+  # traefik is already deployed by default in k3s
+  deployment:
+    enabled: false
