@@ -52,6 +52,10 @@ config:
       credentials:
         server: my.hpc-site.com
         username: ryax
+loki:
+  enabled: false
+intelliscale:
+  enabled: false
 ```
 Each field explained in details:
 
@@ -97,7 +101,7 @@ Also, we will inject the SSH private key required to access the SSH cluster.
 ```sh
 helm upgrade --install worker-hpc-1 \
   oci://registry.ryax.org/release-charts/worker  \
-  --version 26.1.0 \
+  --version 26.2.0-rc6 \
   --namespace ryaxns \
   --values worker-hpc.yaml \
   --set-file hpcPrivateKeyFile=./my-ssh-private-key
@@ -282,10 +286,10 @@ The registry is already exposed on the internet so only the secrets are required
 
 **worker-site**
 
-* The worker site must create a listener to have the main-site broker (ryax-broker-ext) and filestore (minio-ext) services exposed on its side.
+* The worker site must create a listener to have the main-site broker (ryax-broker-ext) and filestore (ryax-minio-ext) services exposed on its side.
   ```shell
   skupper -n ryaxns listener create ryax-broker-ext 5672
-  skupper -n ryaxns listener create minio-ext 9000
+  skupper -n ryaxns listener create ryax-minio-ext 9000
   ```
 
 **main-site**
@@ -293,7 +297,7 @@ The registry is already exposed on the internet so only the secrets are required
 * The main-site must create a connector to allow the listeners to reach its local services, note that we use `--workload` to specify the target service of the connector.
   ```shell
   skupper -n ryaxns connector create ryax-broker-ext 5672 --workload service/ryax-broker
-  skupper -n ryaxns connector create minio-ext 9000 --workload service/minio
+  skupper -n ryaxns connector create ryax-minio-ext 9000 --workload service/ryax-minio
   ```
 
 **main-site**
