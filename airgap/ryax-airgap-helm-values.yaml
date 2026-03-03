@@ -5,6 +5,11 @@ global:
   tls:
     enabled: false
 
+action-builder:
+  extraEnv:
+    - name: RYAX_NIX_GARBAGE_COLLECT_ENABLED
+      value: "false"
+
 worker:
   config:
     site:
