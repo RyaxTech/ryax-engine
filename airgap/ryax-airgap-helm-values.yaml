@@ -20,6 +20,6 @@ worker:
       type: KUBERNETES
 
 traefik:
+  # traefik is already deployed by default in k3s
   deployment:
     enabled: false
-  enabled: false
