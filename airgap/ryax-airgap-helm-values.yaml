@@ -20,4 +20,6 @@ worker:
       type: KUBERNETES
 
 traefik:
+  deployment:
+    enabled: false
   enabled: false

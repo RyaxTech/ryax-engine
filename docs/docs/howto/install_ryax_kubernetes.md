@@ -56,6 +56,10 @@ how to configure a kubernetes cluster before installing.
 * [AWS](kubernetes_aws.md) : requires tweaking so pods can have persistent volume claims (PVCs) and enable autoscaling support;
 * Scaleway : no specific tweaking for Ryax support is required.
 
+!!! note
+    We also provide a [script](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/987689da73f5875c52ca8fa4361c7082ed74a78f/chart/generate-secrets.py) to generate a base value.yaml generating secrets with the right formatting.
+    The output of this file can be used as the configuration file for your cluster.
+
 ## Worker configuration
 
 In your configuration, you have to define at least one `worker` configuration.
