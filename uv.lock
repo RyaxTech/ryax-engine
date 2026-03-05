@@ -361,6 +361,17 @@ wheels = [
 ]
 
 [[package]]
+name = "mkdocs-render-swagger-plugin"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mkdocs" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/de/0b/cf5e4e9529a8068d4b2def4b38540f7a5762283bdd5b652ee083b8a7c9c6/mkdocs_render_swagger_plugin-0.1.2-py3-none-any.whl", hash = "sha256:0340d45e12a0f1633a4b8af2eb99ea75469006ddf418ef0f1acd51ed1e4969e4", size = 5988, upload-time = "2024-05-26T19:34:44.442Z" },
+]
+
+[[package]]
 name = "packaging"
 version = "26.0"
 source = { registry = "https://pypi.org/simple" }
@@ -549,6 +560,7 @@ dependencies = [
     { name = "idna" },
     { name = "mkdocs-autorefs" },
     { name = "mkdocs-material" },
+    { name = "mkdocs-render-swagger-plugin" },
     { name = "python-gitlab" },
     { name = "pyyaml" },
     { name = "requests" },
@@ -566,6 +578,7 @@ requires-dist = [
     { name = "idna" },
     { name = "mkdocs-autorefs", specifier = ">=1.4.3" },
     { name = "mkdocs-material", specifier = ">=9.7.1" },
+    { name = "mkdocs-render-swagger-plugin", specifier = ">=0.1.2" },
     { name = "python-gitlab" },
     { name = "pyyaml" },
     { name = "requests" },

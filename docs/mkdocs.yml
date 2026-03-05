@@ -42,6 +42,8 @@ theme:
 plugins:
 - search
 - autorefs
+- render_swagger:
+    allow_arbitrary_locations : true
 
 nav:
 - ./index.md
@@ -79,4 +81,4 @@ nav:
   - ./reference/hpc.md
   - ./reference/configuration.md
   - ./reference/glossary.md
-
+  - ./reference/api.md
