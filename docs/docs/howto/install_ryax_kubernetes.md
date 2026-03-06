@@ -114,9 +114,9 @@ kubectl describe nodes
 To obtain resources values, look for the *Allocatable* fields.
 Regarding the selector, you should find the label(s) that uniquely refers to your node pool.
 
-For more details about the Worker configuration please see the [Worker reference documentation](../reference/configuration.md#worker-configuration)
+For more details about the Worker configuration please see the [Worker reference documentation](../reference/configuration.md#worker-configuration).
 
-to be able to scale to 0 when unused, your node pools must be dedicated to the Ryax users workload.
+To be able to scale to 0 when unused, your node pools must be dedicated to the Ryax users workload.
 For the node pool to be used only by Ryax actions, we advise you to put a taint on your nodes using the `ryax.tech/ryaxns-execs` key.
 Because all the Ryax action already have a toleration for this by default, they will be the the only pods that will be allowed to deployed there.
 Adding a taint on a node pool depends on your provider but here an example configuration:
