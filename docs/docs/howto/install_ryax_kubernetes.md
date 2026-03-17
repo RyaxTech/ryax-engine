@@ -176,9 +176,9 @@ The last step is configuring your DNS so that you can connect to your cluster..
 To retrieve the external IP of your cluster, run this one-liner
 
 ```bash
-kubectl -n kube-system get svc traefik -o jsonpath='{.status.loadBalancer.ingress[].ip}'
+kubectl -n ryaxns get svc ryax-traefik -o jsonpath='{.status.loadBalancer.ingress[].ip}'
 # OR depending on your provider
-kubectl -n kube-system get svc traefik -o jsonpath='{.status.loadBalancer.ingress[].hostname}'
+kubectl -n ryaxns get svc ryax-traefik -o jsonpath='{.status.loadBalancer.ingress[].hostname}'
 ```
 
 Or simply look at the response of `kubectl -n kube-system get svc traefik`, under "External IP".
