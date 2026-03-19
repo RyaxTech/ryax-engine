@@ -121,7 +121,7 @@ For the node pool to be used only by Ryax actions, we advise you to put a taint 
 Because all the Ryax action already have a toleration for this by default, they will be the the only pods that will be allowed to deployed there.
 Adding a taint on a node pool depends on your provider but here an example configuration:
 ```yaml
-taints
+taints:
  - effect: NO_SCHEDULE
    key: ryax.tech/ryaxns-execs
    value: only
