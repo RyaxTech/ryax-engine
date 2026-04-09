@@ -24,3 +24,4 @@ charts/Chart.lock
 charts/secrets.yaml
 charts/ryax/charts/
 charts/worker/charts/
+charts/**/*.tgz
