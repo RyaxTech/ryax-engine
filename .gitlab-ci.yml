@@ -1,6 +1,9 @@
+variables:
+  CHARTS: "charts/ryax charts/worker"
+
 stages:
   - deploy
-  
+
 pages:
   image: python:3.13
   tags: [docker]
@@ -18,3 +21,6 @@ pages:
       - public
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+verify_helm_charts:
+  extends: .verify_helm_charts
