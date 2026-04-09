@@ -18,21 +18,37 @@ type: application
 version: "26.2"
 appVersion: "26.2"
 dependencies:
+  # Ryax internal subcharts
+  - name: common-resources
+    version: 0.0.0-dev
+    repository: "file://subcharts/common-resources"
+  - name: action-builder
+    version: 0.0.0-dev
+    repository: "file://subcharts/action-builder"
+  - name: authorization
+    version: 0.0.0-dev
+    repository: "file://subcharts/authorization"
+  - name: front
+    version: 0.0.0-dev
+    repository: "file://subcharts/front"
+  - name: repository
+    version: 0.0.0-dev
+    repository: "file://subcharts/repository"
+  - name: runner
+    version: 0.0.0-dev
+    repository: "file://subcharts/runner"
+  - name: studio
+    version: 0.0.0-dev
+    repository: "file://subcharts/studio"
   # Ryax external services: could be replaced with Cloud tools
   # Docker registry
   - name: registry
-    # For local dev
-    # version: 0.0.0-dev
-    # repository: file://../common-helm-charts/registry
-    version: 26.2.1
-    repository: "oci://registry.ryax.org/release-charts"
+    version: 0.0.0-dev
+    repository: "file://subcharts/registry"
   # Postgres database
   - name: datastore
-    # For local dev
-    # version: 0.0.0-dev
-    # repository: file://../common-helm-charts/datastore
-    version: 26.2.1
-    repository: "oci://registry.ryax.org/release-charts"
+    version: 0.0.0-dev
+    repository: "file://subcharts/datastore"
   # S3 compatible storage
   - name: minio
     version: 16.x.x
