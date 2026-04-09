@@ -1,0 +1,54 @@
+global:
+  tls:
+    # -- if set to  "production" use the let's encrypt production server, else use staging
+    environment: development
+    # -- if enabled, create a certManager clusterIssuer: requires certManager to be installed
+    enabled: false
+  ryax:
+    # -- Set the user action deployment namespace  
+    userNamespace: "ryaxns-execs"
+
+  monitoring:
+    enabled: true
+
+# -- override of global.tls.environment with development, staging or production 
+environment:
+
+# -- prefix the services with ryax
+#nameOverride: "ryax-common"
+
+# -- Create a broker secrets for credentials
+brokerSecret: "ryax-broker-secret"
+brokerService: ryax-broker
+brokerUser: "ryaxmq"
+brokerName: "broker"
+brokerPort: "5672"
+brokerCookieName: "ryax-broker-cookie"
+
+
+# -- Name of the API JWT secret to use
+jwtSecret: "api-jwt-secret-key"
+
+# -- If set, override the global.tls.enabled value to create a cert manager issuers
+certManager:
+  enabled:
+
+# -- Create the secret for Grafana access with this name
+grafanaSecret: "grafana-credentials"
+
+# -- Create a filestore access secret
+filestoreSecret: ryax-minio-secret
+filestoreService: ryax-minio
+filestorePort: 9000
+filestoreUser: ryax
+
+# -- User or group ids to bind to the dev role
+devRoleSubject:
+  kind: User
+  id: dev-user
+
+# -- Create Priority classes with their value
+priorityClasses:
+  backbone: 3
+  microservices: 2
+  monitoring: 1

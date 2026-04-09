@@ -1,0 +1,12 @@
+{{- if and .Values.global.monitoring.enabled .Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "runner.fullname" . }}
+  labels: {{- include "runner.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels: {{ include "runner.selectorLabels" . | nindent 6 }}
+  endpoints:
+  - port: metrics
+{{- end }}

@@ -1,0 +1,128 @@
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: {{ include "datastore.fullname" . }}
+  labels: {{ include "datastore.labels" . | nindent 4 }}
+    exporter: '0'
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{ include "datastore.selectorLabels" . | nindent 6 }}
+      exporter: '0'
+  strategy:
+    type: "Recreate"
+  template:
+    metadata:
+      labels:
+        {{- include "datastore.labels" . | nindent 8 }}
+        app.kubernetes.io/component: "external"
+        ryax.tech/resource-type: "external"
+        exporter: '0'
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      priorityClassName: {{ .Values.priorityClass }}
+      volumes:
+        - name: {{ include "datastore.fullname" . | printf "%s-dir" }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.pvcName }}
+        - name: "init"
+          configMap:
+            name: {{ include "datastore.fullname" . | printf "%s-config-init" }}
+      containers:
+        - name: {{ include "datastore.fullname" . }}
+          image: {{ .Values.image }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.servicePort }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: "init"
+              mountPath: "/docker-entrypoint-initdb.d"
+            - name: {{ include "datastore.fullname" . | printf "%s-dir" }}
+              mountPath: "/var/lib/postgresql/data"
+          env:
+            - name: PGDATA
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "datastore.fullname" . | printf "%s-config" }}
+                  key: "PGDATA"
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.datastoreSecret }}
+                  key: "datastore-db"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.datastoreSecret }}
+                  key: "datastore-user"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.datastoreSecret }}
+                  key: "datastore-pass"
+            {{- range .Values.databases }}
+            {{- $dbName := . }}
+            {{- range tuple "db" "user" "pass" }}
+            - name: {{ printf "POSTGRES_%s_%s" ($dbName | replace "-" "_" | upper) (. | upper) }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.datastoreSecret }}
+                  key: {{ printf "datastore-%s-%s" $dbName . }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.extraEnv }}
+              {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}
+
+{{- if .Values.global.monitoring.enabled }}
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: {{ include "datastore.fullname" . | printf "%s-exporter" }}
+  labels: {{ include "datastore.labels" . | nindent 4 }}
+    exporter: '1'
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{ include "datastore.selectorLabels" . | nindent 6 }}
+      exporter: '1'
+  strategy:
+    type: "Recreate"
+  template:
+    metadata:
+      labels:
+        {{- include "datastore.labels" . | nindent 8 }}
+        app.kubernetes.io/component: "external"
+        ryax.tech/resource-type: "external"
+        exporter: '1'
+    spec:
+      priorityClassName: {{ .Values.priorityClass }}
+{{- if .Values.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.pullSecret }}
+{{- end }}
+      containers:
+        - name: "prometheus-postgres-exporter"
+          image: {{ .Values.exporterImage }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          resources: {{- toYaml .Values.exporterResources | nindent 12 }}
+          env:
+            - name: DATA_SOURCE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.datastoreSecret }}
+                  key: "all-databases"
+{{- end }}

@@ -1,0 +1,94 @@
+global:
+  # -- Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # @section -- Global
+  nodeSelector: {}
+  # -- Global container image registry
+  # @section -- Global
+  imageRegistry:
+  # -- Global container registry secret names as an array
+  # Example:
+  #   - name: myPullSercret
+  # @section -- Global
+  imagePullSecrets: []
+  # --	Global default StorageClass for Persistent Volume(s)
+  # @section -- Global
+  # defaultStorageClass:
+
+  tls:
+    # -- Enables TLS for ingress
+    # @section -- Global
+    enabled: false
+    # -- The Ryax cluster name, must be a valid DNS
+    # @section -- Global
+    hostname:
+    # -- In production to get a valid certificat from let's encrypt, otherwise
+    # use the staging Let's encrypt cluster to avoid rate limit
+    # Should be: development or production
+    # @section -- Global
+    environment: development
+    # -- for self hosted instance with intenal TLS certificate
+    # @section -- Global
+    existingCertificatSecret:
+
+  ryax:
+    logLevel:
+
+# -- container image name and version
+image:
+  tag: "SERVICE-VERSION"
+  registry: docker.io/ryaxtech
+  repository: studio
+  digest: ""
+  ## Specify a imagePullPolicy
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+  ##
+  pullPolicy: IfNotPresent
+
+# -- Image used by the updater job pod
+updaterImage: docker.io/bitnamilegacy/kubectl:1.33
+
+# -- log level of the service
+logLevel:
+
+# -- Deployment prority class
+priorityClass:
+
+# -- Max upload size in Bytes for the API. Change this to enable larger file to be used as static or inputs, of project variables.
+# Default to 1GB
+# @section -- Ryax Settings
+apiMaxUploadSizeInBytes: "1073741824"
+
+apiPort: 8080
+datastoreSecret: "ryax-datastore-secret"
+jwtSecret: "api-jwt-secret-key"
+brokerSecret: "ryax-broker-secret"
+filestoreSecret: "ryax-minio-secret"
+filestoreName: "ryax-filestore"
+authorizationUrl: "ryax-authorization:8080"
+#
+# -- resources for the pod
+# Example:
+#  requests:
+#    memory: "200Mi"
+#    cpu: "100m"
+#  limits:
+#    memory: "200Mi"
+resources: {}
+
+# -- Add extra environment variables
+# Example:
+#   name: TEST
+#   value: TOTO
+extraEnv: {}
+#
+# -- Add affinity injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
+affinity: {}
+#   nodeAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       nodeSelectorTerms:
+#       - matchExpressions:
+#         - key: topology.kubernetes.io/zone
+#           operator: In
+#           values:
+#           - antarctica-east1
+#           - antarctica-west1

@@ -1,0 +1,7 @@
+Ryax common resources were installed.
+
+Grafana user :
+  $ k -n {{ .Release.Namespace }} get secrets {{ .Values.grafanaSecret }} -o jsonpath='{.data.admin-user}' | base64 -d
+
+Grafana password :
+  $ k -n {{ .Release.Namespace }} get secrets {{ .Values.grafanaSecret }} -o jsonpath='{.data.admin-password}' | base64 -d

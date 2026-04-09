@@ -1,0 +1,28 @@
+{{- if .Values.config }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-worker-config
+  labels: {{- include "worker.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+{{ tpl (toYaml .Values.config) . | indent 4 }}
+{{- end }}
+---
+{{- if and (and .Values.loki.enabled .Values.global.monitoring.enabled) .Values.monitoring.datasource.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "worker.fullname" . }}-loki-datasource
+  labels: {{- include "worker.labels" . | nindent 4 }}
+    grafana_datasource: "1"
+data:
+  loki-datasource.yaml: |
+    apiVersion: 1
+    datasources:
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://{{ .Release.Name }}-loki:3100/
+      version: 1
+{{- end }}

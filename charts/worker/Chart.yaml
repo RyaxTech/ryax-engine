@@ -1,0 +1,32 @@
+apiVersion: v2
+name: worker
+description: The Ryax Worker service manages the deployment and the execution of Actions on each site.
+home: https://ryax.tech
+keywords:
+  - Ryax
+  - Execution
+  - Deployment
+  - HPC
+  - Kubernetes
+sources:
+  - https://gitlab.com/ryax-tech/ryax/ryax-runner
+icon: https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd2-460a-b263-2e4c79b69196.png
+version: 0.0.0-dev
+appVersion: SERVICE-VERSION
+dependencies:
+- name: intelliscale
+  version: "*"
+  condition: intelliscale.enabled
+- name: loki
+  version: ~6.16.0
+  repository: "https://grafana.github.io/helm-charts"
+  condition: loki.enabled
+- name: promtail
+  version: ~6.16.6
+  repository: "https://grafana.github.io/helm-charts"
+  condition: loki.enabled
+- name: postgresql
+  version: ~16.1.2
+  repository: "oci://registry-1.docker.io/bitnamicharts"
+  condition: postgresql.enabled
+

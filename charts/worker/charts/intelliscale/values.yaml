@@ -1,0 +1,138 @@
+global:
+  # -- Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # @section -- Global
+  nodeSelector: {}
+  # -- Global container image registry
+  # @section -- Global
+  imageRegistry:
+  # -- Global container registry secret names as an array
+  # Example:
+  #   - name: myPullSercret
+  # @section -- Global
+  imagePullSecrets: []
+  # --	Global default StorageClass for Persistent Volume(s)
+  # @section -- Global
+  # defaultStorageClass:
+
+  monitoring:
+    # -- Enables service monitoring
+    # @section -- Global
+    enabled: false
+
+  ryax:
+    # -- Global Ryax log level to use, ignored if empty
+    # @section -- Ryax
+    logLevel:
+
+# -- container image name and version
+image:
+  tag: "SERVICE-VERSION"
+  registry: docker.io
+  repository: ryaxtech/intelliscale
+  digest: ""
+  ## Specify a imagePullPolicy
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+  ##
+  pullPolicy: IfNotPresent
+
+# -- This is for the secretes for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+imagePullSecrets: []
+
+# -- This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+# -- This is for setting Kubernetes Annotations to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+podAnnotations: {}
+#
+# -- This is for setting Kubernetes Labels to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: {}
+
+# -- Recommended resource requirement
+# WARNING: This must be set in production !
+# @section -- Required for Production
+# Recomended values:
+#  limits:
+#    cpu: 150m
+#    memory: 350Mi
+#  requests:
+#    cpu: 120m
+#    memory: 300Mi
+resources: {}
+
+# -- Add theses toleration to the deployment  
+tolerations: []
+
+# -- Kubernetes affinity
+affinity: {}
+
+# -- Deployment prority class
+priorityClass:
+
+# -- Container images used by the labeler daemonSet
+labeler:
+  image: bitnamilegacy/kubectl:latest
+  pauseImage: k8s.gcr.io/pause:3.1
+
+# -- Intelliscalse configuration
+config:
+  MIG:
+    enabled: true
+  algorithm_configs:
+    vpa_pilot_rule:
+      cpu_request:
+        data_source: sp_95 # Supported: sp_90, sp_95, sp_98, avg, max
+        policy: weighted_avg # Supported: max, weighted_avg
+        max_range_samples: 10
+        weighted_avg_decay_half_life_in_seconds: 43200
+        fluctuation_reducer_duration_in_seconds: 3600
+        safety_margin_lower: 0.1
+        safety_margin_upper: 0.15
+      cpu_limit:
+        data_source: max # Supported: sp_90, sp_95, sp_98, avg, max
+        policy: max # Supported: max, weighted_avg
+        max_range_samples: 10
+        weighted_avg_decay_half_life_in_seconds: 43200
+        fluctuation_reducer_duration_in_seconds: 3600
+        safety_margin_lower: 0.2
+        safety_margin_upper: 0.3
+      memory:
+        data_source: sp_98
+        policy: max
+        max_range_samples: 10
+        weighted_avg_decay_half_life_in_seconds: 43200
+        fluctuation_reducer_duration_in_seconds: 3600
+        safety_margin_lower: 0.1
+        safety_margin_upper: 0.15
+
+    simple_mig_recommender:
+      gpu_mig_instance:
+        a: 100
+        b: 200
+        
+    memory_oom_processor:
+      bump_up_ratio: 2.0
+
+  server_ports:
+    api_grpc_server_port: 8326
+    metrics_server_port: 8090
+
+  otlp_endpoint: tempo:4317
+
+  message_bus:
+      keep_event_history: false
+
+ryax:
+  worker:
+    # -- ConfigMap name to be mounted in the VPA pod to get information about node pools
+    # Name of configmap that will be used to inject worker configuration into VPA (will be filled from outside the project if there is)
+    # @section -- Ryax
+    configMapName: ryax-worker-config
+    # -- Ryax worker service name
+    # @section -- Ryax
+    serviceName: ryax-worker
+    # -- Namespace where the Ryax actions are deployed
+    # @section -- Ryax
+    actionNamespace: ryaxns-execs

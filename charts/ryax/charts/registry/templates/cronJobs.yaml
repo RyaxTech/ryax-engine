@@ -1,0 +1,50 @@
+{{- $gcName := include "registry.fullname" . | printf "%s-garbage-collect" }}
+apiVersion: "batch/v1"
+kind: "CronJob"
+metadata:
+  name: {{ $gcName }}
+  labels: {{- include "registry.labels" . | nindent 4 }}
+spec:
+  # At minute 0 past every 2nd hour
+  schedule: "0 */2 * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 300
+      backoffLimit: 300
+      template:
+        metadata:
+          labels: {{- include "registry.labels" . | nindent 12 }}
+        spec:
+          restartPolicy: "OnFailure"
+          volumes:
+            {{- if .Values.persistence.enable }}
+            - name: registry-data-dir
+              persistentVolumeClaim:
+                claimName: {{ include "registry.fullname" . | printf "%s-pvc-0" }}
+            {{- end }}
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - topologyKey: "kubernetes.io/hostname"
+                  labelSelector:
+                    matchExpressions:
+                      - key: "registrySetup"
+                        operator: "In"
+                        values:
+                          - "0"
+          containers:
+            - name: {{ $gcName }}
+              resources: {{- toYaml .Values.garbageCollect.resources | nindent 16 }}
+              image: {{ include "registry.image" . }}
+              imagePullPolicy: {{ .Values.garbageCollect.imagePullPolicy }}
+              args:
+                - /bin/sh
+                - -c
+                - "/bin/registry garbage-collect --delete-untagged /etc/docker/registry/config.yml || echo Nothing to be cleaned"
+              {{- if .Values.persistence.enable }}
+              volumeMounts:
+                - name: registry-data-dir
+                  mountPath: /var/lib/registry
+              {{- end }}

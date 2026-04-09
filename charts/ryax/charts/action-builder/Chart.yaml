@@ -1,0 +1,17 @@
+apiVersion: v2
+name: action-builder
+description: The Ryax action builder creates container images with Ryax wrapper injected
+home: https://ryax.tech
+keywords:
+  - Ryax
+  - Container
+  - Nix
+  - Build
+  - Registry
+sources:
+  - https://gitlab.com/ryax-tech/ryax/ryax-action-builder
+icon: https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd2-460a-b263-2e4c79b69196.png
+
+type: application
+version: 0.0.0-dev
+appVersion: "SERVICE-VERSION"

@@ -1,0 +1,18 @@
+{{- if .Values.global.monitoring.enabled }}
+apiVersion: "monitoring.coreos.com/v1"
+kind: "ServiceMonitor"
+metadata:
+  name: {{ include "registry.fullname" . | printf "%s-monitoring" }}
+  labels: {{ include "registry.labels" . | nindent 4 }}
+spec:
+  jobLabel: {{ include "registry.fullname" . | printf "%s-monitoring" }}
+  selector:
+    matchLabels: {{ include "registry.selectorLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: "metrics"
+      path: "/metrics"
+      interval: "30s"
+{{- end }}

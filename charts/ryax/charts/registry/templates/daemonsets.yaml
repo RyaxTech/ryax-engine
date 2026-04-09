@@ -1,0 +1,65 @@
+{{- if not .Values.ingress.enabled  }}
+{{ $registryPath := printf "127.0.0.1:%d" (.Values.nodePort | int) }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "registry.fullname" . | printf "%s-cert-setup" }}
+  labels: {{- include "registry.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "registry.selectorLabels" . | nindent 6 }}
+      registrySetup: "1"
+  template:
+    metadata:
+      labels:
+        {{- include "registry.labels" . | nindent 8 }}
+        registrySetup: "1"
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+    spec:
+      hostPID: true
+      hostNetwork: true
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+      initContainers:
+      - name: init-node
+        command:
+        - bash
+        args:
+        - -c
+        - |
+          set -e
+          /script/setup-registry-cert.py
+          echo Registry certificate configured successfully!
+        image: {{ printf "%s/%s:%s" (default .Values.registryCertSetup.image.registry .Values.global.imageRegistry) .Values.registryCertSetup.image.repository .Values.registryCertSetup.image.tag }}
+        imagePullPolicy: {{ .Values.registryCertSetup.image.pullPolicy }}
+        env:
+        - name: REGISTRY_CERT
+          valueFrom:
+            secretKeyRef:
+              name: {{ printf "%s-cert" (include "registry.fullname" .) }}
+              key: tls.crt
+        - name: REGISTRY_SERVER
+          value: {{ $registryPath }}
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: script
+          mountPath: /script/setup-registry-cert.py
+          subPath: setup-registry-cert.py
+        - name: nodefs
+          mountPath: /mnt
+      volumes:
+      - name: script
+        configMap:
+          name: {{ printf "%s-cert-setup-script" (include "registry.fullname" .) }}
+          defaultMode: 0755
+      - name: nodefs
+        hostPath:
+          path: /
+      containers:
+      - name: wait
+        image: k8s.gcr.io/pause:3.1
+{{- end }}

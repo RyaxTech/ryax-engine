@@ -1,0 +1,73 @@
+global:
+  # -- Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # @section -- Global
+  nodeSelector: {}
+  # -- Global container image registry
+  # @section -- Global
+  imageRegistry:
+  # -- Global container registry secret names as an array
+  # Example:
+  #   - name: myPullSercret
+  # @section -- Global
+  imagePullSecrets: []
+
+  tls:
+    # -- Enables TLS for ingress
+    # @section -- Global
+    enabled: false
+    # -- The Ryax cluster name, must be a valid DNS
+    # @section -- Global
+    hostname:
+    # -- In production to get a valid certificat from let's encrypt, otherwise
+    # use the staging Let's encrypt cluster to avoid rate limit
+    # Should be: development or production
+    # @section -- Global
+    environment: development
+    # -- for self hosted instance with intenal TLS certificate
+    # @section -- Global
+    existingCertificatSecret:
+
+# -- container image name and version
+image:
+  tag: "SERVICE-VERSION"
+  registry: docker.io/ryaxtech
+  repository: authorization
+  digest: ""
+  # -- Specify a imagePullPolicy
+  # ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+  pullPolicy: IfNotPresent
+
+# -- priority class for the pods
+priorityClass:
+
+# -- override global log level
+logLevel: info
+
+apiPort: 8080
+jwtSecret: "api-jwt-secret-key"
+datastoreSecret: "ryax-datastore-secret"
+
+# -- Recommended resource requirement
+# WARNING: This must be set in production !
+# @section -- Resource Settings
+# Example:
+#   requests:
+#     memory: "100Mi"
+#     cpu: "50m"
+#   limits:
+#     memory: "200Mi"
+#   cpu: "100m"
+resources: {}
+
+# -- Add affinity injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
+# Example:
+#   nodeAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       nodeSelectorTerms:
+#       - matchExpressions:
+#         - key: topology.kubernetes.io/zone
+#           operator: In
+#           values:
+#           - antarctica-east1
+#           - antarctica-west1
+affinity: {}

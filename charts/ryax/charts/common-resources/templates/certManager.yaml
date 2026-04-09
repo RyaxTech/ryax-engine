@@ -1,0 +1,23 @@
+{{- if .Values.certManager.enabled | default .Values.global.tls.enabled }}
+{{- $environment := .Values.environment | default .Values.global.tls.environment }}
+apiVersion: "cert-manager.io/v1"
+kind: "ClusterIssuer"
+metadata:
+  name: "letsencrypt-{{ $environment }}"
+  labels: {{- include "common-resources.labels" . | nindent 4 }}
+spec:
+  acme:
+    email: "admin@ryax.tech"
+    server:
+      {{- if eq $environment "production" }}
+        {{- " https://acme-v02.api.letsencrypt.org/directory" }}
+      {{- else }}
+        {{- " https://acme-staging-v02.api.letsencrypt.org/directory" }}
+      {{- end }}
+    privateKeySecretRef:
+      name: ryax-issuer-account-key-{{ $environment }}
+    solvers:
+      - http01:
+          ingress:
+            class: "traefik"
+{{- end }}

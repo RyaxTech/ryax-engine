@@ -1,0 +1,102 @@
+global:
+  # -- Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # @section -- Global
+  # Example:
+  #   myenv: prod
+  nodeSelector: {}
+  # -- Global container image registry
+  # @section -- Global
+  imageRegistry:
+  # -- Global container registry secret names as an array
+  # Example:
+  #   - name: myPullSercret
+  # @section -- Global
+  imagePullSecrets: []
+  # --	Global default StorageClass for Persistent Volume(s)
+  # @section -- Global
+  defaultStorageClass:
+
+  monitoring:
+    # -- Enables service monitoring
+    # @section -- Global
+    enabled: false
+
+  ryax:
+    # -- Global Ryax log level to use, ignored if empty
+    # @section -- Ryax
+    logLevel:
+    # -- The namespace to put all Ryax users actions
+    # @section -- Ryax
+    userNamespace: ryaxns-execs
+
+
+# -- container image name and version
+image:
+  tag: "SERVICE-VERSION"
+  registry: docker.io/ryaxtech
+  repository: action-builder
+  digest: ""
+  ## Specify a imagePullPolicy
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+  ##
+  pullPolicy: IfNotPresent
+
+priorityClass: # "microservices"
+
+# -- Git reference to use for the Ryax Wrappers repository that is pulled from https://gitlab.com/ryax-tech/ryax/ryax-action-wrappers.git
+# Leave empty to use the wrapper pinned in the Builder
+# @section -- Ryax Settings
+ryaxWrappersGitReference:
+
+# -- log level of the service
+logLevel:
+
+internalRegistry: "ryax-registry:5000"
+# -- Name of the secret that contains credentials to access the registry hosting Ryax actions.
+# Leave empty to use public access registry
+# Secret must be of type: kubernetes.io/dockerconfigjson
+actionRegistrySecret:
+brokerSecret: "ryax-broker-secret"
+
+# -- Nix store can be put in a persistent storage or a ephemeral one
+nix:
+  # -- The size of the store
+  storeSize: 50Gi
+
+# -- persistence is use for the Nix store
+persistence:
+  enabled: true
+  # -- leave empty to use the default one
+  storageClass:
+
+# Experimental gRPC API, disabled by default
+grpcAPI:
+  enabled: false
+
+# -- Recommended resource requirement really depends on what you are building
+# Because this service is building container it might have to compile large software,
+# so be aware that in some case it would require large amount of memory and some CPU to speed up the build.
+# @section -- Resource Settings
+resources:
+  requests:
+    memory: "4Gi"
+    cpu: "2"
+  limits:
+    memory: "4Gi"
+    cpu: "2"
+
+# -- Add affinity injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
+affinity: {}
+#   nodeAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       nodeSelectorTerms:
+#       - matchExpressions:
+#         - key: topology.kubernetes.io/zone
+#           operator: In
+#           values:
+#           - antarctica-east1
+#           - antarctica-west1
+# extraEnv:
+#   - name: FOO
+#     value: bar
+extraEnv: []

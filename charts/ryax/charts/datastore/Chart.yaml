@@ -1,0 +1,6 @@
+apiVersion: v2
+name: datastore
+description: Ryax database
+type: application
+version: 0.0.0-dev
+appVersion: "SERVICE-VERSION"

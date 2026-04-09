@@ -1,0 +1,59 @@
+{{- $tlsEnabled := .Values.global.tls.enabled }}
+{{- $hostname := .Values.global.tls.hostname }}
+apiVersion: "networking.k8s.io/v1"
+kind: "Ingress"
+metadata:
+  name: {{ include "studio.fullname" . }}
+  labels: {{- include "studio.labels" . | nindent 4 }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares:
+      {{ .Release.Namespace }}-{{ include "studio.fullname" . }}-strip-prefix@kubernetescrd
+    {{- if $tlsEnabled }}
+      ,{{ .Release.Namespace }}-{{ include "studio.fullname" . }}-https-redirect@kubernetescrd
+    cert-manager.io/cluster-issuer: "letsencrypt-{{ .Values.global.tls.environment }}"
+    {{- end }}
+spec:
+  rules:
+    - http:
+        paths:
+          - backend:
+              service:
+                name: {{ include "studio.fullname" . }}
+                port:
+                  name: "api"
+            path: '/{{ include "studio.name" . }}'
+            pathType: "Prefix"
+          - backend:
+              service:
+                name: {{ include "studio.fullname" . }}
+                port:
+                  name: "api"
+            path: '/api/{{ include "studio.name" . }}'
+            pathType: "Prefix"
+  {{- if and $tlsEnabled }}
+  tls:
+    - hosts:
+        - {{ required "ERROR: global.tls.hostname is required when TLS is enabled" $hostname }}
+      secretName: {{ .Values.global.tls.existingCertificatSecret | default (printf "ryax-cert-%s" .Values.global.tls.environment) }}
+  {{- end }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "studio.fullname" . }}-strip-prefix
+spec:
+  stripPrefix:
+    prefixes:
+      - '/{{ include "studio.name" . }}'
+      - '/api/{{ include "studio.name" . }}'
+{{- if and $tlsEnabled }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "studio.fullname" . }}-https-redirect
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+{{- end }}

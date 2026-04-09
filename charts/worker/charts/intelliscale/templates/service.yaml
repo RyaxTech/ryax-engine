@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "intelliscale.fullname" . }}
+  labels:
+    {{- include "intelliscale.labels" . | nindent 4 }}
+spec:
+  ports:
+    - name: api-port
+      port: {{ .Values.config.server_ports.api_grpc_server_port }}
+    - name: metrics-port
+      port: {{ .Values.config.server_ports.metrics_server_port }}
+  selector:
+    {{- include "intelliscale.selectorLabels" . | nindent 4 }}
+    ryax.tech/endpoint: "intelliscale-main" # Let service find the correct pod. Not goto node labalers.
+

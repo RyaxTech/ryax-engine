@@ -1,0 +1,10 @@
+{{- if and .Values.global.monitoring.enabled .Values.monitoring.dashboards.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "runner.fullname" . }}-grafana-dashboard
+  labels: {{- include "runner.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  {{- (.Files.Glob "RyaxUsageAndPerformance-withSites.json").AsConfig | nindent 2 }}
+{{- end }}

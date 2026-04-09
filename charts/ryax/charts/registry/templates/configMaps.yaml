@@ -1,0 +1,22 @@
+{{- if not .Values.ingress.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "%s-cert-setup-script" (include "registry.fullname" .) }}
+  labels: {{- include "registry.labels" . | nindent 4 }}
+binaryData:
+  setup-registry-cert.py: {{ .Files.Get "setup-registry-cert.py" | b64enc }}
+{{- end }}
+
+{{- if .Values.global.monitoring.enabled }}
+---
+apiVersion: "v1"
+kind: "ConfigMap"
+metadata:
+  name: {{ include "registry.fullname" . | printf "%s-grafana-dashboard" }}
+  labels: {{- include "registry.labels" . | nindent 4}}
+    grafana_dashboard: "1"
+data:
+  grafana-dashboard.json: {{ (.Files.Glob "grafana-dashboard.json").AsConfig | nindent 2 }}
+{{- end }}

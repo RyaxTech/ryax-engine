@@ -1,0 +1,19 @@
+{{- if .Values.global.monitoring.enabled }}
+apiVersion: "monitoring.coreos.com/v1"
+kind: "ServiceMonitor"
+metadata:
+  name: {{ include "datastore.fullname" . | printf "%s-monitoring" }}
+  labels: {{ include "datastore.labels" . | nindent 4 }}
+spec:
+  jobLabel: {{ include "datastore.fullname" . | printf "%s-monitoring" }}
+  selector:
+    matchLabels: {{ include "datastore.selectorLabels" . | nindent 6 }}
+      exporter: '1'
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: "metrics"
+      path: "/metrics"
+      interval: "30s"
+{{- end }}

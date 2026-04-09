@@ -1,0 +1,58 @@
+{{- $tlsEnabled := .Values.global.tls.enabled }}
+{{- $hostname := .Values.global.tls.hostname }}
+apiVersion: "networking.k8s.io/v1"
+kind: "Ingress"
+metadata:
+  name: {{ include "front.fullname" . }}
+  labels: {{- include "front.labels" . | nindent 4 }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares:
+      {{ .Release.Namespace }}-{{ include "front.fullname" . }}-strip-prefix@kubernetescrd
+    {{- if $tlsEnabled }}
+      ,{{ .Release.Namespace }}-{{ include "front.fullname" . }}-https-redirect@kubernetescrd
+    cert-manager.io/cluster-issuer: "letsencrypt-{{ .Values.global.tls.environment }}"
+    {{- end }}
+spec:
+  rules:
+    - http:
+        paths:
+          - backend:
+              service:
+                name: {{ include "front.fullname" . }}
+                port:
+                  name: http
+            path: /app
+            pathType: Prefix
+          - backend:
+              service:
+                name: {{ include "front.fullname" . }}
+                port:
+                  name: http
+            path: /
+            pathType: Exact
+  {{- if $tlsEnabled }}
+  tls:
+    - hosts:
+        - {{ required "ERROR: global.tls.hostname is required when TLS is enabled" $hostname }}
+      secretName: {{ .Values.global.tls.existingCertificatSecret | default (printf "ryax-cert-%s" .Values.global.tls.environment) }}
+  {{- end }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "front.fullname" . }}-strip-prefix
+spec:
+  stripPrefix:
+    prefixes:
+      - '/app'
+{{- if $tlsEnabled }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "front.fullname" . }}-https-redirect
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+{{- end }}

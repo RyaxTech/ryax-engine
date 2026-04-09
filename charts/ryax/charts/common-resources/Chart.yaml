@@ -1,0 +1,6 @@
+apiVersion: v2
+name: common-resources
+description: Common secrets and configuration for the Ryax platform
+type: application
+version: 0.0.0-dev
+appVersion: "SERVICE-VERSION"

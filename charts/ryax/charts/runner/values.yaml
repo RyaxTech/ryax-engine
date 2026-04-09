@@ -1,0 +1,140 @@
+
+global:
+  # -- Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # @section -- Global
+  nodeSelector: {}
+  # -- Global container image registry
+  # @section -- Global
+  imageRegistry:
+  # -- Global container registry secret names as an array
+  # Example:
+  #   - name: myPullSercret
+  # @section -- Global
+  imagePullSecrets: []
+  # --	Global default StorageClass for Persistent Volume(s)
+  # @section -- Global
+  defaultStorageClass:
+
+  tls:
+    # -- Enables TLS for ingress
+    # @section -- Global
+    enabled: false
+    # -- The Ryax cluster name, must be a valid DNS
+    # @section -- Global
+    hostname:
+    # -- In production to get a valid certificat from let's encrypt, otherwise
+    # use the staging Let's encrypt cluster to avoid rate limit
+    # Should be: development or production
+    # @section -- Global
+    environment: development
+    # -- for self hosted instance with intenal TLS certificate
+    # @section -- Global
+    existingCertificatSecret:
+
+  monitoring:
+    # -- Enables service monitoring
+    # @section -- Global
+    enabled: false
+    # -- Traces collector (Tempo) endpoint Trace collection (disabled if empty)
+    # @section -- Global
+    otlpEndpoint: ""
+    
+  ryax:
+    logLevel:
+    # -- Namespace where user's actions are deployed
+    # @section -- Ryax
+    userNamespace: ryaxns-execs
+    
+# -- container image name and version
+image:
+  tag: "SERVICE-VERSION"
+  registry: docker.io/ryaxtech
+  repository: runner
+  digest: ""
+  ## Specify a imagePullPolicy
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+  ##
+  pullPolicy: IfNotPresent
+
+upgradeJob:
+  image: "docker.io/bitnamilegacy/kubectl:1.33"
+
+# -- log level of the service (overide global.ryax.logLevel)
+logLevel:
+
+# -- Deployment prority class
+priorityClass:
+
+billing:
+  enabled: false
+
+apiPort: 8080
+userAPIPort: 10080
+metricsPort: 8090
+
+monitoring:
+  dashboards:
+    # -- Enables the injection of a grafana dashboard.
+    enabled: true
+  serviceMonitor:
+    # -- Enable service monitor for prometheus. Requires ServiceMonitor CRD
+    enabled: true
+
+datastoreSecret: "ryax-datastore-secret"
+jwtSecret: "api-jwt-secret-key"
+brokerSecret: "ryax-broker-secret"
+filestoreSecret: "ryax-minio-secret"
+filestoreName: "ryax-filestore"
+authorizationUrl: "ryax-authorization:8080"
+internalRegistry: "127.0.0.1:30012"
+encryptionKeySecret: runner-encryption-key
+
+# -- You can set this by generating a Key with this script:
+#    ```python3
+#    #!/usr/bin/env python3
+#    import base64
+#    import os
+#
+#    print(base64.urlsafe_b64encode(os.urandom(32)).decode())
+#    ```
+fernetEncryptionKey:
+
+# -- User actions log level
+# @section -- Ryax User Actions Settings
+defaultActionLogLevel: "info"
+# -- Set the retention time after an execution in seconds.
+# Ryax Actions are kept for this amount of time waiting for new execution before undeploying to avoid cold start
+# Note: For more settings, you can use extraEnv wth environment variables defined in ryax/runner/app.py
+# @section -- Ryax User Actions Settings
+userActionsRetentionTime: 30
+
+# -- Necessary to make the swagger interactive docs to show up properly
+baseApiUrl: "runner"
+
+
+# -- Recommended resource requirement
+# WARNING: This must be set in production !
+# @section -- Resource Settings
+# Example:
+#   requests:
+#     memory: "2Gi"
+#     cpu: "1000m"
+#   limits:
+#     memory: "2Gi"
+resources: {}
+
+# -- Add extra environment variables
+extraEnv: []
+
+# -- Add affinity injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
+# Example:
+#   nodeAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       nodeSelectorTerms:
+#       - matchExpressions:
+#         - key: topology.kubernetes.io/zone
+#           operator: In
+#           values:
+#           - antarctica-east1
+#           - antarctica-west1
+affinity: {}

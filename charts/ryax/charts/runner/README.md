@@ -1,0 +1,78 @@
+# runner
+
+![Version: 0.0.0-dev](https://img.shields.io/badge/Version-0.0.0--dev-informational?style=flat-square) ![AppVersion: SERVICE-VERSION](https://img.shields.io/badge/AppVersion-SERVICE--VERSION-informational?style=flat-square)
+
+The Ryax Runner service orchestrates the deployment and the execution of Actions inside Ryax.
+
+**Homepage:** <https://ryax.tech>
+
+## Source Code
+
+* <https://gitlab.com/ryax-tech/ryax/ryax-runner>
+
+## Values
+
+### Ryax User Actions Settings
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| defaultActionLogLevel | string | `"info"` | User actions log level |
+| userActionsRetentionTime | int | `30` | Set the retention time after an execution in seconds. Ryax Actions are kept for this amount of time waiting for new execution before undeploying to avoid cold start Note: For more settings, you can use extraEnv wth environment variables defined in ryax/runner/app.py |
+
+### Global
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| global.defaultStorageClass | string | `nil` | Global default StorageClass for Persistent Volume(s) |
+| global.imagePullSecrets | list | `[]` | Global container registry secret names as an array Example:   - name: myPullSercret |
+| global.imageRegistry | string | `nil` | Global container image registry |
+| global.monitoring.enabled | bool | `false` | Enables service monitoring |
+| global.monitoring.otlpEndpoint | string | `""` | Traces collector (Tempo) endpoint Trace collection (disabled if empty) |
+| global.nodeSelector | object | `{}` | Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) |
+| global.tls.enabled | bool | `false` | Enables TLS for ingress |
+| global.tls.environment | string | `"development"` | In production to get a valid certificat from let's encrypt, otherwise use the staging Let's encrypt cluster to avoid rate limit Should be: development or production |
+| global.tls.existingCertificatSecret | string | `nil` | for self hosted instance with intenal TLS certificate |
+| global.tls.hostname | string | `nil` | The Ryax cluster name, must be a valid DNS |
+
+### Ryax
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| global.ryax.userNamespace | string | `"ryaxns-execs"` | Namespace where user's actions are deployed |
+
+### Resource Settings
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| resources | object | `{}` | Recommended resource requirement WARNING: This must be set in production ! Example:   requests:     memory: "2Gi"     cpu: "1000m"   limits:     memory: "2Gi" |
+
+### Other Values
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| affinity | object | `{}` | Add affinity injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) Example:   nodeAffinity:     requiredDuringSchedulingIgnoredDuringExecution:       nodeSelectorTerms:       - matchExpressions:         - key: topology.kubernetes.io/zone           operator: In           values:           - antarctica-east1           - antarctica-west1 |
+| apiPort | int | `8080` |  |
+| authorizationUrl | string | `"ryax-authorization:8080"` |  |
+| baseApiUrl | string | `"runner"` | Necessary to make the swagger interactive docs to show up properly |
+| billing.enabled | bool | `false` |  |
+| brokerSecret | string | `"ryax-broker-secret"` |  |
+| datastoreSecret | string | `"ryax-datastore-secret"` |  |
+| encryptionKeySecret | string | `"runner-encryption-key"` |  |
+| extraEnv | list | `[]` | Add extra environment variables |
+| fernetEncryptionKey | string | `nil` | You can set this by generating a Key with this script:    ```python3    #!/usr/bin/env python3    import base64    import os     print(base64.urlsafe_b64encode(os.urandom(32)).decode())    ``` |
+| filestoreName | string | `"ryax-filestore"` |  |
+| filestoreSecret | string | `"ryax-minio-secret"` |  |
+| global.ryax.logLevel | string | `nil` |  |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"runner","tag":"SERVICE-VERSION"}` | container image name and version |
+| internalRegistry | string | `"127.0.0.1:30012"` |  |
+| jwtSecret | string | `"api-jwt-secret-key"` |  |
+| logLevel | string | `nil` | log level of the service (overide global.ryax.logLevel) |
+| metricsPort | int | `8090` |  |
+| monitoring.dashboards.enabled | bool | `true` | Enables the injection of a grafana dashboard. |
+| monitoring.serviceMonitor.enabled | bool | `true` | Enable service monitor for prometheus. Requires ServiceMonitor CRD |
+| priorityClass | string | `nil` | Deployment prority class |
+| upgradeJob.image | string | `"docker.io/bitnamilegacy/kubectl:1.33"` |  |
+| userAPIPort | int | `10080` |  |
+
+----------------------------------------------
+Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)
