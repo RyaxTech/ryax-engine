@@ -15,7 +15,8 @@ version: 0.0.0-dev
 appVersion: SERVICE-VERSION
 dependencies:
 - name: intelliscale
-  version: "*"
+  version: 0.0.0-dev
+  repository: "file://subcharts/intelliscale"
   condition: intelliscale.enabled
 - name: loki
   version: ~6.16.0
