@@ -1,0 +1,75 @@
+apiVersion: v2
+home: https://ryax.tech
+keywords:
+  - Ryax
+  - Serverless
+  - Workflow
+  - GPU
+  - HPC
+  - Slurm
+  - Cloud
+  - Kubernetes
+sources:
+  - https://gitlab.com/ryax-tech/ryax/ryax-engine
+icon: https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd2-460a-b263-2e4c79b69196.png
+name: ryax-engine
+description: Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows and applications on multiple infrastructure.
+type: application
+version: "26.4"
+appVersion: "latest"
+dependencies:
+  # Ryax internal subcharts
+  - name: common-resources
+    version: 0.0.0-dev
+    repository: "file://subcharts/common-resources"
+  - name: action-builder
+    version: 0.0.0-dev
+    repository: "file://subcharts/action-builder"
+  - name: authorization
+    version: 0.0.0-dev
+    repository: "file://subcharts/authorization"
+  - name: front
+    version: 0.0.0-dev
+    repository: "file://subcharts/front"
+  - name: repository
+    version: 0.0.0-dev
+    repository: "file://subcharts/repository"
+  - name: runner
+    version: 0.0.0-dev
+    repository: "file://subcharts/runner"
+  - name: studio
+    version: 0.0.0-dev
+    repository: "file://subcharts/studio"
+
+  # Docker registry
+  - name: registry
+    version: 0.0.0-dev
+    repository: "file://subcharts/registry"
+  # Postgres database
+  - name: datastore
+    version: 0.0.0-dev
+    repository: "file://subcharts/datastore"
+  # S3 compatible storage
+  - name: minio
+    version: 16.x.x
+    repository: 'oci://registry-1.docker.io/bitnamicharts'
+  # Reverse proxy
+  - name: traefik
+    version: 39.x.x
+    repository: 'https://helm.traefik.io/traefik'
+    condition: traefik.deployment.enabled
+  # rabbitmq message broker
+  - name: rabbitmq
+    version: 15.x.x
+    repository: 'oci://registry-1.docker.io/bitnamicharts'
+  # Observability
+  # Prometheus stack with grafana
+  - name: kube-prometheus-stack
+    version: 81.x.x
+    repository: 'https://prometheus-community.github.io/helm-charts'
+    condition: kube-prometheus-stack.enabled
+  # Tracing
+  - name: tempo
+    version: 1.x.x
+    repository: 'https://grafana.github.io/helm-charts'
+    condition: tempo.enabled

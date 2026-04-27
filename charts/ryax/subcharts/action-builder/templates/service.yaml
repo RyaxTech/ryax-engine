@@ -1,0 +1,55 @@
+{{- if .Values.grpcAPI.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "action-builder.fullname" . }}
+  labels: {{- include "action-builder.labels" . | nindent 4 }}
+  annotations:
+    traefik.ingress.kubernetes.io/service.serversscheme: h2c
+spec:
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 8081
+  selector: {{- include "action-builder.selectorLabels" . | nindent 4 }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "action-builder.fullname" . }}
+  labels: {{- include "action-builder.labels" . | nindent 4 }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares:
+    {{- if .Values.tls.enabled }}
+      {{ .Release.Namespace }}-{{ include "action-builder.fullname" . }}-https-redirect@kubernetescrd
+    cert-manager.io/cluster-issuer: "letsencrypt-{{ .Values.environment }}"
+    {{- end }}
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /action_builder
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "action-builder.fullname" . }}
+                port:
+                  number: 80
+  {{- if .Values.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.tls.hostname }}
+      secretName: {{.Values.tls.certSecret }}
+  {{- end }}
+{{- if .Values.tls.enabled }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "action-builder.fullname" . }}-https-redirect
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+{{- end }}
+{{- end }}

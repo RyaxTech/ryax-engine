@@ -1,0 +1,16 @@
+{{- if .Values.persistence.enabled }}
+kind: "PersistentVolumeClaim"
+apiVersion: "v1"
+metadata:
+  name: {{ include "registry.fullname" . | printf "%s-pvc-0" }}
+  labels: {{- include "registry.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: {{ .Values.persistence.pvcSize }}
+  {{- with .Values.persistence.storageClass | default .Values.global.defaultStorageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,141 @@
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: {{ include "runner.fullname" . }}
+  labels: {{- include "runner.labels" . | nindent 4}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "runner.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "runner.labels" . | nindent 8 }}
+        app.kubernetes.io/component: "internal"
+        ryax.tech/resource-type: "internal"
+    spec:
+      priorityClassName: {{ .Values.priorityClass }}
+      serviceAccount: {{ include "runner.fullname" . }}
+      securityContext:
+        fsGroup: 1200
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - emptyDir:
+          name: "tmp-dir"
+        - emptyDir:
+          name: "tmp-var-dir"
+      containers:
+        - name: {{ include "runner.fullname" . }}
+          image: {{ include "runner.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: "tmp-dir"
+              mountPath: "/tmp"
+            - name: "tmp-var-dir"
+              mountPath: "/var/tmp"
+          readinessProbe:
+            httpGet:
+              path: "/healthz"
+              port: {{ .Values.apiPort }}
+            initialDelaySeconds: 5
+            failureThreshold: 3
+            periodSeconds: 20
+            successThreshold: 1
+            timeoutSeconds: 1
+          livenessProbe:
+            httpGet:
+              path: "/healthz"
+              port: {{ .Values.apiPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+          env:
+            - name: RYAX_LOG_LEVEL
+              value: {{ .Values.logLevel | default .Values.global.ryax.logLevel | default "warning" }}
+            - name: RYAX_INTERNAL_REGISTRY
+              {{- if .Values.global.tls.enabled }}
+              value: registry.{{ .Values.global.tls.hostname | required "global.tls.hostname is required when global.tls.enabled"  }}
+              {{- else }}
+              value: {{ .Values.internalRegistry }}
+              {{- end }}
+            - name: RYAX_JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.jwtSecret }}
+                  key: "jwt-secret-key"
+            - name: RYAX_BROKER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.brokerSecret }}
+                  key: "broker"
+            - name: RYAX_DATASTORE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.datastoreSecret }}
+                  key: "datastore-runner"
+            - name: RYAX_FILESTORE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: "filestore"
+            - name: RYAX_FILESTORE_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: "filestore-access"
+            - name: RYAX_FILESTORE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: "filestore-secret"
+            - name: RYAX_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.encryptionKeySecret }}
+                  key: encryption-key
+            - name: RYAX_FILESTORE_BUCKET
+              value: {{ .Values.filestoreName }}
+            - name: RYAX_AUTHORIZATION_API_BASE_URL
+              value: {{ .Values.authorizationUrl }}
+            - name: RYAX_RUNNER_API_BASE_URL
+              value: /{{ .Values.baseApiUrl }}
+            - name: RYAX_USER_NAMESPACE
+              value: {{ .Values.global.ryax.userNamespace }}
+            - name: RYAX_DEFAULT_ACTION_LOG_LEVEL
+              value: {{ .Values.defaultActionLogLevel }}
+            - name: RYAX_UNDEPLOY_IDLE_ACTIONS_AFTER_SECONDS
+              value: "{{ .Values.userActionsRetentionTime }}"
+            - name: RYAX_OTLP_ENDPOINT
+              value: {{ .Values.global.monitoring.otlpEndpoint | default "" | quote }}
+            - name: RYAX_BILLING_ENABLED
+              value: {{ .Values.billing.enabled | default "" | quote }}
+            {{- if .Values.billing.enabled }}
+            - name: RYAX_BILLING_STRIPE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: stripe-secrets
+                  key: stripe-api-key
+            - name: RYAX_BILLING_CUSTOMER_ID
+              valueFrom:
+                secretKeyRef:
+                  name: stripe-secrets
+                  key: stripe-customer-id
+            {{- end }}
+            {{- with .Values.extraEnv }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}

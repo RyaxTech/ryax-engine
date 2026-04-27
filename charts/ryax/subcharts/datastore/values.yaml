@@ -1,0 +1,46 @@
+global:
+  # -- Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # @section -- Global
+  nodeSelector: {}
+  # -- Global container registry secret names as an array
+  # Example:
+  #   - name: myPullSercret
+  # @section -- Global
+  imagePullSecrets: []
+  
+  monitoring:
+    # -- Enables service monitoring
+    # @section -- Global
+    enabled: true
+
+priorityClass: # backbone
+affinity: {}
+
+image: "docker.io/postgres:18"
+exporterImage: "quay.io/prometheuscommunity/postgres-exporter:v0.18.1"
+
+servicePort: 5432
+datastoreSecret: "ryax-datastore-secret"
+databases:
+  - repository
+  - studio
+  - authorization
+  - runner
+pvcName: "ryax-datastore-pvc-0"
+pvcSize: "2Gi"
+storageClass:
+datastoreUser: "ryax"
+datastoreDB: "ryaxdb"
+resources:
+  requests:
+    memory: "500Mi"
+    cpu: "100m"
+  limits:
+    memory: "1000Mi"
+exporterResources:
+  requests:
+    memory: "200Mi"
+    cpu: "100m"
+  limits:
+    memory: "200Mi"
+    cpu: "200m"

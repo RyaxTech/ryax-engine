@@ -1,0 +1,111 @@
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: {{ include "studio.fullname" . }}
+  labels: {{- include "studio.labels" . | nindent 4}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "studio.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "studio.labels" . | nindent 8 }}
+        app.kubernetes.io/component: "internal"
+        ryax.tech/resource-type: "internal"
+    spec:
+      {{ with .Values.priorityClass }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        fsGroup: 1200
+      volumes:
+        - emptyDir:
+          name: "tmp-dir"
+
+      containers:
+        - name: {{ include "studio.fullname" . }}
+          image: {{ include "studio.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            - name: "tmp-dir"
+              mountPath: "/tmp"
+          readinessProbe:
+            httpGet:
+              path: "/healthz"
+              port: {{ .Values.apiPort }}
+            periodSeconds: 6
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: "/healthz"
+              port: {{ .Values.apiPort }}
+            periodSeconds: 30
+            failureThreshold: 1
+          env:
+            - name: RYAX_TMP_DIR
+              value: /tmp
+            - name: RYAX_LOG_LEVEL
+              value: {{ .Values.logLevel | default .Values.global.ryax.logLevel | default "warning" }}
+            - name: RYAX_JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.jwtSecret }}
+                  key: "jwt-secret-key"
+            - name: JWT_ALGORITHM
+              value: HS256
+            - name: RYAX_EXECUTOR_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: "metadata.name"
+            - name: RYAX_BROKER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.brokerSecret }}
+                  key: "broker"
+            - name: RYAX_DATASTORE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.datastoreSecret }}
+                  key: "datastore-studio"
+            - name: RYAX_FILESTORE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: "filestore"
+            - name: RYAX_FILESTORE_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: "filestore-access"
+            - name: RYAX_FILESTORE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: "filestore-secret"
+            - name: RYAX_FILESTORE_BUCKET
+              value: {{ .Values.filestoreName }}
+            - name: RYAX_EXECUTION_API_BASE_URL
+              value: {{ .Values.ryaxApiUrl }}
+            - name: RYAX_AUTHORIZATION_API_BASE_URL
+              value: {{ .Values.authorizationUrl }}
+            - name: RYAX_STUDIO_API_PORT
+              value: {{ .Values.apiPort | quote }}
+            - name: RYAX_MAX_UPLOAD_SIZE
+              value: "{{ .Values.apiMaxUploadSizeInBytes }}"
+            {{- if .Values.extraEnv }}
+              {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}

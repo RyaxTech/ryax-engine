@@ -1,6 +1,19 @@
+variables:
+  CHARTS: "charts/ryax charts/worker"
+  FILES_TO_PREPROCESS: "charts/ryax/Chart.yaml charts/worker/Chart.yaml"
+
+include:
+  - project: ryax-tech/ryax/ci_common
+    # Update on the latest release (see https://gitlab.com/ryax-tech/ryax/ci_common/-/tags)
+    ref: 5.7.2
+    file: common-steps-gitlab-ci.yml
+
 stages:
+  - verify
   - deploy
-  
+  - package
+  - release
+
 pages:
   image: python:3.13
   tags: [docker]
@@ -18,3 +31,42 @@ pages:
       - public
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+verify_helm_charts:
+  extends: .verify_helm_charts
+  # Exhaustive list of charts here for linter
+  variables:
+    CHARTS: |-
+      charts/ryax
+      charts/ryax/subcharts/action-builder
+      charts/ryax/subcharts/authorization
+      charts/ryax/subcharts/common-resources
+      charts/ryax/subcharts/datastore
+      charts/ryax/subcharts/front
+      charts/ryax/subcharts/registry
+      charts/ryax/subcharts/repository
+      charts/ryax/subcharts/runner
+      charts/ryax/subcharts/studio
+      charts/worker
+      charts/worker/subcharts/intelliscale
+
+package_helm_charts:
+  extends: .package_helm_charts
+  needs:
+    - verify_helm_charts
+
+staging_charts:
+  extends: .staging_charts
+
+release_charts:
+  extends: .release_charts
+  needs:
+    - package_helm_charts
+
+release_charts_latest:
+  extends: .release_charts
+  needs:
+    - release_charts
+  variables:
+    CHART_VERSION: 0.0.0-latest
+

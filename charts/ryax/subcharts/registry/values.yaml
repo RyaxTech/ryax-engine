@@ -1,0 +1,120 @@
+global:
+  # -- Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # @section -- Global
+  nodeSelector: {}
+  # -- Global container image registry
+  # @section -- Global
+  imageRegistry:
+  # -- Global container registry secret names as an array
+  # Example:
+  #   - name: myPullSercret
+  # @section -- Global
+  imagePullSecrets: []
+  # --	Global default StorageClass for Persistent Volume(s)
+  # @section -- Global
+  defaultStorageClass: ""
+
+  monitoring:
+    # -- Enables service monitoring
+    # @section -- Global
+    enabled: false
+
+  ryax:
+    userNamespace: ryaxns-execs
+
+  tls:
+    enabled: false
+
+# -- container image name and version
+image:
+  tag: "3"
+  registry: docker.io
+  repository: registry
+  digest: ""
+  # -- Specify a imagePullPolicy
+  # ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+  pullPolicy: IfNotPresent
+
+registryCertSetup:
+  image:
+    tag: "1.1"
+    registry: registry.ryax.org/release
+    repository: registry-cert-setup
+    # -- Specify a imagePullPolicy
+    # ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+    pullPolicy: IfNotPresent
+
+# -- priority class for the pods
+priorityClass: # "backbone"
+
+persistence:
+  enabled: true
+  # -- storage size
+  pvcSize: "10Gi"
+  # -- leave empty for the default value
+  storageClass:
+
+servicePort: 5000
+# -- This is required for the kubelet to pull the image from
+# localhost. This is only used if the ingress is disabled.
+# This is useful in private clusters because image pull is done by the kubelet that do not have access to
+# internal services. Using a node port allows to give acess to any host as localhost.
+# Value in range 30000-32767
+nodePort: 30012
+# -- Metrics port used by monitoring
+debugPort: 5001
+
+
+ingress:
+  # -- Create a public Ingress to access the repository.
+  # *WARNING*: If disabled it is replaced by a self-sign certificate that is
+  # injected with DaemonSet on all nodes (Only works with containerd and k3s with
+  # mutable config)
+  # *WARNING*: kubelet will be able to pull the images only if a
+  # valid certificate is associated to the Ingress
+  enabled: false
+
+  # -- hostname of the registry required if ingress is enabled
+  # Must be the cluster FQDN like "registry.cluster.example.io" use
+  # Use to create a valid certificate and to create docker pull credentials
+  hostname:
+
+  # -- Name of the secret that contains the TLS certificate (not provisionned by this chart)
+  certSecret: "ryax-registry-ingress-cert"
+
+  # -- Custom annotation for the Ingress.
+  # Additional annotation.
+  # WARNING: when global.tls.enabled, certManager annotation is already added for you
+  annotations: {}
+
+credentials:
+  # -- Enable credentials, disable this to make your registry public
+  enabled: true
+  # -- registry access default username
+  # WARNING: Change this in production, this is unsecure !
+  username: ryax
+  # -- registry access default password
+  # WARNING: Change this in production, this is unsecure !
+  password: 'ryaxPassw0rd?'
+  # -- Namepace where the registry pull secret should be injected
+  # The installation current namespace and the global.ryax.userNamespace is added by default
+  injectInNamespaces: []
+  # -- Name of the pull secret injected in the namespaces
+  pullSecretName: ryax-registry-creds-secret
+
+# -- Recommended resource requirement
+# @section -- Resource Settings
+# Example:
+#  resources:
+#    requests:
+#      memory: "500Mi"
+#      cpu: "100m"
+#    limits:
+#      memory: "750Mi"
+resources: {}
+
+garbageCollect:
+  imagePullPolicy: "IfNotPresent"
+  # -- Do not add request unless you are sure. The lack of resource it might make
+  # the job fail forever...
+  resources: {}

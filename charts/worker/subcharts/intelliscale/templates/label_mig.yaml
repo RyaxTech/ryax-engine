@@ -1,0 +1,111 @@
+{{- if .Values.config.MIG.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+  labels:
+    {{- include "intelliscale.labels" . | nindent 4 }}
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+  labels:
+    {{- include "intelliscale.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "patch"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+  labels:
+    {{- include "intelliscale.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+    namespace: {{  .Release.Namespace  }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+  labels:
+    {{- include "intelliscale.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "intelliscale.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "intelliscale.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        app.kubernetes.io/component: "internal"
+        ryax.tech/resource-type: "internal"
+    spec:
+      serviceAccountName: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+      initContainers:
+      - name: label-node
+        image: {{ .Values.labeler.image }}
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        command:
+          - /bin/sh
+          - -c
+          - |
+            #!/bin/sh
+
+            echo "Node name: $NODE_NAME"
+
+            LABEL_VALUES=$(kubectl get node "$NODE_NAME" -o jsonpath='{.metadata.labels.*}')
+
+            echo "All label values: $LABEL_VALUES"
+
+            POOL_NAME_LABEL=""
+            for value in $LABEL_VALUES; do
+                case "$value" in
+                    gpu-pool-mig-*) 
+                        POOL_NAME_LABEL=$value
+                        break
+                        ;;
+                esac
+            done
+
+            if [ -n "$POOL_NAME_LABEL" ]; then
+                MIG_CONFIG=$(echo "$POOL_NAME_LABEL" | sed 's/^gpu-pool-mig-//')
+
+                MIG_FORMATTED=$(echo "$MIG_CONFIG" | sed 's/-/./g')
+
+                kubectl label node "$NODE_NAME" "nvidia.com/mig.config=all-$MIG_FORMATTED" --overwrite
+                echo "Patch success for $NODE_NAME : $MIG_CONFIG -> $MIG_FORMATTED"
+            else
+                echo "Skipping $NODE_NAME, not a GPU node"
+            fi
+      containers:
+        - name: pause-container
+          image: {{ .Values.labeler.pauseImage }}
+{{- end }}

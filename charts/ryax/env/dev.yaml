@@ -89,19 +89,6 @@ intelliscale:
     registry: registry.ryax.org/dev
     pullPolicy: Always
 
-worker:
-  image:
-    tag: master
-    registry: registry.ryax.org/dev
-    pullPolicy: Always
-  loki:
-    singleBinary:
-      persistence:
-        size: 10Gi
-        # storageClass: local-path
-  intelliscale:
-    enabled: false
-
 minio:
   persistence:
     enabled: true

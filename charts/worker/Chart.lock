@@ -1,0 +1,15 @@
+dependencies:
+- name: intelliscale
+  repository: file://subcharts/intelliscale
+  version: 0.0.0-dev
+- name: loki
+  repository: https://grafana.github.io/helm-charts
+  version: 6.16.0
+- name: promtail
+  repository: https://grafana.github.io/helm-charts
+  version: 6.16.6
+- name: postgresql
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 16.1.2
+digest: sha256:922e184dbf8fa60b98f885ff83b7846a7931c4e5d99c41ba9e66d97b6845af77
+generated: "2026-04-09T14:57:24.567116738+02:00"

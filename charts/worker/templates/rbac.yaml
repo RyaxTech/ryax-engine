@@ -1,0 +1,77 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "worker.fullname" . }}
+  labels: {{- include "worker.labels" . | nindent 4}}
+rules:
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/log
+  - services
+  - namespaces
+  - nodes
+  - nodes/proxy
+  - nodes/metrics
+  - endpoints
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - extensions
+  - apps
+  resources:
+  - deployments
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - traefik.io
+  resources:
+  - middlewares
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "worker.fullname" . }}
+  labels: {{- include "worker.labels" . | nindent 4}}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "worker.fullname" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "worker.fullname" . }}
+  namespace: {{ .Release.Namespace }}

@@ -1,0 +1,95 @@
+global:
+  # -- Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # @section -- Global
+  nodeSelector: {}
+  # -- Global container image registry
+  # @section -- Global
+  imageRegistry:
+  # -- Global container registry secret names as an array
+  # Example:
+  #   - name: myPullSercret
+  # @section -- Global
+  imagePullSecrets: []
+  # --	Global default StorageClass for Persistent Volume(s)
+  # @section -- Global
+  # defaultStorageClass:
+
+  tls:
+    # -- Enables TLS for ingress
+    # @section -- Global
+    enabled: false
+    # -- The Ryax cluster name, must be a valid DNS
+    # @section -- Global
+    hostname:
+    # -- In production to get a valid certificat from let's encrypt, otherwise
+    # use the staging Let's encrypt cluster to avoid rate limit
+    # Should be: development or production
+    # @section -- Global
+    environment: development
+    # -- for self hosted instance with intenal TLS certificate
+    # @section -- Global
+    existingCertificatSecret:
+
+# -- container image name and version
+image:
+  tag: "latest"
+  registry: docker.io/ryaxtech
+  repository: repository
+  digest: ""
+  ## Specify a imagePullPolicy
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+  ##
+  pullPolicy: IfNotPresent
+
+# -- log level of the service
+logLevel: info
+
+# -- Deployment prority class
+priorityClass:
+
+# -- log level of the service
+apiPort: 8080
+datastoreSecret: ryax-datastore-secret
+jwtSecret: api-jwt-secret-key
+brokerSecret: ryax-broker-secret
+passwordEncryptionKeySecret: repository-password-encryption-key
+authorizationUrl: "ryax-authorization:8080"
+
+# -- Set this by generating a Key with this script:
+#    ```python3
+#    #!/usr/bin/env python3
+#    import base64
+#    import os
+#
+#    print(base64.urlsafe_b64encode(os.urandom(32)).decode())
+#    ```
+fernetEncryptionKey: 
+
+# -- Recommended resource requirement
+# @section -- Resource Settings
+# Example:
+#   requests:
+#     memory: 1000Mi
+#     cpu: 500m
+#   limits:
+#     memory: 1000Mi
+resources:
+
+# -- `extraVolumes` and `extraVolumeMounts` are useful to inject local Git repository if needed
+# @section -- Ryax
+# Example:
+# extraVolumes:
+# - name: repos 
+#   hostPath:
+#     path: /home/example/myrepos
+#     type: DirectoryOrCreate
+# extraVolumeMounts:
+# - mountPath: /data/repos
+#   name: repos
+# 
+# Now you can add a repo with this URL: file:///data/repos/my-actions
+extraVolumes: []
+
+# -- `extraVolumes` and `extraVolumeMounts` are useful to inject local Git repository if needed. See extraVolumes example.
+# @section -- Ryax
+extraVolumeMounts: []

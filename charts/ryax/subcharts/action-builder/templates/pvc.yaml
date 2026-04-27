@@ -1,0 +1,16 @@
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "action-builder.fullname" . }}-nix-store
+spec:
+  {{- with (.Values.persistence.storageClass | default .Values.global.defaultStorageClass) }}
+  storageClassName: "{{ . }}"
+  {{- end }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.nix.storeSize }}
+{{- end }}
+

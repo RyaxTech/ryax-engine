@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "tempo-datasource"
+  labels:
+    {{- include "common-resources.labels" . | nindent 4 }}
+    grafana_datasource: "1"
+data: 
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Tempo
+        type: tempo
+        access: proxy
+        orgId: 1
+        url: http://{{ .Release.Name }}-tempo:3100
+        basicAuth: false
+        version: 1
+        editable: false
+        apiVersion: 1
+        uid: tempo

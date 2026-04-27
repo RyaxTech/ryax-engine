@@ -1,0 +1,67 @@
+{{- $tlsEnabled := .Values.global.tls.enabled }}
+{{- $hostname := .Values.global.tls.hostname }}
+apiVersion: "networking.k8s.io/v1"
+kind: "Ingress"
+metadata:
+  name: {{ include "runner.fullname" . }}
+  labels: {{- include "runner.labels" . | nindent 4 }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares:
+      {{ .Release.Namespace }}-{{ include "runner.fullname" . }}-strip-prefix@kubernetescrd
+    {{- if $tlsEnabled }}
+      ,{{ .Release.Namespace }}-{{ include "runner.fullname" . }}-https-redirect@kubernetescrd
+    cert-manager.io/cluster-issuer: "letsencrypt-{{ .Values.global.tls.environment }}"
+    {{- end }}
+spec:
+  rules:
+    - http:
+        paths:
+          - backend:
+              service:
+                name: {{ include "runner.fullname" . }}
+                port:
+                  name: "api"
+            path: '/{{ .Values.baseApiUrl }}'
+            pathType: "Prefix"
+          - backend:
+              service:
+                name: {{ include "runner.fullname" . }}
+                port:
+                  name: "api"
+            path: '/api/{{ .Values.baseApiUrl }}'
+            pathType: "Prefix"
+          - backend:
+              service:
+                name: {{ include "runner.fullname" . }}
+                port:
+                  name: "user-api"
+            path: '/user-api'
+            pathType: "Prefix"
+  {{- if $tlsEnabled }}
+  tls:
+    - hosts:
+        - {{ required "ERROR: global.tls.hostname is required when TLS is enabled" $hostname }}
+      secretName: {{ .Values.global.tls.existingCertificatSecret | default (printf "ryax-cert-%s" .Values.global.tls.environment) }}
+  {{- end }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "runner.fullname" . }}-strip-prefix
+spec:
+  stripPrefix:
+    prefixes:
+      - '/{{ .Values.baseApiUrl }}'
+      - '/api/{{ .Values.baseApiUrl }}'
+      - '/user-api'
+{{- if $tlsEnabled }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "runner.fullname" . }}-https-redirect
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+{{- end }}

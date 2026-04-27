@@ -4,7 +4,7 @@
     For a local development installation please refers the [Getting Started Guide](https://gitlab.com/ryax-tech/ryax/ryax-engine#getting-started-with-ryax)
 
 !!! note
-    Previous installation methode with `ryax-adm` is **deprecated**: You can still find the documentation [here](./install_ryax_kubernetes_old.md)
+    Previous installation method with `ryax-adm` is **deprecated**: You can still find the documentation [here](./install_ryax_kubernetes_old.md)
 
 If you have any questions, please join our [Discord server](https://discord.gg/ctgBtx9QwB). We will be happy to help!
 
@@ -20,16 +20,16 @@ Supported Kubernetes:
 Hardware:
 
 * At least 2 CPU core
-* 4GB or memory
+* 4GB of memory
 * 40GB of disk available
 
 !!! tip
     Depending on the Actions that you run on your cluster you might need more resources
 
-## Preparatory Steps
+## Prerequisites
 
 !!! warning
-    This guide assume that you are comfortable with Kubernetes and Helm.
+    This guide assumes that you are comfortable with Kubernetes and Helm.
 
 - Make sure your configuration point to the intended cluster: `kubectl config current-context`.
 - Your Kubernetes cluster dedicated to Ryax: we offer no guarantee that Ryax runs smoothly alongside other applications.
@@ -41,6 +41,19 @@ Hardware:
   ```
 - Have access to a DNS server where you can add a new `A` or `CNAME` entry for your cluster.
 
+### Enable TLS
+
+!!! note
+    Without a DNS, the Ryax cluster will be accessed with the IP address directly and the HTTPS certificate will be self-signed.
+
+If you intend to configure a DNS for your cluster the first step is to install [cert-manager](https://cert-manager.io/).
+
+For instance with the following command:
+
+```sh
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.2/cert-manager.yaml
+```
+
 ## Configure your Installation
 
 Installing Ryax is analogous to installing a Helm chart. To begin we will start
@@ -50,7 +63,7 @@ able to fine-tune your installation later on.
 
 In our tests we installed Ryax with the main cloud providers current on the market, depending on the provider
 some configuration is required to get kubernetes with all the features
-required to run Ryax. Please visit the link of you provider below to check
+required to run Ryax. Please visit the link of your provider below to check
 how to configure a kubernetes cluster before installing.
 
 * [AWS](kubernetes_aws.md) : requires tweaking so pods can have persistent volume claims (PVCs) and enable autoscaling support;
@@ -60,73 +73,6 @@ how to configure a kubernetes cluster before installing.
     We also provide a [script](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/987689da73f5875c52ca8fa4361c7082ed74a78f/chart/generate-secrets.py) to generate a base value.yaml generating secrets with the right formatting.
     The output of this file can be used as the configuration file for your cluster.
 
-## Worker configuration
-
-In your configuration, you have to define at least one `worker` configuration.
-By default, a Worker is installed on the local Kubernetes cluster.
-
-In order to configure your Worker, you will need to select one or more node pools (set of homogeneous nodes) and give to the Worker some information about the nodes.
-
-!!! note
-    For Multi-Site Installation see [Worker Installation Documentation](./worker-install.md).
-
-<!--
-!!! note
-    Why we use node pools? Because it allows Ryax to leverage the Kubernetes node **autoscaling with scale to zero !**
--->
-
-Here is a simple example worker configuration using a AWS EKS managed cluster:
-```yaml
-worker:
-  config:
-    site:
-      name: aws-kubernetes-small
-      spec:
-        nodePools:
-        - name: small
-          cpu: 2
-          # gpu: 1 # required if the nodepool has GPUs
-          memory: 4G
-          selector:
-            eks.amazonaws.com/nodegroup: default
-```
-
-Let's explain each field:
-
-- **site.name**: the name of the site that identifies the site in Ryax
-- **site.spec.nodePools**: the node pools definitions (a node pool is a set of homogeneous node. Each resource value is given by node).
-  - **name**: name of the node pool.
-  - **cpu**: amount of allocatable cpu core per node.
-  - **memory**: amount of allocatable memory in bytes per node.
-  - **selector**: node selector type within Kubernetes to precise which nodes will take part in the node pool.
-
-
-These fields might change depending on the cloud provider. Below an example of configuration for Azure.
-
-```yaml
-kubernetes.azure.com/agentpool: default
-```
-
-All node pool information can be obtained using a simple:
-```sh
-kubectl describe nodes
-```
-To obtain resources values, look for the *Allocatable* fields.
-Regarding the selector, you should find the label(s) that uniquely refers to your node pool.
-
-For more details about the Worker configuration please see the [Worker reference documentation](../reference/configuration.md#worker-configuration).
-
-To be able to scale to 0 when unused, your node pools must be dedicated to the Ryax users workload.
-For the node pool to be used only by Ryax actions, we advise you to put a taint on your nodes using the `ryax.tech/ryaxns-execs` key.
-Because all the Ryax action already have a toleration for this by default, they will be the the only pods that will be allowed to deployed there.
-Adding a taint on a node pool depends on your provider but here an example configuration:
-```yaml
-taints:
- - effect: NO_SCHEDULE
-   key: ryax.tech/ryaxns-execs
-   value: only
-```
-
 ## Installation
 
 !!! note
@@ -135,22 +81,10 @@ taints:
 First, download the configuration file `prod.yaml` in this [repository](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/chart/env).
 This file contains specific configuration with tls enabled and monitoring configured with tls.
 
-### Enable TLS
-
-!!! note
-    That, wihtout a DNS the ryax cluster will be accessed with the IP address directly and the https certificate will be self-signed.
-
-If you intend to configure a DNS for your cluster the first step is to install [cert-manager](https://cert-manager.io/).
-For instance with the following command:
+Next you can install Ryax with the `prod.yaml` configuration file, the only value you need to complete is `global.tls.hostname` with the intended domain name for your cluster.
 
 ```sh
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.2/cert-manager.yaml
-```
-
-Next you can install ryax with the `prod.yaml` configuration file, the only value you need to complete is `global.tls.hostname` with the intended domain name for you cluster.
-
-```sh
-helm install oci://registry.ryax.org/release-charts/ryax-engine ryax -n ryaxns --create-namespace -f prod.yaml \
+helm install ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns --create-namespace -f prod.yaml \
   --set global.tls.hostname='example.company.io'
 ```
 
@@ -169,9 +103,9 @@ helm install oci://registry.ryax.org/release-charts/ryax-engine ryax -n ryaxns -
 ### Configure the DNS
 
 To get a valid SSL certificate and to allow other Kubernetes sites to be join your Ryax main site, you have to associate a valid domain name by setting `global.tls.hostname`.
-Then, you need to configure domain name resolution  pointing to the correct kubernetes cluster public IP address.
+Then, you need to configure domain name resolution pointing to the correct Kubernetes cluster public IP address.
 
-The last step is configuring your DNS so that you can connect to your cluster..
+The last step is configuring your DNS so that you can connect to your cluster.
 
 To retrieve the external IP of your cluster, run this one-liner
 
@@ -212,11 +146,9 @@ For more fine grained settings you can set each storage class independently with
 Regarding the volume size, we recommend that you start small, you can extend them later on with most Storage providers.
 The default values give comfortable volume sizes to start working on the platform.
 
-If you have any questions, please join our [Discord server](https://discord.gg/ctgBtx9QwB). We will be happy to help!
-
 ## Access to your Cluster
 
-Now you can access to you cluster with it's IP adress on your web browser.
+Now you can access your cluster with its IP address in your web browser.
 
 !!! tip
     To get a DNS access with valid SSL certificate, please refer to the [Production Installation](#production-installation) section.
@@ -226,6 +158,84 @@ Default credentials are *user1/pass1*
 !!! warning
     Change this password and user as soon as you're logged in!
 
+## Install a Worker
+
+In Ryax, workflow executions are handled by Workers.
+The next step is to configure and install a worker in your cluster to start running your workflows.
+
+!!! tip
+    This guide explains how to install a worker in your main ryax installation. If you already have a worker on your main site, and you want to create a multi site installation you can follow this [guide](./worker-install.md).
+
+### Worker configuration
+
+In order to configure your Worker, you will need to select one or more node pools (set of homogeneous nodes) and give to the Worker some information about the nodes.
+<!--
+!!! note
+    Why we use node pools? Because it allows Ryax to leverage the Kubernetes node **autoscaling with scale to zero !**
+-->
+
+Here is a simple example worker configuration using an AWS EKS managed cluster:
+
+```yaml
+config:
+  site:
+    name: aws-kubernetes-small
+    spec:
+      nodePools:
+      - name: small
+        cpu: 2
+        # gpu: 1 # required if the nodepool has GPUs
+        memory: 4G
+        selector:
+          eks.amazonaws.com/nodegroup: default
+#
+postgresql:
+  auth:
+    password: elFy3uw3bS2z
+loki:
+  singleBinary:
+    persistence:
+      size: 10Gi
+```
+
+Let's explain each field of the `config`:
+
+- **site.name**: the name of the site that identifies the site in Ryax
+- **site.spec.nodePools**: the node pools definitions (a node pool is a set of homogeneous node. Each resource value is given by node).
+  - **name**: name of the node pool.
+  - **cpu**: amount of allocatable cpu core per node.
+  - **memory**: amount of allocatable memory in bytes per node.
+  - **selector**: node selector type within Kubernetes to precise which nodes will take part in the node pool.
+
+
+These fields might change depending on the cloud provider. Below an example of configuration for Azure.
+
+```yaml
+kubernetes.azure.com/agentpool: default
+```
+
+All node pool information can be obtained using a simple:
+```sh
+kubectl describe nodes
+```
+
+To obtain resources values, look for the *Allocatable* fields.
+Regarding the selector, you should find the label(s) that uniquely refers to your node pool.
+
+For more details about the Worker configuration please see the [Worker reference documentation](../reference/configuration.md#worker-configuration).
+
+To be able to scale to 0 when unused, your node pools must be dedicated to the Ryax users workload.
+For the node pool to be used only by Ryax actions, we advise you to put a taint on your nodes using the `ryax.tech/ryaxns-execs` key.
+Because all the Ryax action already have a toleration for this by default, they will be the only pods that will be allowed to deployed there.
+
+Adding a taint on a node pool depends on your provider but here an example configuration:
+
+```yaml
+taints:
+ - effect: NO_SCHEDULE
+   key: ryax.tech/ryaxns-execs
+   value: only
+```
 
 ## Cluster Update
 
@@ -235,102 +245,8 @@ Default credentials are *user1/pass1*
 
 Run the upgrade with:
 ```sh
-helm upgrade oci://registry.ryax.org/release-charts/ryax-engine ryax -n ryaxns --reuse-values
+helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns --reuse-values
 ```
-
-## Ryax IntelliScale
-
-Ryax IntelliScale is a Resource Management optimization technique (Vertical Pod Autoscaling) that performs an optimal sizing of allocated resources within nodes based on previous
-executions. It tracks the usage of CPUs, RAM, GPUs and GPU VRAM while recommending and adjusting follow-up executions based on the real usage of resources. You can find
-more details along with configuration info in [Ryax IntelliScale](../reference/intelliscale.md)
-
-In particular when used for GPUs it performs dynamic GPU fractioning by leveraging NVIDIA MIG mechanism (available on specific new NVIDIA architectures)
-
-### Enable MIG
-
-[MIG](https://www.nvidia.com/en-eu/technologies/multi-instance-gpu/), or Multi-Instance GPU, is a technology developed by NVIDIA that allows a
-single GPU to be partitioned into multiple instances. Each instance operates with its own dedicated resources, enabling various workloads to run
-simultaneously on a single GPU, which optimizes utilization and maximizes data center investment. For AI applications, MIG can be particularly
-beneficial as it allows for the efficient distribution of resources, ensuring that each task has the necessary computational power with a certain isolation from other processes running on the same GPU.
-
-To enable the usage of MIG to be considered in the context of IntelliScale GPU tracking and adapted recommendations you need to setup the different supported MIG node pools within the configuration of the worker.
-IntelliScale functions at the level of each Kubernetes cluster so it needs to be configured for each worker.
-
-An example for a configuration on Scaleway is given below:
-
-```yaml
-# The following details should be created under worker nodepools
-          nodePools:
-          - cpu: 23
-            gpu: 7
-            gpu_mode: mig-1g.10gb
-            memory: 240G
-            name: gpu-pool-mig-1g-10gb
-            selector:
-              k8s.scaleway.com/pool-name: gpu-pool-mig-1g-10gb
-          - cpu: 23
-            gpu: 2
-            gpu_mode: mig-3g.40gb
-            memory: 240G
-            name: gpu-pool-mig-3g-40gb
-            selector:
-              k8s.scaleway.com/pool-name: gpu-pool-mig-3g-40gb
-          - cpu: 23
-            gpu: 1
-            gpu_mode: mig-7g.80gb
-            memory: 240G
-            name: gpu-pool-mig-7g-80gb
-            selector:
-              k8s.scaleway.com/pool-name: gpu-pool-mig-7g-80gb
-```
-
-In the above example we configured 3 node pools each one representing a different MIG configuration. Ryax IntelliScale will track the usage of GPUs for each execution and will recommend the most adapted
-node-pool for the follow-up runs.
-Let's explain each field:
-
-- **cpu**: the number of allocatable cpus of each node of the node pool
-- **gpu**: the number of allocatable GPU instances for each node of the node pool
-- **gpu_mode**: the MIG mode that this node pool is configured.
-  - *The value format should strictly follow the pattern "mig-xg.ygb" (xg.ygb is the standard MIG slice format with x MIG GIs and y GB GPU memory) if you want to enable MIG on this node pool. Instead if you want nodes with entire GPU (which is not under control of IntelliScale), the value should be a single word "full".*
-  - Currently we suggest to use only mig-1g.10gb, mig-3g.40gb or mig-7g.80gb modes since there are less unutilized resources
-- **memory**: amount of allocatable RAM for each node of the node pool
-- **name**: name of the node pool
-  - **selector**: node pool selector within Kubernetes.
-  - *To be handled by IntelliScale, a node pool with MIG mode GPUs should own a node selector with its value following strictly the format "gpu-pool-mig-xg-ygb", where xg-ygb is the standard MIG slice format "xg.ygb" replacing '.' by '-'.*
-
-What is interesting to understand is that ideally you should set autoscaling activated from 0 to n
-
-
-For more details regarding MIG, please refer to Nvidia's [User Guide](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/index.html). This is also another
-concrete [example](https://developer.nvidia.com/blog/deploying-nvidia-triton-at-scale-with-mig-and-kubernetes/) of how MIG is applied to industrial workflows.
-
-
-## Use Local Only Registry
-
-Ryax uses an internal registry to store actions' images.
-If you want Ryax to work on local site only (default), no external access to registry will be provided.
-Notice that with tls disabled, you cannot add external sites to Ryax outside your local network.
-
-!!! warning
-    Some Kubernetes providers block access the nodePort or disable them entirly.
-    In this case use a DNS with a loadBalancer as described in this section: [Configure the DNS](#configure-the-dns).
-
-If your cluster is inaccessible from outside your private network, Ryax use a nodePort to connect to the registry.
-This will allow actions' pods to be deployed, however you will not be able to connect external kubernetes sites.
-To accomplish that just disable tls in the helm values.
-It will disable the registry ingress and make the internal registry available from a nodePort.
-
-```yaml
-global:
-  tls:
-    enabled: false
-```
-
-In details, this configuration will the internal registry available to the Kubernetes node daemon, the kubelet.
-It will start one pod per node named `ryax-registry-cert-setup-xxxxx` that configures certificates to access the internal registry through `127.0.0.1:30012`.
-The pod images for the Ryax actions in the namespace `ryaxns-execs` will pull images through that nodePort.
-
-
 
 ## Troubleshooting
 

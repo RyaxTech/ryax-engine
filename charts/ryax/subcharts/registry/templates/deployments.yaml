@@ -1,0 +1,101 @@
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: {{ include "registry.fullname" . }}
+  labels: {{- include "registry.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: "Recreate"
+  selector:
+    matchLabels:
+      {{- include "registry.selectorLabels" . | nindent 6 }}
+      registrySetup: "0"
+  template:
+    metadata:
+      labels:
+        {{- include "registry.labels" . | nindent 8 }}
+        registrySetup: "0"
+    spec:
+      containers:
+        - image: {{ include "registry.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          name: {{ include "registry.fullname" . }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: "RYAX_EXECUTOR_ID"
+              valueFrom:
+                fieldRef:
+                  fieldPath: "metadata.name"
+            - name: REGISTRY_STORAGE_DELETE_ENABLED
+              value: "true"
+            - name: REGISTRY_HTTP_ADDR
+              value: "0.0.0.0:{{ .Values.servicePort }}"
+            - name: REGISTRY_HTTP_DEBUG_ADDR
+              value: ":{{ .Values.debugPort }}"
+            - name: REGISTRY_HTTP_DEBUG_PROMETHEUS_ENABLED
+              value: "true"
+            {{- if .Values.credentials.enabled }}
+            - name: REGISTRY_AUTH
+              value: "htpasswd"
+            - name: REGISTRY_AUTH_HTPASSWD_REALM
+              value: "Registry Realm"
+            - name: REGISTRY_AUTH_HTPASSWD_PATH
+              value: "/auth/htpasswd"
+            {{- end }}
+            {{- if .Values.extraEnv }}
+              {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}
+            {{- if not .Values.ingress.enabled }}
+            - name: REGISTRY_HTTP_TLS_CERTIFICATE
+              value: /certs/tls.crt
+            - name: REGISTRY_HTTP_TLS_KEY
+              value: /certs/tls.key
+            {{- end }}
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            - mountPath: "/var/lib/registry"
+              name: {{ include "registry.fullname" . | printf "%s-dir" }}
+            {{- end }}
+            {{- if .Values.credentials.enabled }}
+            - name: auth
+              mountPath: /auth
+              readOnly: true
+            {{- end }}
+            {{- if not .Values.ingress.enabled }}
+            - mountPath: /certs
+              name: certificates
+            {{- end }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      priorityClassName: {{ .Values.priorityClass }}
+      volumes:
+        {{- if .Values.persistence.enabled }}
+        - name: {{ include "registry.fullname" . | printf "%s-dir" }}
+          persistentVolumeClaim:
+            claimName: {{ include "registry.fullname" . | printf "%s-pvc-0" }}
+        {{- end }}
+        {{- if .Values.credentials.enabled }}
+        - name: auth
+          secret:
+            secretName: {{ include "registry.fullname" . | printf "%s-credentials" }}
+            items:
+            - key: htpasswd
+              path: htpasswd
+        {{- end }}
+        {{- if not .Values.ingress.enabled }}
+        - name: certificates
+          secret:
+            defaultMode: 420
+            optional: false
+            secretName: {{ printf "%s-cert" (include "registry.fullname" .) }}
+        {{- end }}

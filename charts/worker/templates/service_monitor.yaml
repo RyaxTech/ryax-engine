@@ -1,0 +1,12 @@
+{{- if and .Values.global.monitoring.enabled .Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "worker.fullname" . }}
+  labels: {{- include "worker.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels: {{ include "worker.selectorLabels" . | nindent 6 }}
+  endpoints:
+  - port: metrics
+{{- end }}

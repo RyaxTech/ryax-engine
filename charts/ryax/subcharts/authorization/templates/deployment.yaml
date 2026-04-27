@@ -1,0 +1,102 @@
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: {{ include "authorization.fullname" . }}
+  labels: {{- include "authorization.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: "Recreate"
+  replicas: 1
+  selector:
+    matchLabels: {{- include "authorization.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "authorization.labels" . | nindent 8 }}
+        app.kubernetes.io/component: "internal"
+        ryax.tech/resource-type: "internal"
+    spec:
+      {{- with .Values.priorityClass }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      imagePullSecrets:
+      {{- with .Values.global.imagePullSecrets }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      nodeSelector:
+      {{- with .Values.global.nodeSelector }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: {{ include "authorization.fullname" . | printf "%s-database-migration" }}
+          image: {{ include "authorization.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: "RYAX_DATASTORE"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.datastoreSecret }}
+                  key: "datastore-authorization"
+            - name: "RYAX_LOG_LEVEL"
+              value: {{ .Values.logLevel }}
+          volumeMounts:
+            - mountPath: "/tmp"
+              name: "tmp-dir"
+          command:
+            - "ryax-authorization-update-db"
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - emptyDir:
+          name: "tmp-dir"
+      containers:
+        - name: {{ include "authorization.fullname" . }}
+          image: {{ include "authorization.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          readinessProbe:
+            httpGet:
+              path: "/healthz"
+              port: {{ .Values.apiPort }}
+            initialDelaySeconds: 5
+            failureThreshold: 3
+            periodSeconds: 20
+            successThreshold: 1
+            timeoutSeconds: 1
+          livenessProbe:
+            httpGet:
+              path: "/healthz"
+              port: {{ .Values.apiPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: "JWT_ALGORITHM"
+              value: "HS256"
+            - name: "JWT_EXP_DELTA_SECONDS"
+              value: "60 * 60 * 24"
+            - name: "RYAX_JWT_SECRET_KEY"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.jwtSecret }}
+                  key: "jwt-secret-key"
+            - name: "RYAX_DATASTORE"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.datastoreSecret }}
+                  key: "datastore-authorization"
+            - name: "RYAX_LOG_LEVEL"
+              value: {{ .Values.logLevel }}
+            {{- with .Values.extraEnv }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - mountPath: "/tmp"
+              name: "tmp-dir"

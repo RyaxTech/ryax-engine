@@ -1,0 +1,26 @@
+{{ if .Values.config }}
+{{ if get .Values.config "site" }}
+{{ if not (not (eq (get .Values.config.site.spec "type") "KUBERNETES")) }}
+{{- if .Values.userNamespaceResources }}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ include "worker.fullname" . }}-users-resource-quota
+  namespace: {{ tpl .Values.config.site.spec.namespace . }}
+spec:
+  hard: {{- toYaml .Values.userNamespaceResources | nindent 4 }}
+---
+{{- end }}
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: {{ include "worker.fullname" . }}-users-limit-range
+  namespace: {{ tpl .Values.config.site.spec.namespace . }}
+spec:
+  limits:
+  - type: Container
+    default: {{- toYaml .Values.userActionResources.limit | nindent 6 }}
+    defaultRequest: {{- toYaml .Values.userActionResources.request | nindent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}
