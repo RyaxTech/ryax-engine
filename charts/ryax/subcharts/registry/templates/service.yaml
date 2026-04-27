@@ -1,0 +1,31 @@
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: {{ include "registry.fullname" . }}
+  labels: {{- include "registry.labels" . | nindent 4 }}
+spec:
+  ports:
+    - name: http
+      port: {{ .Values.servicePort }}
+    - name: metrics
+      port: {{ .Values.debugPort }}
+  selector:
+    {{- include "registry.selectorLabels" . | nindent 4 }}
+    registrySetup: "0"
+
+{{- if not .Values.ingress.enabled }}
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: {{ include "registry.fullname" . | printf "%s-ext" }}
+  labels: {{- include "registry.labels" . | nindent 4 }}
+spec:
+  type: "NodePort"
+  ports:
+    - nodePort: {{ .Values.nodePort }}
+      port: {{ .Values.servicePort }}
+  selector:
+    {{- include "registry.selectorLabels" . | nindent 4 }}
+    registrySetup: "0"
+{{- end }}

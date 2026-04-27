@@ -1,0 +1,55 @@
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: {{ include "front.fullname" . }}
+  labels: {{- include "front.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "front.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "front.labels" . | nindent 8 }}
+    spec:
+      {{- with .Values.priorityClass }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - emptyDir: {}
+          name: "tmp-dir"
+      containers:
+        - image: {{ include "front.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          name: {{ include "front.fullname" . }}
+          env:
+            {{- if .Values.extraEnv }}
+              {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: "tmp-dir"
+              mountPath: "/tmp"
+          readinessProbe:
+            httpGet:
+              path: "/"
+              port: {{ .Values.apiPort }}
+            periodSeconds: 6
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: "/"
+              port: {{ .Values.apiPort }}
+            periodSeconds: 30
+            failureThreshold: 1

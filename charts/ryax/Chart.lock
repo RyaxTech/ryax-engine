@@ -1,0 +1,45 @@
+dependencies:
+- name: common-resources
+  repository: file://subcharts/common-resources
+  version: 0.0.0-dev
+- name: action-builder
+  repository: file://subcharts/action-builder
+  version: 0.0.0-dev
+- name: authorization
+  repository: file://subcharts/authorization
+  version: 0.0.0-dev
+- name: front
+  repository: file://subcharts/front
+  version: 0.0.0-dev
+- name: repository
+  repository: file://subcharts/repository
+  version: 0.0.0-dev
+- name: runner
+  repository: file://subcharts/runner
+  version: 0.0.0-dev
+- name: studio
+  repository: file://subcharts/studio
+  version: 0.0.0-dev
+- name: registry
+  repository: file://subcharts/registry
+  version: 0.0.0-dev
+- name: datastore
+  repository: file://subcharts/datastore
+  version: 0.0.0-dev
+- name: minio
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 16.0.10
+- name: traefik
+  repository: https://helm.traefik.io/traefik
+  version: 39.0.7
+- name: rabbitmq
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 15.5.3
+- name: kube-prometheus-stack
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 81.6.9
+- name: tempo
+  repository: https://grafana.github.io/helm-charts
+  version: 1.24.4
+digest: sha256:cb846de93fedf81861899560278f8da8e15ba83ce56b1b69e92d846f0db45e8a
+generated: "2026-04-17T13:35:16.604556651+02:00"

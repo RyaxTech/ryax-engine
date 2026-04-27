@@ -51,37 +51,6 @@ datastore:
   pvcSize: 1Gi
   priorityClass: backbone
   
-worker:
-  config:
-    site:
-      name: local
-      spec:
-        namespace: "{{ .Values.global.ryax.userNamespace }}"
-        nodePools:
-        - cpu: 4
-          memory: 8G
-          name: default
-          selector:
-            node.kubernetes.io/instance-type: k3s
-      type: KUBERNETES
-  loki:
-    monitoring:
-      serviceMonitor:
-        enabled: false
-    singleBinary:
-      persistence:
-        enabled: true
-        size: 1Gi
-        # storageClass: local-path
-  promtail:
-    serviceMonitor:
-      enabled: false
-  postgresql:
-    metrics:
-      enabled: false
-  intelliscale:
-    enabled: false
-
 action-builder:
   persitence:
     enabled: false

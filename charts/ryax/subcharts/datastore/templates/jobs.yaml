@@ -1,0 +1,98 @@
+# This is only required in the case of adding a new database while the DB is already initialize
+# because the init script only run once.
+# This will create the DB table and users only for missing ones and be ignore for existing databases
+# 
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "datastore.fullname" . }}-db-migration"
+  labels: {{- include "datastore.labels" . | nindent 4}}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "datastore.fullname" . }}-db-migration"
+      labels:
+        {{- include "datastore.labels" . | nindent 8}}
+        app.kubernetes.io/component: "external"
+        ryax.tech/resource-type: "external"
+    spec:
+      restartPolicy: Never
+      securityContext:
+        fsGroup: 1200
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      priorityClassName: {{ .Values.priorityClass }}
+      volumes:
+        - emptyDir:
+          name: "tmp-dir"
+      containers:
+        - name: {{ include "datastore.fullname" . | printf "%s-update" }}
+          image: {{ .Values.image }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          volumeMounts:
+            - name: "tmp-dir"
+              mountPath: "/tmp"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              # for debug
+              # sleep 10000
+              set -e
+              set -x
+              set -u
+
+              psql --host {{ include "datastore.fullname" . }} --port {{ .Values.servicePort | int }} --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+              {{- range .Values.databases }}
+              {{- $dbName := . | replace "-" "_" | upper }}
+              CREATE USER "$POSTGRES_{{ $dbName }}_USER";
+              CREATE DATABASE "$POSTGRES_{{ $dbName }}_DB" WITH OWNER "$POSTGRES_{{ $dbName }}_USER";
+              GRANT ALL PRIVILEGES ON DATABASE "$POSTGRES_{{ $dbName }}_DB" TO "$POSTGRES_{{ $dbName }}_USER";
+              ALTER USER "$POSTGRES_{{ $dbName }}_USER" PASSWORD '$POSTGRES_{{ $dbName }}_PASS';
+              {{- end }}
+              EOSQL
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.datastoreSecret }}
+                  key: "datastore-db"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.datastoreSecret }}
+                  key: "datastore-user"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.datastoreSecret }}
+                  key: "datastore-pass"
+            {{- range .Values.databases }}
+            {{- $dbName := . }}
+            {{- range tuple "db" "user" "pass" }}
+            - name: {{ printf "POSTGRES_%s_%s" ($dbName | replace "-" "_" | upper) (. | upper) }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.datastoreSecret }}
+                  key: {{ printf "datastore-%s-%s" $dbName . }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.extraEnv }}
+              {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}
+
+

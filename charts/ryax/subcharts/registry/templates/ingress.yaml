@@ -1,0 +1,33 @@
+{{- if .Values.ingress.enabled }}
+{{ $hostname := tpl (.Values.ingress.hostname | default (printf "%s.%s" "registry" .Values.global.tls.hostname)) . }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    {{- with .Values.ingress.annotations }}
+    {{- . | toYaml | nindent 4}}
+    {{- end }}
+    {{- if .Values.global.tls.enabled }}
+    cert-manager.io/cluster-issuer: "letsencrypt-{{ .Values.global.tls.environment | required "global.tls.environment is required when TLS is global.tls.enabled" }}"
+    {{- end }}
+  name: {{ include "registry.fullname" . }}
+  labels: {{- include "registry.labels" . | nindent 4 }}
+spec:
+  rules:
+  - host: {{ $hostname }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: {{ include "registry.fullname" . }}
+            port:
+              name: http
+        path: /
+        pathType: Prefix
+  {{- if  .Values.global.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ required "ERROR: global.tls.hostname is required when TLS is enabled" $hostname }}
+      secretName: {{ .Values.ingress.certSecret | default .Values.global.tls.existingCertificatSecret | default (printf "%s-%s" (include "registry.fullname" .) .Values.global.tls.environment) }}
+  {{- end }}
+{{- end }}

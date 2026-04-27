@@ -1,0 +1,167 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "action-builder.fullname" . }}
+  labels: {{- include "action-builder.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  {{- if .Values.persistence.enabled }}
+  strategy:
+    type: Recreate
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "action-builder.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "action-builder.labels" . | nindent 8 }}
+        app.kubernetes.io/component: "internal"
+        ryax.tech/resource-type: "internal"
+    spec:
+      priorityClassName: {{ .Values.priorityClass }}
+      imagePullSecrets:
+      {{- with .Values.global.imagePullSecrets }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: {{ include "action-builder.fullname" . }}-pull-wrappers
+          image: {{ include "action-builder.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              echo Loading Ryax Wrappers from Gitlab...
+              # Use an src directory to avoid git issues with ownership
+              rm -rf /tmp/wrappers/src
+              (git clone https://gitlab.com/ryax-tech/ryax/ryax-action-wrappers.git /tmp/wrappers/src && \
+               cd /tmp/wrappers/src && git checkout $RYAX_WRAPPERS_GIT_REF \
+               ) || (
+               echo Unable to fetch Ryax Wrappers from Gitlab, fallback to the embedded version. && \
+               rm -rf /tmp/wrappers/src && \
+               cp -av /data/wrappers /tmp/wrappers/src)
+              echo Done!
+          env:
+            - name: RYAX_WRAPPERS_GIT_REF
+              value: {{ .Values.ryaxWrappersGitReference | default "NOT_EXISTING_REF" }}
+          volumeMounts:
+            - mountPath: "/tmp"
+              name: "tmp-dir"
+            - mountPath: "/var/tmp"
+              name: "tmp-var-dir"
+            - mountPath: "/tmp/wrappers"
+              name: ryax-wrappers-code
+        - name: {{ include "action-builder.fullname" . }}-persistent-nix-store
+          image: {{ include "action-builder.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              set -x
+              set -e
+              echo Copy /nix from the container image
+              if [ ! -d /persist/nix/store ]
+              then
+                echo Bootstrapping the nix directory
+                cp -av /nix/* /persist/nix
+              else
+                nix --extra-experimental-features nix-command copy --all --no-check-sigs --to /persist
+
+                GC_ROOT=$(ls /nix/var/nix/gcroots/)
+                for root in $GC_ROOT; do
+                  cp -r /nix/var/nix/gcroots/$root /persist/nix/var/nix/gcroots/
+                done
+              fi
+
+              chown -R ryax:ryax /persist/nix
+              echo Done!
+          volumeMounts:
+            - mountPath: /persist/nix
+              name: nix-store
+          # IMPORTANT: Next release (after 25.10.0) this should removed
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+      containers:
+        - name: {{ include "action-builder.fullname" . }}
+          image: {{ include "action-builder.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: RYAX_BROKER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.brokerSecret }}
+                  key: "broker"
+            - name: RYAX_INTERNAL_REGISTRY
+              value: {{ .Values.internalRegistry }}
+            - name: RYAX_LOG_LEVEL
+              value: {{ .Values.logLevel | default .Values.global.ryax.logLevel | default "warning" }}
+            - name: RYAX_WRAPPERS_DIR
+              value: /data/wrappers/src
+            {{- if .Values.grpcAPI.enabled }}
+            - name: RYAX_GRPC_API_ENABLED
+              value: "1" # Leave empty to disable
+            {{- end }}
+            {{- if .Values.extraEnv }}
+              {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - mountPath: "/tmp"
+              name: "tmp-dir"
+            - mountPath: "/var/tmp"
+              name: "tmp-var-dir"
+            - mountPath: "/data/wrappers"
+              name: ryax-wrappers-code
+            - mountPath: /nix
+              name: nix-store
+            {{- if .Values.actionRegistrySecret }}
+            - mountPath: /home/ryax/.docker
+              name: action-registry-creds
+              readOnly: true
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: "/healthz"
+              port: 8080
+            periodSeconds: 30
+            failureThreshold: 1
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+      imagePullSecrets:
+      {{- with .Values.global.imagePullSecrets }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      nodeSelector:
+      {{- with .Values.global.nodeSelector }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - emptyDir:
+          name: "tmp-dir"
+        - emptyDir:
+          name: "tmp-var-dir"
+        - emptyDir:
+          name: ryax-wrappers-code
+        {{- if .Values.persistence.enabled }}
+        - name: nix-store
+          persistentVolumeClaim:
+            claimName: {{ include "action-builder.fullname" . }}-nix-store
+        {{- else }}
+        - emptyDir:
+            sizeLimit: {{ .Values.nix.storeSize }}
+          name: nix-store
+        {{- end }}
+        {{- if .Values.actionRegistrySecret }}
+        - name: action-registry-creds
+          secret:
+            secretName: {{ .Values.actionRegistrySecret }}
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+        {{- end }}
+

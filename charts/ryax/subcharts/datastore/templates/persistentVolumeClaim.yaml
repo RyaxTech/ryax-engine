@@ -1,0 +1,14 @@
+kind: "PersistentVolumeClaim"
+apiVersion: "v1"
+metadata:
+  name: {{ .Values.pvcName }}
+  labels: {{- include "datastore.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: {{ .Values.pvcSize }}
+{{- if .Values.storageClass }}
+  storageClassName: {{ .Values.storageClass }}
+{{- end -}}

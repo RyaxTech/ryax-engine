@@ -1,0 +1,296 @@
+global:
+  # -- Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # @section -- Global
+  nodeSelector: {}
+  # -- Global container image registry
+  # @section -- Global
+  imageRegistry:
+  # -- Global container registry secret names as an array
+  # Example:
+  #   - name: myPullSercret
+  # @section -- Global
+  imagePullSecrets: []
+  # --	Global default StorageClass for Persistent Volume(s)
+  # @section -- Global
+  defaultStorageClass:
+
+  monitoring:
+    # -- Enables service monitoring
+    # @section -- Global
+    enabled: false
+    # -- Traces collector (Tempo) endpoint Trace collection (disabled if empty)
+    # @section -- Global
+    otlpEndpoint: ""
+
+  ryax:
+    logLevel:
+    userNamespace: ryaxns-execs
+
+# -- Name of the secret that contains credentials to access the registry hosting Ryax actions.
+# Leave empty to use public access registry
+# Secret must be of type: kubernetes.io/dockerconfigjson
+actionRegistrySecret: ryax-registry-creds-secret
+
+# -- Ryax Worker configuration use for the registration. See documentation for more details:
+# https://docs.ryax.tech/reference/configuration.html#worker-configuration
+# @section -- Ryax
+config:
+  site:
+    type: KUBERNETES
+    spec:
+      namespace: "{{ .Values.global.ryax.userNamespace }}"
+
+# -- Resource limit and request for individual user actions if not set in the action `resources` section.
+# Requires a LimitRange Kubernetes object. See for more details: https://kubernetes.io/docs/concepts/policy/limit-range/
+# @section -- Ryax User Actions Settings
+userActionResources:
+  request:
+    cpu: 0.1
+    memory: 64Mi
+  limit:
+    memory: 64Mi
+
+# -- Rate at which the User Action logging system is queried to get the logs in seconds.
+# @section -- Ryax User Actions Settings
+actionLogsQueryRate: 5
+
+# -- Activate this to limit users' resource total usage. Highly recommended in production!
+# Resource quota for the user namespace set as-is in the Kubernetes ResourceQuota:
+# Example:
+#   requests.cpu: "2"
+#   requests.memory: 2Gi
+#   limits.cpu: "16"
+#   limits.memory: 32Gi
+# See for more details: https://kubernetes.io/docs/concepts/policy/resource-quotas/
+# @section -- Resource Settings
+userNamespaceResources: {}
+
+# -- container image name and version
+image:
+  tag: "latest"
+  registry: docker.io/ryaxtech
+  repository: worker
+  digest: ""
+  ## Specify a imagePullPolicy
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+  ##
+  pullPolicy: IfNotPresent
+
+# -- log level of the service (override global.ryax.logLevel)
+logLevel:
+  
+# -- Add priority class
+priorityClass:
+
+apiPort: 8880
+metricsPort: 8090
+
+brokerSecret: ryax-broker-secret
+
+filestoreSecret: ryax-minio-secret
+filestoreName: ryax-filestore
+
+# -- this is used for SLURM_SSH deployment mode on a private network mode.
+# Don't change it unless you know what you are doing
+internalRegistryOverride: 'ryax-registry:5000'
+
+# -- Set as true to enable ssh slurm hpc offloading,
+# will run worker container as root so singularity build works without --fakeroot
+# Disable it to avoid running as root inside the container
+# @section -- Important Settings
+hpcOffloading: true
+
+# -- Inject the private key to SSH to the HPC site with `--set-file hpcPrivateKeyFile=./my-private.key`
+hpcPrivateKeyFile:
+
+# -- Inject the SSH config to customize the access to the HPC site here with `--set-file`
+hpcConfigFile:
+
+# -- Default resources request when enabling `hpcOffloading`
+# This is needed because the Runner build the action using Singularity which requires more memory.
+# @section -- Resource Settings
+# Example:
+#   requests:
+#     memory: "4Gi"
+#     cpu: "1000m"
+#   limits:
+#     memory: "4Gi"
+hpcResources: {}
+
+# -- Recommended resource requirement
+# @section -- Resource Settings
+# Example:
+#   requests:
+#     memory: "2Gi"
+#     cpu: "1000m"
+#   limits:
+#     memory: "2Gi"
+resources: {}
+
+# -- Add extra environment variables
+extraEnv: []
+
+# -- Add affinity injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
+# Example:
+#   nodeAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       nodeSelectorTerms:
+#       - matchExpressions:
+#         - key: topology.kubernetes.io/zone
+#           operator: In
+#           values:
+#           - antarctica-east1
+#           - antarctica-west1
+affinity: {}
+
+# -- Database URL in a SQLAlchemy compatible format. If you choose SQLite, be sure to enable persistence so the /data/db is preserved on restart
+# example: "sqlite:////data/db/ryax-worker.db"
+# WARNING: only use sqlite for testing or for very light usage, or you will face "database is locked" errors.
+databaseURL:
+
+# -- Only necessary for SQLite database in /data/db, Disabled by default
+# WARNING: only use sqlite for testing or for very light usage, or you will face "database is locked" errors.
+persistence:
+  enabled: false
+  # -- Database data Persistent Volume Storage Class
+  # If defined, storageClassName: <storageClass>
+  # If set to "-", storageClassName: "", which disables dynamic provisioning
+  # If undefined (the default) or set to null, no storageClassName spec is set, choosing the default provisioner.
+  #
+  # Example:
+  # storageClass: "-"
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  annotations: { }
+
+# -- Datastore secret: if set, use the Ryax internal database instead the local one
+# You should disable persistence when enabling this
+datastoreSecret:
+
+postgresql:
+  # -- Enables PostgreSQL local database instead of remote or local sqlite
+  enabled: true
+  auth:
+    existingSecret: '{{ include "worker.postgresql.secret" . }}'
+    database: worker
+    username: worker
+  image:
+    repository: bitnamilegacy/postgresql
+  metrics:
+    image:
+        repository: bitnamilegacy/postgres-exporter
+  primary:
+    persistence:
+      size: 1Gi
+ 
+monitoring:
+  # -- Grafana datasource for loki
+  datasource:
+    enabled: true
+  # -- Enable service monitor for prometheus using ServiceMonitor CRD
+  serviceMonitor:
+    enabled: true
+
+# -- Loki is an extrenal dependency that provide log collection on Kubernetes.
+# Disable this if the site type is different from KUBERNETES
+loki:
+  enabled: true
+  resultsCache:
+    enabled: false
+  test:
+    enabled: false
+  chunksCache:
+    enabled: false
+  lokiCanary:
+    enabled: false
+
+  deploymentMode: SingleBinary
+  singleBinary:
+    # Avoid Loki using too much resources
+    resources:
+      requests:
+        cpu: 0.5
+        memory: 512Mi
+      limits:
+        cpu: 1
+        memory: 512Mi
+    replicas: 1
+    # Fix cluster node discovery issues
+    extraArgs:
+      - -config.expand-env=true
+    extraEnv:
+      - name: POD_IP
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+  read:
+    replicas: 0
+  backend:
+    replicas: 0
+  write:
+    replicas: 0
+  gateway:
+    enabled: false
+
+  loki:
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: 'filesystem'
+    schemaConfig:
+      configs:
+      - from: "2024-01-01"
+        store: tsdb
+        index:
+          prefix: loki_index_
+          period: 24h
+        object_store: filesystem # we're storing on filesystem so there's no real persistence here.
+        schema: v13
+
+    # Extra config
+    # Fix loki-memberlist unreachable error, see this issue fo rmore details:
+    # https://github.com/grafana/loki/issues/6370#issuecomment-2260528852
+    extraMemberlistConfig:
+      bind_addr:
+        - ${POD_IP}
+    # Avoid too much logs
+    server:
+      log_level: warn
+    # Avoid "No Org id error" in Grafana datasource
+    auth_enabled: false
+    limits_config:
+      # Keep only Oone week of logs
+      retention_period: 7d
+      # Increase the number of labels or logs from ryax services can be ignored
+      max_label_names_per_series: 30
+    # Adding this to avoid "too many outstanding requests" errors on the API
+    # See https://github.com/grafana/loki/issues/4613
+    query_scheduler:
+      max_outstanding_requests_per_tenant: 2048
+
+promtail:
+  serviceMonitor:
+    enabled: false
+  # Be sure that promtail runs on every nodes
+  tolerations:
+    - effect: NoSchedule
+      operator: Exists
+  config:
+    clients:
+      # Required to match the release name
+      - url: '{{ printf "http://%s-loki:3100/loki/api/v1/push" .Release.Name }}'
+    snippets:
+      # Drop labels to avoid the "too much labels" error
+      extraRelabelConfigs:
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - action: labeldrop
+          regex: app_kubernetes_io_(.+)
+
+intelliscale:
+  enabled: true
+  ryax:
+    worker:
+      # Use tpl to render inside vpa config
+      configMapName: '{{ .Release.Name }}-config'
+      serviceName: '{{ .Release.Name }}'

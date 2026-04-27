@@ -1,0 +1,15 @@
+apiVersion: v2
+name: studio
+description: The Ryax Studio manages the creation and edition of the workflows
+type: application
+home: https://ryax.tech
+keywords:
+  - Ryax
+  - Scheduling
+  - Workflow
+  - HPC
+sources:
+  - https://gitlab.com/ryax-tech/ryax/ryax-studio
+icon: https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd2-460a-b263-2e4c79b69196.png
+version: 0.0.0-dev
+appVersion: latest

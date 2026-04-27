@@ -1,0 +1,7 @@
+{{ if .Values.global.ryax.userNamespace }}
+apiVersion: "v1"
+kind: "Namespace"
+metadata:
+  name: {{ .Values.global.ryax.userNamespace }}
+  labels: {{- include "common-resources.labels" . | nindent 4 }}
+{{- end }}

@@ -1,0 +1,26 @@
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ template "worker.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+{{- with .Values.persistence.annotations  }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+  labels: {{- include "worker.labels" . | nindent 4}}
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size | quote }}
+{{- $storageClass := .Values.persistence.storageClass | default .Values.global.defaultStorageClass }}
+{{- if $storageClass }}
+{{- if (eq "-" $storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ $storageClass }}"
+{{- end }}
+{{- end }}
+{{- end }}

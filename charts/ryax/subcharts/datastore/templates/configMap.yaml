@@ -1,0 +1,40 @@
+apiVersion: "v1"
+kind: "ConfigMap"
+metadata:
+  labels: {{ include "datastore.labels" . | nindent 4 }}
+  name: {{ include "datastore.fullname" . | printf "%s-config" }}
+data:
+  PGDATA: "/var/lib/postgresql/data/pgdata"
+
+---
+apiVersion: "v1"
+kind: "ConfigMap"
+metadata:
+  labels: {{ include "datastore.labels" . | nindent 4 }}
+  name: {{ include "datastore.fullname" . | printf "%s-config-init" }}
+data:
+  init_repository_dh.sh: |
+    #!/bin/bash
+    set -e
+    set -u
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    {{- range .Values.databases }}
+    {{- $dbName := . | replace "-" "_" | upper }}
+    CREATE USER "$POSTGRES_{{ $dbName }}_USER";
+    CREATE DATABASE "$POSTGRES_{{ $dbName }}_DB" WITH OWNER "$POSTGRES_{{ $dbName }}_USER";
+    GRANT ALL PRIVILEGES ON DATABASE "$POSTGRES_{{ $dbName }}_DB" TO "$POSTGRES_{{ $dbName }}_USER";
+    ALTER USER "$POSTGRES_{{ $dbName }}_USER" PASSWORD '$POSTGRES_{{ $dbName }}_PASS';
+    {{- end }}
+    EOSQL
+
+{{- if .Values.global.monitoring.enabled }}
+---
+apiVersion: "v1"
+kind: "ConfigMap"
+metadata:
+  name: {{ include "datastore.fullname" . | printf "%s-grafana-dashboard" }}
+  labels: {{- include "datastore.labels" . | nindent 4}}
+    grafana_dashboard: "1"
+data:
+  grafana-dashboard.json: {{ (.Files.Glob "grafana-dashboard.json").AsConfig | nindent 2 }}
+{{- end }}
