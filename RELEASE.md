@@ -1,42 +1,33 @@
 We are proud to announce the release of:
 
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
-# Ryax 26.2.0
+# Ryax 26.4.0
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
 
 ## New features
 
-### Fully Compatible Helm Installation
+### New scheduling policy
 
-Starting from 26.2.0 release installation is done using helm and ryax-adm must not be used anymore.
-The new installation documentation is available [here](https://docs.ryax.tech/howto/install_ryax_kubernetes/).
+We have added a new multi-objective scheduler that combines static scores, runtime prediction, node-pool pricing,
+and empirical execution history to automatically select the best execution pool according to performance and cost preferences.
 
-The switch from ryax-adm to helm breaks the retro-compatibility for clusters installed under Ryax version 26.2.0. Worfklows, images and data can be migrated, but clusters installed with adm cannot be operated directly with Helm and vice versa.
+### Site Registation
 
-**We are developing tools to migrate clusters to pure-helm installation without data loss.**
-
-### Air gap version of ryax
-
-Ryax now supports air-gapped clusters, where one can build and run workflows in a completely isolated environment.
-
-More information in our installation documentation related to air-gapped clusters [here](https://docs.ryax.tech/howto/install_ryax_kubernetes_airgap).
-
-### Navigation and UI
-
-- This release also brings new features related to the fine-grain observability of executions and resources consumption.
-- Project navigation has been improved: a top bar that enables you switching between your projects.
-- User and project management is now in the top menu for admins.
-- Resource usage data is now available in the UI for system administrators.
-- We added an infrastructure view that shows the current topology of the underlying infrastructure (including workers, sites, and node pools).
-- Complete rework of the installation: now use Helm (ryax-adm is deprecated).
-
+The Ryax Site registration (from the main site to one with a Worker) is now done in the Ryax UI.
+This simplifies the Worker configuration make it more secure and fix issues with dynamic registration token.
+    
 ## Bug fixes and Improvements
 
-- Fix URL is now stripped of its whitespace when adding a repository.
-- Project deletion when the active user's current project leads to a stalled UI.
-- Move the user documentation to MkDocs.
+- Fix unable to create user in the UI
+- Centralized Helm repository in ryax-engine so simplify install and development
+- Emit Evry and Stop action is now propely stopping in all case
+- Fix memory warm start with last successful allocation in Intelliscale
+- Reduce Intelliscale recomendation timeout to avoid stall deployment
+- Modularize scheduling policies to prepare external policies support
 
 ## Upgrade to this version
 
-Upgrade of old Ryax versions (prior to 26.2) will need to go through adapted cluster migration. Procedure will be provided soon. Users needing a rapid migration can contact us directly.
+The Worker that was packaged inside the Ryax installation is now removed and the Worker install will be done separately.
+This simplify the configuration and make the Ryax installation independant of user code execution.
 
+TODO: Test and explain process or point to the doc
