@@ -307,6 +307,49 @@ def command_update_ci_common_version(args):
         print(f"Error updating ref in submodules: {e}")
 
 
+def command_update_charts_version(args):
+    """
+    Update the image tag in all Ryax services Helm charts.
+    """
+    version = args.version
+    try:
+        # Files to update
+        files_to_update = [
+            "charts/ryax/subcharts/authorization/values.yaml",
+            "charts/ryax/subcharts/repository/values.yaml",
+            "charts/ryax/subcharts/action-builder/values.yaml",
+            "charts/ryax/subcharts/studio/values.yaml",
+            "charts/ryax/subcharts/runner/values.yaml",
+            "charts/ryax/subcharts/front/values.yaml",
+            "charts/worker/subcharts/intelliscale/values.yaml",
+            "charts/worker/values.yaml",
+        ]
+
+        for file_path in files_to_update:
+            if os.path.exists(file_path):
+                # Replace tag: "..." or tag: ... with tag: "version"
+                # We want to keep the indentation.
+                sed_command = f"sed -i 's/\\(tag: \\).*/\\1\"{version}\"/' {file_path}"
+                subprocess.run(sed_command, shell=True, check=True)
+                print(f"Updated image tag to {version} in {file_path}")
+
+        # Also update appVersion in Chart.yaml files
+        charts_to_update = [
+            "charts/ryax/Chart.yaml",
+            "charts/worker/Chart.yaml",
+        ]
+        for chart_path in charts_to_update:
+            if os.path.exists(chart_path):
+                sed_command = (
+                    f"sed -i 's/\\(appVersion: \\).*/\\1\"{version}\"/' {chart_path}"
+                )
+                subprocess.run(sed_command, shell=True, check=True)
+                print(f"Updated appVersion to {version} in {chart_path}")
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error updating charts version: {e}")
+
+
 def get_last_pipe(projgit, tag) -> Dict:
     for pipe in projgit.pipelines.list(get_all=False):
         if tag != pipe.ref:
@@ -471,6 +514,13 @@ if __name__ == "__main__":
     )
     sp.add_argument("-v", "--version")
     sp.set_defaults(func=command_update_ci_common_version)
+
+    description = "Update image version in all Ryax services Helm charts"
+    sp = subparsers.add_parser(
+        "charts_update", description=description, help=description
+    )
+    sp.add_argument("-v", "--version")
+    sp.set_defaults(func=command_update_charts_version)
 
     description = "Force all submodule staging branch to align with current version"
     sp = subparsers.add_parser(
