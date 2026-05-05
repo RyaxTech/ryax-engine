@@ -198,7 +198,7 @@ spec:
             - name: RYAX_LOKI_QUERY_INTERVAL_IN_SECONDS
               value: "{{ .Values.actionLogsQueryRate }}"
             - name: RYAX_OTLP_ENDPOINT
-              value: {{ .Values.global.monitoring.otlpEndpoint | default "" | quote }}
+              value: {{ tpl .Values.global.monitoring.otlpEndpoint . | default "" | quote }}
             - name: RYAX_INTELLISCALE_ENABLED
               value: {{ .Values.intelliscale.enabled | default "" | quote }}
             - name: RYAX_INTELLISCALE_SVC_HOST

@@ -16,8 +16,8 @@ global:
 
   monitoring:
     enabled: true
-    # -- TODO: use a tpl in sub chart to inject release name
-    otlpEndpoint: "ryax-tempo:4317"
+    # -- WARN: Be sure to use tpl in sub chart to inject release name
+    otlpEndpoint: "{{ .Release.Name }}-tempo:4317"
 
   tls:
     enabled: false

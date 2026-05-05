@@ -44,7 +44,7 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | global.imagePullSecrets | list | `[]` |  |
 | global.imageRegistry | string | `nil` | Override the container registry globaly. Useful to use development using registry.ryax.org/dev or for airgapped env |
 | global.monitoring.enabled | bool | `true` |  |
-| global.monitoring.otlpEndpoint | string | `"ryax-tempo:4317"` | TODO: use a tpl in sub chart to inject release name |
+| global.monitoring.otlpEndpoint | string | `"{{ .Release.Name }}-tempo:4317"` | WARN: Be sure to use tpl in sub chart to inject release name |
 | global.nodeSelector | object | `{}` |  |
 | global.ryax | object | `{"logLevel":"warning","userNamespace":"ryaxns-execs"}` | Ryax specific configuration |
 | global.ryax.logLevel | string | `"warning"` | Global log level, can be overriden locally |
