@@ -1,6 +1,6 @@
 # ryax-engine
 
-![Version: 26.4.0-rc1](https://img.shields.io/badge/Version-26.4.0--rc1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.4.0-rc1](https://img.shields.io/badge/AppVersion-26.4.0--rc1-informational?style=flat-square)
+![Version: 26.4.0-rc1](https://img.shields.io/badge/Version-26.4.0--rc1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.4.0-rc0](https://img.shields.io/badge/AppVersion-26.4.0--rc0-informational?style=flat-square)
 
 Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows and applications on multiple infrastructure.
 

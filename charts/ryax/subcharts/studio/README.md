@@ -1,6 +1,6 @@
 # studio
 
-![Version: 26.4.0-rc1](https://img.shields.io/badge/Version-26.4.0--rc1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.4.0-rc1](https://img.shields.io/badge/AppVersion-26.4.0--rc1-informational?style=flat-square)
+![Version: 26.4.0-rc1](https://img.shields.io/badge/Version-26.4.0--rc1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.4.0-rc0](https://img.shields.io/badge/AppVersion-26.4.0--rc0-informational?style=flat-square)
 
 The Ryax Studio manages the creation and edition of the workflows
 
@@ -43,7 +43,7 @@ The Ryax Studio manages the creation and edition of the workflows
 | filestoreName | string | `"ryax-filestore"` |  |
 | filestoreSecret | string | `"ryax-minio-secret"` |  |
 | global.ryax.logLevel | string | `nil` |  |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"studio","tag":"26.4.0-rc1"}` | container image name and version |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"studio","tag":"26.4.0-rc0"}` | container image name and version |
 | jwtSecret | string | `"api-jwt-secret-key"` |  |
 | logLevel | string | `nil` | log level of the service |
 | priorityClass | string | `nil` | Deployment prority class |

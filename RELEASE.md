@@ -30,4 +30,20 @@ This simplifies the Worker configuration make it more secure and fix issues with
 The Worker that was packaged inside the Ryax installation is now removed and the Worker install will be done separately.
 This simplify the configuration and make the Ryax installation independant of user code execution.
 
+To upgrade your main cluster, find the values file from your previous install or restore them using:
+```sh
+helm get values -n ryaxns ryax --output yaml > values.yaml
+```
+Then, run the upgrade with :
+```sh
+helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine:26.4.0 \
+  -n ryaxns \
+  -f values.yaml
+```
+
+To restore your local worker run:
+```sh
+helm install -n ryaxns ryax-worker oci://registry.ryax.org/release-charts/ryax-worker:26.4.0 -f worker.yaml
+```
+
 TODO: Test and explain process or point to the doc

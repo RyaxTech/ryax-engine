@@ -312,6 +312,7 @@ def command_update_charts_version(args):
     Update the image tag in all Ryax services Helm charts.
     """
     version = args.version
+    app_version = args.app_version if args.app_version else version
     try:
         # Files to update
         files_to_update = [
@@ -327,11 +328,11 @@ def command_update_charts_version(args):
 
         for file_path in files_to_update:
             if os.path.exists(file_path):
-                # Replace tag: "..." or tag: ... with tag: "version"
+                # Replace tag: "..." or tag: ... with tag: "app_version"
                 # We want to keep the indentation.
-                sed_command = f"sed -i 's/\\(tag: \\).*/\\1\"{version}\"/' {file_path}"
+                sed_command = f"sed -i 's/\\(tag: \\).*/\\1\"{app_version}\"/' {file_path}"
                 subprocess.run(sed_command, shell=True, check=True)
-                print(f"Updated image tag to {version} in {file_path}")
+                print(f"Updated image tag to {app_version} in {file_path}")
 
         # Update version and appVersion in all Chart.yaml files
         for root, dirs, files in os.walk("charts"):
@@ -342,9 +343,9 @@ def command_update_charts_version(args):
                     sed_command_v = f"sed -i 's/^version: .*/version: \"{version}\"/' {chart_path}"
                     subprocess.run(sed_command_v, shell=True, check=True)
                     # Update appVersion
-                    sed_command_av = f"sed -i 's/^appVersion: .*/appVersion: \"{version}\"/' {chart_path}"
+                    sed_command_av = f"sed -i 's/^appVersion: .*/appVersion: \"{app_version}\"/' {chart_path}"
                     subprocess.run(sed_command_av, shell=True, check=True)
-                    print(f"Updated version and appVersion to {version} in {chart_path}")
+                    print(f"Updated version to {version} and appVersion to {app_version} in {chart_path}")
 
         # Update local dependencies in parent charts
         for parent_chart_path in ["charts/ryax/Chart.yaml", "charts/worker/Chart.yaml"]:
@@ -366,7 +367,7 @@ def command_update_charts_version(args):
 
                 with open(parent_chart_path, "w") as f:
                     f.write("".join(new_parts))
-                print(f"Updated local dependencies in {parent_chart_path}")
+                print(f"Updated local dependencies version to {version} in {parent_chart_path}")
 
         # Update Chart.lock
         for parent_dir in ["charts/ryax", "charts/worker"]:
@@ -552,7 +553,8 @@ if __name__ == "__main__":
     sp = subparsers.add_parser(
         "charts_update", description=description, help=description
     )
-    sp.add_argument("-v", "--version")
+    sp.add_argument("-v", "--version", required=True)
+    sp.add_argument("-a", "--app-version", help="The app version to use for images and appVersion field. Defaults to version if not set.")
     sp.set_defaults(func=command_update_charts_version)
 
     description = "Force all submodule staging branch to align with current version"
