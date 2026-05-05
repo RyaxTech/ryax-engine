@@ -76,9 +76,9 @@ how to configure a kubernetes cluster before installing.
 ## Installation
 
 !!! note
-    We also propose a **minimal** and a **dev** version. You can find the values here: https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/chart/env.
+    We also propose a **minimal** and a **dev** version. You can find the values here: https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/charts/ryax/env.
 
-First, download the configuration file `prod.yaml` in this [repository](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/chart/env).
+First, download the configuration file `prod.yaml` in this [repository](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/charts/ryax/env).
 This file contains specific configuration with tls enabled and monitoring configured with tls.
 
 Next you can install Ryax with the `prod.yaml` configuration file, the only value you need to complete is `global.tls.hostname` with the intended domain name for your cluster.
