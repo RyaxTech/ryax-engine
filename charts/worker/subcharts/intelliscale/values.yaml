@@ -26,7 +26,7 @@ global:
 
 # -- container image name and version
 image:
-  tag: "26.4.0-rc0"
+  tag: "26.4.0-rc2"
   registry: docker.io
   repository: ryaxtech/intelliscale
   digest: ""

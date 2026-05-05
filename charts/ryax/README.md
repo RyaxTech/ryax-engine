@@ -1,6 +1,6 @@
 # ryax-engine
 
-![Version: 26.4.0-rc1](https://img.shields.io/badge/Version-26.4.0--rc1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.4.0-rc0](https://img.shields.io/badge/AppVersion-26.4.0--rc0-informational?style=flat-square)
+![Version: 26.4.0-rc2](https://img.shields.io/badge/Version-26.4.0--rc2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.4.0-rc2](https://img.shields.io/badge/AppVersion-26.4.0--rc2-informational?style=flat-square)
 
 Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows and applications on multiple infrastructure.
 
@@ -14,15 +14,15 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 
 | Repository | Name | Version |
 |------------|------|---------|
-| file://subcharts/action-builder | action-builder | 26.4.0-rc1 |
-| file://subcharts/authorization | authorization | 26.4.0-rc1 |
-| file://subcharts/common-resources | common-resources | 26.4.0-rc1 |
-| file://subcharts/datastore | datastore | 26.4.0-rc1 |
-| file://subcharts/front | front | 26.4.0-rc1 |
-| file://subcharts/registry | registry | 26.4.0-rc1 |
-| file://subcharts/repository | repository | 26.4.0-rc1 |
-| file://subcharts/runner | runner | 26.4.0-rc1 |
-| file://subcharts/studio | studio | 26.4.0-rc1 |
+| file://subcharts/action-builder | action-builder | 26.4.0-rc2 |
+| file://subcharts/authorization | authorization | 26.4.0-rc2 |
+| file://subcharts/common-resources | common-resources | 26.4.0-rc2 |
+| file://subcharts/datastore | datastore | 26.4.0-rc2 |
+| file://subcharts/front | front | 26.4.0-rc2 |
+| file://subcharts/registry | registry | 26.4.0-rc2 |
+| file://subcharts/repository | repository | 26.4.0-rc2 |
+| file://subcharts/runner | runner | 26.4.0-rc2 |
+| file://subcharts/studio | studio | 26.4.0-rc2 |
 | https://grafana.github.io/helm-charts | tempo | 1.x.x |
 | https://helm.traefik.io/traefik | traefik | 39.x.x |
 | https://prometheus-community.github.io/helm-charts | kube-prometheus-stack | 81.x.x |

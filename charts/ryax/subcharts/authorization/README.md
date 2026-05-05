@@ -1,6 +1,6 @@
 # authorization
 
-![Version: 26.4.0-rc1](https://img.shields.io/badge/Version-26.4.0--rc1-informational?style=flat-square) ![AppVersion: 26.4.0-rc0](https://img.shields.io/badge/AppVersion-26.4.0--rc0-informational?style=flat-square)
+![Version: 26.4.0-rc2](https://img.shields.io/badge/Version-26.4.0--rc2-informational?style=flat-square) ![AppVersion: 26.4.0-rc2](https://img.shields.io/badge/AppVersion-26.4.0--rc2-informational?style=flat-square)
 
 The Ryax Authorizaion service manage authentication and user rights inside Ryax.
 
@@ -37,7 +37,7 @@ The Ryax Authorizaion service manage authentication and user rights inside Ryax.
 | affinity | object | `{}` | Add affinity injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) Example:   nodeAffinity:     requiredDuringSchedulingIgnoredDuringExecution:       nodeSelectorTerms:       - matchExpressions:         - key: topology.kubernetes.io/zone           operator: In           values:           - antarctica-east1           - antarctica-west1 |
 | apiPort | int | `8080` |  |
 | datastoreSecret | string | `"ryax-datastore-secret"` |  |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"authorization","tag":"26.4.0-rc0"}` | container image name and version |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"authorization","tag":"26.4.0-rc2"}` | container image name and version |
 | image.pullPolicy | string | `"IfNotPresent"` | Specify a imagePullPolicy ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images |
 | jwtSecret | string | `"api-jwt-secret-key"` |  |
 | logLevel | string | `"info"` | override global log level |

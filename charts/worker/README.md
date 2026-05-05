@@ -1,6 +1,6 @@
 # ryax-worker
 
-![Version: 26.4.0-rc1](https://img.shields.io/badge/Version-26.4.0--rc1-informational?style=flat-square) ![AppVersion: 26.4.0-rc0](https://img.shields.io/badge/AppVersion-26.4.0--rc0-informational?style=flat-square)
+![Version: 26.4.0-rc2](https://img.shields.io/badge/Version-26.4.0--rc2-informational?style=flat-square) ![AppVersion: 26.4.0-rc2](https://img.shields.io/badge/AppVersion-26.4.0--rc2-informational?style=flat-square)
 
 The Ryax Worker service manages the deployment and the execution of Actions on each site.
 
@@ -14,7 +14,7 @@ The Ryax Worker service manages the deployment and the execution of Actions on e
 
 | Repository | Name | Version |
 |------------|------|---------|
-| file://subcharts/intelliscale | intelliscale | 26.4.0-rc1 |
+| file://subcharts/intelliscale | intelliscale | 26.4.0-rc2 |
 | https://grafana.github.io/helm-charts | loki | ~6.16.0 |
 | https://grafana.github.io/helm-charts | promtail | ~6.16.6 |
 | oci://registry-1.docker.io/bitnamicharts | postgresql | ~16.1.2 |
@@ -76,7 +76,7 @@ The Ryax Worker service manages the deployment and the execution of Actions on e
 | global.ryax.userNamespace | string | `"ryaxns-execs"` |  |
 | hpcConfigFile | string | `nil` | Inject the SSH config to customize the access to the HPC site here with `--set-file` |
 | hpcPrivateKeyFile | string | `nil` | Inject the private key to SSH to the HPC site with `--set-file hpcPrivateKeyFile=./my-private.key` |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker","tag":"26.4.0-rc0"}` | container image name and version |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker","tag":"26.4.0-rc2"}` | container image name and version |
 | intelliscale.enabled | bool | `true` |  |
 | intelliscale.ryax.worker.configMapName | string | `"{{ .Release.Name }}-config"` |  |
 | intelliscale.ryax.worker.serviceName | string | `"{{ .Release.Name }}"` |  |
