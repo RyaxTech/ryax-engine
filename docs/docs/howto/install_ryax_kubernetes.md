@@ -69,22 +69,30 @@ how to configure a kubernetes cluster before installing.
 * [AWS](kubernetes_aws.md) : requires tweaking so pods can have persistent volume claims (PVCs) and enable autoscaling support;
 * Scaleway : no specific tweaking for Ryax support is required.
 
-!!! note
-    We also provide a [script](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/987689da73f5875c52ca8fa4361c7082ed74a78f/chart/generate-secrets.py) to generate a base value.yaml generating secrets with the right formatting.
-    The output of this file can be used as the configuration file for your cluster.
-
 ## Installation
 
 !!! note
     We also propose a **minimal** and a **dev** version. You can find the values here: https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/charts/ryax/env.
 
-First, download the configuration file `prod.yaml` in this [repository](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/charts/ryax/env).
+We provide a script to generate a `secrets.yaml` including secrets with the right formatting.
+```sh
+curl -s https://gitlab.com/ryax-tech/ryax/ryax-engine/-/raw/987689da73f5875c52ca8fa4361c7082ed74a78f/chart/generate-secrets.py | python > secrets.yaml
+```
+
+Then, download the configuration file `prod.yaml` in this [repository](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/master/charts/ryax/env/prod.yaml).
+Or using this command:
+```sh
+curl -O https://gitlab.com/ryax-tech/ryax/ryax-engine/-/raw/master/charts/ryax/env/prod.yaml
+```
 This file contains specific configuration with tls enabled and monitoring configured with tls.
 
-Next you can install Ryax with the `prod.yaml` configuration file, the only value you need to complete is `global.tls.hostname` with the intended domain name for your cluster.
+Next you can install Ryax with these configuration files.
+The only value you need to complete is `global.tls.hostname` with the intended domain name for your cluster.
 
 ```sh
-helm install ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns --create-namespace -f prod.yaml \
+helm install ryax oci://registry.ryax.org/release-charts/ryax-engine \
+  -n ryaxns --create-namespace \
+  -f prod.yaml -f secrets.yaml \
   --set global.tls.hostname='example.company.io'
 ```
 
@@ -150,10 +158,9 @@ The default values give comfortable volume sizes to start working on the platfor
 
 Now you can access your cluster with its IP address in your web browser.
 
-!!! tip
-    To get a DNS access with valid SSL certificate, please refer to the [Production Installation](#production-installation) section.
-
-Default credentials are *user1/pass1*
+Default credentials are:
+- user: `user1`
+- password: `pass1`
 
 !!! warning
     Change this password and user as soon as you're logged in!
@@ -169,10 +176,6 @@ The next step is to configure and install a worker in your cluster to start runn
 ### Worker configuration
 
 In order to configure your Worker, you will need to select one or more node pools (set of homogeneous nodes) and give to the Worker some information about the nodes.
-<!--
-!!! note
-    Why we use node pools? Because it allows Ryax to leverage the Kubernetes node **autoscaling with scale to zero !**
--->
 
 Here is a simple example worker configuration using an AWS EKS managed cluster:
 
@@ -297,5 +300,4 @@ address. See also how to [Configure the DNS](#configure-the-dns).
 If you do not want to configure external access to your cluster you won't be able
 to connect external kubernetes workers, but you can always have a local worker.
 In this case, to configure the internal registry refer to [Use local registry only](#use-local-only-registry).
-
 
