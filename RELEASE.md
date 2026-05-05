@@ -41,9 +41,34 @@ helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine:26.4.0 \
   -f values.yaml
 ```
 
-To restore your local worker run:
+To restore your local worker, we need to extract the worker config to be able to attach the database to the same volume.
+To do so extract the worker values with:
+```sh
+yq -y .worker ./values.yaml > worker.yaml
+```
+The new registration mechanism requires you to enter the site and node pools ids.
+To do so, edit this file to add the `config.site.id` and the `config.spec.nodePools[].id` ids that
+you can find in the Web UI in the Infrastructure view.
+
+Here is an example of configuration:
+```yaml
+postgresql:
+  auth:
+    password: KSODJAOPP2
+config:
+  site:
+    id: Site-1777972967-vlyxkb72
+    spec:
+      nodePools:
+      - id: NodePool-1777972967-duf9w7tu
+        selector:
+          k8s.scaleway.com/pool-name: default
+      - id: NodePool-1777984371-q43o0vc6
+        selector:
+          k8s.scaleway.com/pool-name: small
+```
+And then run:
 ```sh
 helm install -n ryaxns ryax-worker oci://registry.ryax.org/release-charts/ryax-worker:26.4.0 -f worker.yaml
 ```
 
-TODO: Test and explain process or point to the doc
