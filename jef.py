@@ -333,20 +333,53 @@ def command_update_charts_version(args):
                 subprocess.run(sed_command, shell=True, check=True)
                 print(f"Updated image tag to {version} in {file_path}")
 
-        # Also update appVersion in Chart.yaml files
-        charts_to_update = [
-            "charts/ryax/Chart.yaml",
-            "charts/worker/Chart.yaml",
-        ]
-        for chart_path in charts_to_update:
-            if os.path.exists(chart_path):
-                sed_command = (
-                    f"sed -i 's/\\(appVersion: \\).*/\\1\"{version}\"/' {chart_path}"
-                )
-                subprocess.run(sed_command, shell=True, check=True)
-                print(f"Updated appVersion to {version} in {chart_path}")
+        # Update version and appVersion in all Chart.yaml files
+        for root, dirs, files in os.walk("charts"):
+            for file in files:
+                if file == "Chart.yaml":
+                    chart_path = os.path.join(root, file)
+                    # Update version
+                    sed_command_v = f"sed -i 's/^version: .*/version: \"{version}\"/' {chart_path}"
+                    subprocess.run(sed_command_v, shell=True, check=True)
+                    # Update appVersion
+                    sed_command_av = f"sed -i 's/^appVersion: .*/appVersion: \"{version}\"/' {chart_path}"
+                    subprocess.run(sed_command_av, shell=True, check=True)
+                    print(f"Updated version and appVersion to {version} in {chart_path}")
 
-    except subprocess.CalledProcessError as e:
+        # Update local dependencies in parent charts
+        for parent_chart_path in ["charts/ryax/Chart.yaml", "charts/worker/Chart.yaml"]:
+            if os.path.exists(parent_chart_path):
+                with open(parent_chart_path, "r") as f:
+                    content = f.read()
+
+                # Split by dependency entry
+                # It can be '  - name:' or '- name:'
+                parts = re.split(r"(\n\s*-\s+name:)", content)
+                new_parts = [parts[0]]
+                for i in range(1, len(parts), 2):
+                    header = parts[i]
+                    block = parts[i + 1]
+                    if 'repository: "file://' in block or "repository: 'file://" in block:
+                        block = re.sub(r"(version: ).*", rf'\1"{version}"', block)
+                    new_parts.append(header)
+                    new_parts.append(block)
+
+                with open(parent_chart_path, "w") as f:
+                    f.write("".join(new_parts))
+                print(f"Updated local dependencies in {parent_chart_path}")
+
+        # Update Chart.lock
+        for parent_dir in ["charts/ryax", "charts/worker"]:
+            if os.path.exists(parent_dir):
+                print(f"Updating Chart.lock for {parent_dir}...")
+                subprocess.run(f"helm dependency update {parent_dir}", shell=True, check=True)
+
+        # Update chart READMEs with helm-docs
+        if os.path.exists("charts"):
+            print("Updating chart READMEs with helm-docs...")
+            subprocess.run("helm-docs", cwd="charts", shell=True, check=True)
+
+    except Exception as e:
         print(f"Error updating charts version: {e}")
 
 

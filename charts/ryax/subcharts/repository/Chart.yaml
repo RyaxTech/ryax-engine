@@ -8,5 +8,5 @@ keywords:
 sources:
   - https://gitlab.com/ryax-tech/ryax/ryax-repository
 icon: https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd2-460a-b263-2e4c79b69196.png
-version: 0.0.0-dev
-appVersion: latest
+version: "26.4.0-rc1"
+appVersion: "26.4.0-rc1"

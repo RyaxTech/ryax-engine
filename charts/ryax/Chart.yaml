@@ -15,39 +15,39 @@ icon: https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd
 name: ryax-engine
 description: Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows and applications on multiple infrastructure.
 type: application
-version: "26.4"
-appVersion: "26.4.0-rc0"
+version: "26.4.0-rc1"
+appVersion: "26.4.0-rc1"
 dependencies:
   # Ryax internal subcharts
   - name: common-resources
-    version: 0.0.0-dev
+    version: "26.4.0-rc1"
     repository: "file://subcharts/common-resources"
   - name: action-builder
-    version: 0.0.0-dev
+    version: "26.4.0-rc1"
     repository: "file://subcharts/action-builder"
   - name: authorization
-    version: 0.0.0-dev
+    version: "26.4.0-rc1"
     repository: "file://subcharts/authorization"
   - name: front
-    version: 0.0.0-dev
+    version: "26.4.0-rc1"
     repository: "file://subcharts/front"
   - name: repository
-    version: 0.0.0-dev
+    version: "26.4.0-rc1"
     repository: "file://subcharts/repository"
   - name: runner
-    version: 0.0.0-dev
+    version: "26.4.0-rc1"
     repository: "file://subcharts/runner"
   - name: studio
-    version: 0.0.0-dev
+    version: "26.4.0-rc1"
     repository: "file://subcharts/studio"
 
   # Docker registry
   - name: registry
-    version: 0.0.0-dev
+    version: "26.4.0-rc1"
     repository: "file://subcharts/registry"
   # Postgres database
   - name: datastore
-    version: 0.0.0-dev
+    version: "26.4.0-rc1"
     repository: "file://subcharts/datastore"
   # S3 compatible storage
   - name: minio

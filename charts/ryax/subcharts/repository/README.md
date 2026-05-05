@@ -1,6 +1,6 @@
 # repository
 
-![Version: 0.0.0-dev](https://img.shields.io/badge/Version-0.0.0--dev-informational?style=flat-square) ![AppVersion: latest](https://img.shields.io/badge/AppVersion-SERVICE--VERSION-informational?style=flat-square)
+![Version: 26.4.0-rc1](https://img.shields.io/badge/Version-26.4.0--rc1-informational?style=flat-square) ![AppVersion: 26.4.0-rc1](https://img.shields.io/badge/AppVersion-26.4.0--rc1-informational?style=flat-square)
 
 Ryax repository that pull Ryax Actions from service Helm chart for Kubernetes
 
@@ -46,7 +46,7 @@ Ryax repository that pull Ryax Actions from service Helm chart for Kubernetes
 | brokerSecret | string | `"ryax-broker-secret"` |  |
 | datastoreSecret | string | `"ryax-datastore-secret"` |  |
 | fernetEncryptionKey | string | `nil` | Set this by generating a Key with this script:    ```python3    #!/usr/bin/env python3    import base64    import os     print(base64.urlsafe_b64encode(os.urandom(32)).decode())    ``` |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"repository","tag":"latest"}` | container image name and version |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"repository","tag":"26.4.0-rc1"}` | container image name and version |
 | jwtSecret | string | `"api-jwt-secret-key"` |  |
 | logLevel | string | `"info"` | log level of the service |
 | passwordEncryptionKeySecret | string | `"repository-password-encryption-key"` |  |

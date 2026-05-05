@@ -1,6 +1,6 @@
-# worker
+# ryax-worker
 
-![Version: 0.0.0-dev](https://img.shields.io/badge/Version-0.0.0--dev-informational?style=flat-square) ![AppVersion: latest](https://img.shields.io/badge/AppVersion-SERVICE--VERSION-informational?style=flat-square)
+![Version: 26.4.0-rc1](https://img.shields.io/badge/Version-26.4.0--rc1-informational?style=flat-square) ![AppVersion: 26.4.0-rc1](https://img.shields.io/badge/AppVersion-26.4.0--rc1-informational?style=flat-square)
 
 The Ryax Worker service manages the deployment and the execution of Actions on each site.
 
@@ -14,10 +14,10 @@ The Ryax Worker service manages the deployment and the execution of Actions on e
 
 | Repository | Name | Version |
 |------------|------|---------|
+| file://subcharts/intelliscale | intelliscale | 26.4.0-rc1 |
 | https://grafana.github.io/helm-charts | loki | ~6.16.0 |
 | https://grafana.github.io/helm-charts | promtail | ~6.16.6 |
 | oci://registry-1.docker.io/bitnamicharts | postgresql | ~16.1.2 |
-| oci://registry.ryax.org/release-charts | intelliscale | 26.1.x |
 
 ## Values
 
@@ -76,20 +76,25 @@ The Ryax Worker service manages the deployment and the execution of Actions on e
 | global.ryax.userNamespace | string | `"ryaxns-execs"` |  |
 | hpcConfigFile | string | `nil` | Inject the SSH config to customize the access to the HPC site here with `--set-file` |
 | hpcPrivateKeyFile | string | `nil` | Inject the private key to SSH to the HPC site with `--set-file hpcPrivateKeyFile=./my-private.key` |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker","tag":"latest"}` | container image name and version |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker","tag":"26.4.0-rc1"}` | container image name and version |
 | intelliscale.enabled | bool | `true` |  |
-| intelliscale.ryax.worker.configMapName | string | `"{{ .Release.Name }}-worker-config"` |  |
-| intelliscale.ryax.worker.serviceName | string | `"{{ .Release.Name }}-worker"` |  |
+| intelliscale.ryax.worker.configMapName | string | `"{{ .Release.Name }}-config"` |  |
+| intelliscale.ryax.worker.serviceName | string | `"{{ .Release.Name }}"` |  |
 | internalRegistryOverride | string | `"ryax-registry:5000"` | this is used for SLURM_SSH deployment mode on a private network mode. Don't change it unless you know what you are doing |
 | logLevel | string | `nil` | log level of the service (override global.ryax.logLevel) |
-| loki | object | `{"backend":{"replicas":0},"chunksCache":{"enabled":false},"deploymentMode":"SingleBinary","enabled":true,"gateway":{"enabled":false},"loki":{"auth_enabled":false,"commonConfig":{"replication_factor":1},"extraMemberlistConfig":{"bind_addr":["${POD_IP}"]},"limits_config":{"retention_period":"7d"},"query_scheduler":{"max_outstanding_requests_per_tenant":2048},"schemaConfig":{"configs":[{"from":"2024-01-01","index":{"period":"24h","prefix":"loki_index_"},"object_store":"filesystem","schema":"v13","store":"tsdb"}]},"server":{"log_level":"warn"},"storage":{"type":"filesystem"}},"lokiCanary":{"enabled":false},"read":{"replicas":0},"resultsCache":{"enabled":false},"singleBinary":{"extraArgs":["-config.expand-env=true"],"extraEnv":[{"name":"POD_IP","valueFrom":{"fieldRef":{"fieldPath":"status.podIP"}}}],"replicas":1,"resources":{"limits":{"cpu":1,"memory":"512Mi"},"requests":{"cpu":0.5,"memory":"512Mi"}}},"test":{"enabled":false},"write":{"replicas":0}}` | Loki is an extrenal dependency that provide log collection on Kubernetes. Disable this if the site type is different from KUBERNETES |
+| loki | object | `{"backend":{"replicas":0},"chunksCache":{"enabled":false},"deploymentMode":"SingleBinary","enabled":true,"gateway":{"enabled":false},"loki":{"auth_enabled":false,"commonConfig":{"replication_factor":1},"extraMemberlistConfig":{"bind_addr":["${POD_IP}"]},"limits_config":{"max_label_names_per_series":30,"retention_period":"7d"},"query_scheduler":{"max_outstanding_requests_per_tenant":2048},"schemaConfig":{"configs":[{"from":"2024-01-01","index":{"period":"24h","prefix":"loki_index_"},"object_store":"filesystem","schema":"v13","store":"tsdb"}]},"server":{"log_level":"warn"},"storage":{"type":"filesystem"}},"lokiCanary":{"enabled":false},"read":{"replicas":0},"resultsCache":{"enabled":false},"singleBinary":{"extraArgs":["-config.expand-env=true"],"extraEnv":[{"name":"POD_IP","valueFrom":{"fieldRef":{"fieldPath":"status.podIP"}}}],"replicas":1,"resources":{"limits":{"cpu":1,"memory":"512Mi"},"requests":{"cpu":0.5,"memory":"512Mi"}}},"test":{"enabled":false},"write":{"replicas":0}}` | Loki is an extrenal dependency that provide log collection on Kubernetes. Disable this if the site type is different from KUBERNETES |
 | metricsPort | int | `8090` |  |
 | monitoring.datasource | object | `{"enabled":true}` | Grafana datasource for loki |
 | monitoring.serviceMonitor | object | `{"enabled":true}` | Enable service monitor for prometheus using ServiceMonitor CRD |
 | persistence | object | `{"accessMode":"ReadWriteOnce","annotations":{},"enabled":false,"size":"1Gi"}` | Only necessary for SQLite database in /data/db, Disabled by default WARNING: only use sqlite for testing or for very light usage, or you will face "database is locked" errors. |
 | persistence.accessMode | string | `"ReadWriteOnce"` | Database data Persistent Volume Storage Class If defined, storageClassName: <storageClass> If set to "-", storageClassName: "", which disables dynamic provisioning If undefined (the default) or set to null, no storageClassName spec is set, choosing the default provisioner.  Example: storageClass: "-" |
-| postgresql | object | `{"auth":{"database":"worker","existingSecret":"{{ include \"worker.postgresql.secret\" . }}","username":"worker"},"enabled":true,"image":{"repository":"bitnamilegacy/postgresql"},"metrics":{"image":{"repository":"bitnamilegacy/postgres-exporter"}},"nameOverride":"worker-postgresql","primary":{"persistence":{"size":"1Gi"}}}` | local postgresql database |
+| postgresql.auth.database | string | `"worker"` |  |
+| postgresql.auth.existingSecret | string | `"{{ include \"worker.postgresql.secret\" . }}"` |  |
+| postgresql.auth.username | string | `"worker"` |  |
 | postgresql.enabled | bool | `true` | Enables PostgreSQL local database instead of remote or local sqlite |
+| postgresql.image.repository | string | `"bitnamilegacy/postgresql"` |  |
+| postgresql.metrics.image.repository | string | `"bitnamilegacy/postgres-exporter"` |  |
+| postgresql.primary.persistence.size | string | `"1Gi"` |  |
 | priorityClass | string | `nil` | Add priority class |
 | promtail.config.clients[0].url | string | `"{{ printf \"http://%s-loki:3100/loki/api/v1/push\" .Release.Name }}"` |  |
 | promtail.config.snippets.extraRelabelConfigs[0].action | string | `"labelmap"` |  |
