@@ -57,13 +57,13 @@ postgresql:
     password: KSODJAOPP2
 config:
   site:
-    id: Site-1777972967-vlyxkb72
+    id: Site-1777972967-vlyxkb72 # Add this field
     spec:
       nodePools:
-      - id: NodePool-1777972967-duf9w7tu
+      - id: NodePool-1777972967-duf9w7tu # Add this field
         selector:
           k8s.scaleway.com/pool-name: default
-      - id: NodePool-1777984371-q43o0vc6
+      - id: NodePool-1777984371-q43o0vc6 # Add this field
         selector:
           k8s.scaleway.com/pool-name: small
 ```
