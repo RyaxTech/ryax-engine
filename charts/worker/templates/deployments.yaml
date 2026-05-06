@@ -23,6 +23,9 @@ spec:
       annotations:
         # Force restart on config changes
         checksum/config: {{ .Values.config | toYaml | sha256sum }}
+        {{- if .Values.hpcPrivateKeyFile }}
+        checksum/sshkey: {{ .Values.hpcPrivateKeyFile | toYaml | sha256sum }}
+        {{- end }}
     spec:
       priorityClassName: {{ .Values.priorityClass }}
       serviceAccount: {{ include "worker.fullname" . }}
