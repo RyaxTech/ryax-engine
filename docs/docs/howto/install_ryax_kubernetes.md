@@ -175,40 +175,32 @@ The next step is to configure and install a worker in your cluster to start runn
 
 ### Worker configuration
 
-In order to configure your Worker, you will need to select one or more node pools (set of homogeneous nodes) and give to the Worker some information about the nodes.
+In order to configure your Worker, you will need to register a *Site* and or more *Node Pools* (set of homogeneous nodes) in the Ryax UI.
+To do so, go into the Infrastructure view of your Ryax installation (For example in https://ryax.example.com/app/infrastructure) and create a new Site.
+Then create a new Node pool that match the caracteristics of the computing node (servers) that you want to attach to Ryax.
+
+Now that your Site and you Node Pools are created, we will need to their IDs to create the Worker configuration.
+Create a `worker-values.yaml` file and copy the Site and Node Pools IDs from the Ryax UI to add them to the configuration like in the following example.  
 
 Here is a simple example worker configuration using an AWS EKS managed cluster:
 
 ```yaml
 config:
   site:
-    name: aws-kubernetes-small
+    id: Site-1777021590-tq6kqbbe
     spec:
       nodePools:
-      - name: small
-        cpu: 2
-        # gpu: 1 # required if the nodepool has GPUs
-        memory: 4G
+      - id: NodePool-1777021590-n3y8xs0g
         selector:
           eks.amazonaws.com/nodegroup: default
-#
-postgresql:
-  auth:
-    password: elFy3uw3bS2z
-loki:
-  singleBinary:
-    persistence:
-      size: 10Gi
 ```
 
 Let's explain each field of the `config`:
 
-- **site.name**: the name of the site that identifies the site in Ryax
+- **site.id**: the id of the site copied from the Ryax UI.
 - **site.spec.nodePools**: the node pools definitions (a node pool is a set of homogeneous node. Each resource value is given by node).
-  - **name**: name of the node pool.
-  - **cpu**: amount of allocatable cpu core per node.
-  - **memory**: amount of allocatable memory in bytes per node.
-  - **selector**: node selector type within Kubernetes to precise which nodes will take part in the node pool.
+  - **id**: the id of the node pool copied from the Ryax UI.
+  - **selector**: node selector that precises within Kubernetes which nodes will take part in the node pool.
 
 
 These fields might change depending on the cloud provider. Below an example of configuration for Azure.
@@ -245,10 +237,15 @@ taints:
 !!! warning
     Before any updates, [do a backup](./create-backups.md) and have a look at the changelog to see if there is any extra step needed.
 
-
+!!! tip
+    If you have lost the values YAML files use for your cluster you can restore them using:
+    ```sh
+    helm get values -n ryaxns ryax --output yaml > values.yaml
+    ```
+     
 Run the upgrade with:
 ```sh
-helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns --reuse-values
+helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns -f values.yaml
 ```
 
 ## Troubleshooting
