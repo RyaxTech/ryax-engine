@@ -30,9 +30,9 @@ pages:
     paths:
       - public
   rules:
-    - if: $CI_COMMIT_BRANCH =- "/^release-.*/" # ensure to run on the default branch (with default PAGES_PREFIX)
+    - if: $CI_COMMIT_BRANCH =~ "/^release-.*/" # ensure to run on the default branch (with default PAGES_PREFIX)
       variables:
-        PAGES_PREFIX: '$CI_COMMIT_BRANCH' # prefix with _stg for the staging branch
+        PAGES_PREFIX: $CI_COMMIT_BRANCH  # prefix with for the release branch
   variables:
     PAGES_PREFIX: "" # no prefix by default (run on the default branch)
   pages:  # specifies that this is a Pages job and publishes the default public directory
