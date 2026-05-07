@@ -159,6 +159,7 @@ The default values give comfortable volume sizes to start working on the platfor
 Now you can access your cluster with its IP address in your web browser.
 
 Default credentials are:
+
 - user: `user1`
 - password: `pass1`
 

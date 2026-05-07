@@ -34,21 +34,21 @@ So, the only things you'll need are:
     Be sure to install the workers on the same cluster and namespace that is running `ryax-runner`.
 
 Ryax allows you to register one or more SLURM partitions to run your actions on. 
-To do so, you need to define in the configuration partition name and node resources
+To do so, you need to define a *Site* and one or more partitions, called *Node Pools* in Ryax, in the infrastructure view of the Ryax UI.
 
-Here is a simple example of configuration:
+Now that your Site and you Node Pools are created, their IDs are required to create the Worker configuration.
+Create a worker-values.yaml file and copy the Site and Node Pools IDs from the Ryax UI to add them to the configuration
+like in the following example: 
+
 ```yaml
 config:
   site:
-    name: HPCSite-1
+    id: Site-1777021590-tq6kqbbe
     type: SLURM_SSH
     spec:
       partitions:
-        - name: default
-          cpu: 16
-          memory: 24G
-          gpu: 1
-          time: 2H
+        - name: default # name of the partition as define in Slurm
+          id: NodePool-1777021590-n3y8xs0g
       credentials:
         server: my.hpc-site.com
         username: ryax
@@ -59,37 +59,12 @@ intelliscale:
 ```
 Each field explained in details:
 
-- **site.name**: the name of the site that identifies the site in Ryax
+- **site.id**: the name of the site that identifies the site in Ryax
 - **site.type**: the type of the site (can SLURM_SSH or KUBERNETES)
 - **site.spec.partitions**: the partition definitions. **Ryax only supports partition with homogeneous node for now.** Each resource value is given by node.
-  - **name**: name of the partition.
-  - **cpu**: amount of allocatable cpu core per node.
-  - **memory**: amount of allocatable memory in bytes per node.
-- **site.credentials**: Contains credential to SSH to HPC cluster login server.
-
-To extract the partition information we provide a helper script to run on the Slurm login node:
-```shell
-wget "https://gitlab.com/ryax-tech/ryax/ryax-runner/-/raw/master/slurm-ryax-config.py"
-chmod +x ./slurm-ryax-config.py
-./slurm-ryax-config.py > worker-hpc.yaml
-```
-
-Now you can edit the file to add your credentials for Ryax to be able to SSH to the HPC loin node:
-
-```yaml
-config:
-  site:
-    spec:
-      # ...
-      credentials:
-        username: ryax
-        server: hpc.example.com
-```
-
-!!! warning
-    Names must be unique among worker on the main site.
-
-The private key will be injected during the installation phase.
+  - **name**: name of the partition in Slurm (Will be use to target the partition).
+  - **id**: id of the partition provided by the Ryax UI.
+- **site.spec.credentials**: Contains credential to SSH to HPC cluster login server. The private key will be injected during the installation phase.
 
 For more details about the Ryax Worker configuration please see the [Worker reference documentation](../reference/configuration.md#worker-configuration)
 
@@ -99,16 +74,16 @@ Now you can install the Worker on the Ryax main site. To do so, we will use the 
 
 Also, we will inject the SSH private key required to access the SSH cluster.
 ```sh
-helm upgrade --install worker-hpc-1 \
+helm upgrade --install ryax-worker-hpc \
   oci://registry.ryax.org/release-charts/worker  \
-  --version 26.2.0-rc6 \
+  --version 26.4.0 \
   --namespace ryaxns \
-  --values worker-hpc.yaml \
+  --values worker-values.yaml \
   --set-file hpcPrivateKeyFile=./my-ssh-private-key
 ```
 
-* `worker-hpc-1`: name of the helm release
-* `worker-hpc.yaml`: file containing the configuration of the worker
+* `ryax-worker-hpc`: name of the helm release
+* `worker-values.yaml`: file containing the configuration of the worker
 * `my-ssh-private-key`: rsa private key file that has authorization to login
 
 Once the worker is up and running, you should see a new site available in UI, in the workflow edition, in the *Deploy* tab of each action.
@@ -126,7 +101,6 @@ First, you'll need a Kubernetes cluster, of course! Be sure that your cluster is
 kubectl get storageclass
 ```
 
-
 This command should show you at least one storage class with the *default* flag, if this is not the case you should install one.
 Make sure that the storage class you want to use is set as default. You can set a storage class as default with:
 
@@ -142,7 +116,7 @@ To install a Ryax Worker on Kubernetes we will use Helm.
 
 Supported versions:
 
-* Kubernetes > 1.19
+* Kubernetes > 1.30
 * Helm > 3.x
 
 Hardware Requirements:
@@ -155,59 +129,65 @@ Hardware Requirements:
 
 ### Configuration
 
-In order to configure your Worker, you will need to select one or more node pools (set of homogeneous nodes) and give to the Worker some information about the nodes.
+<!-- TODO: This is the exact copy of the install worker configuration part -->
+<!-- reformat or use include-markdown https://pypi.org/project/mkdocs-include-markdown-plugin/ -->
 
-!!! info
-    Why we use node pools? Because it allows Ryax to leverage the Kubernetes node **autoscaling with scale to zero !**
+In order to configure your Worker, you will need to register a *Site* and or more *Node Pools* (set of homogeneous nodes) in the Ryax UI.
+To do so, go into the Infrastructure view of your Ryax installation (For example in https://ryax.example.com/app/infrastructure) and create a new Site.
+Then create a new Node pool that match the caracteristics of the computing node (servers) that you want to attach to Ryax.
 
-Here is a simple example of configuration for aws:
+Now that your Site and you Node Pools are created, we will need to their IDs to create the Worker configuration.
+Create a `worker-values.yaml` file and copy the Site and Node Pools IDs from the Ryax UI to add them to the configuration like in the following example.  
+
+Here is a simple example worker configuration using an AWS EKS managed cluster:
 
 ```yaml
 config:
   site:
-    name: aws-kubernetes-cluster-1
+    id: Site-1777021590-tq6kqbbe
     spec:
       nodePools:
-      - name: small
-        cpu: 2
-        memory: 4G
+      - id: NodePool-1777021590-n3y8xs0g
         selector:
           eks.amazonaws.com/nodegroup: default
 ```
-let's exaplain each field:
 
-* **site.name**: the name of the site that identifies the site in Ryax
-* **site.spec.nodePools**: the node pools definitions (a node pool is a set of homogeneous node. Each resource value is given by node). 
-  * **name**: name of the node pool.
-  * **cpu**: amount of allocatable cpu core per node.
-  * **memory**: amount of allocatable memory in bytes per node.
+Let's explain each field of the `config`:
+
+- **site.id**: the id of the site copied from the Ryax UI.
+- **site.spec.nodePools**: the node pools definitions (a node pool is a set of homogeneous node. Each resource value is given by node).
+  - **id**: the id of the node pool copied from the Ryax UI.
+  - **selector**: node selector that precises within Kubernetes which nodes will take part in the node pool.
 
 
 These fields might change depending on the cloud provider. Below an example of configuration for Azure.
 
 ```yaml
-config:
-  site:
-    name: azure-kubernetes-cluster-2
-    spec:
-      nodePools:
-      - name: small
-        cpu: 2
-        memory: 4G
-        selector:
-          kubernetes.azure.com/agentpool: default
+kubernetes.azure.com/agentpool: default
 ```
 
 All node pool information can be obtained using a simple:
 ```sh
 kubectl describe nodes
 ```
+
 To obtain resources values, look for the *Allocatable* fields.
-Regarding the selector, you should find the label(s) that uniquely refers to your node pool (little hint: there is often *pool* in it ☺️).
+Regarding the selector, you should find the label(s) that uniquely refers to your node pool.
 
-For more details about the Worker configuration please see the [Worker reference documentation](../reference/configuration.md#worker-configuration)
+For more details about the Worker configuration please see the [Worker reference documentation](../reference/configuration.md#worker-configuration).
 
-Once your configuration is ready save it for later to a `worker.yaml` file.
+To be able to scale to 0 when unused, your node pools must be dedicated to the Ryax users workload.
+For the node pool to be used only by Ryax actions, we advise you to put a taint on your nodes using the `ryax.tech/ryaxns-execs` key.
+Because all the Ryax action already have a toleration for this by default, they will be the only pods that will be allowed to deployed there.
+
+Adding a taint on a node pool depends on your provider but here an example configuration:
+
+```yaml
+taints:
+ - effect: NO_SCHEDULE
+   key: ryax.tech/ryaxns-execs
+   value: only
+```
 
 ### Preparing
 
