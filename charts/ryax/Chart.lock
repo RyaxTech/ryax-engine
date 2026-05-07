@@ -1,31 +1,31 @@
 dependencies:
 - name: common-resources
   repository: file://subcharts/common-resources
-  version: 26.4.0-rc2
+  version: 26.4.0
 - name: action-builder
   repository: file://subcharts/action-builder
-  version: 26.4.0-rc2
+  version: 26.4.0
 - name: authorization
   repository: file://subcharts/authorization
-  version: 26.4.0-rc2
+  version: 26.4.0
 - name: front
   repository: file://subcharts/front
-  version: 26.4.0-rc2
+  version: 26.4.0
 - name: repository
   repository: file://subcharts/repository
-  version: 26.4.0-rc2
+  version: 26.4.0
 - name: runner
   repository: file://subcharts/runner
-  version: 26.4.0-rc2
+  version: 26.4.0
 - name: studio
   repository: file://subcharts/studio
-  version: 26.4.0-rc2
+  version: 26.4.0
 - name: registry
   repository: file://subcharts/registry
-  version: 26.4.0-rc2
+  version: 26.4.0
 - name: datastore
   repository: file://subcharts/datastore
-  version: 26.4.0-rc2
+  version: 26.4.0
 - name: minio
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 16.0.10
@@ -41,5 +41,5 @@ dependencies:
 - name: tempo
   repository: https://grafana.github.io/helm-charts
   version: 1.24.4
-digest: sha256:906e75b4bc09e76e01d66e3cd5a01aab8450cc9f0b154e5c45e10dae1508c74a
-generated: "2026-05-05T16:59:22.966236086+02:00"
+digest: sha256:b1a5b3dada35f9fe855870cde773a7a10c9cb4ec1cdb4ba18cde89714670928a
+generated: "2026-05-07T17:26:07.052081047+02:00"
