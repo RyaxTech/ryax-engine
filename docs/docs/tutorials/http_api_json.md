@@ -42,7 +42,7 @@ To start click on `Dashboard` and create workflow.
 Select a name and choose as trigger the `HTTP API JSON` trigger built in Part I. 
 Edit workflow name to `Echo POST`, fulfill OpenAPI doc parameters summary, tags and description.
 Template endpoint is the endpoint rightmost part, to append on the project URL, we used `/echo/post`.
-Select the method as `POST`, you can leave `HTTTP success status code` and `Asynchronous Reply Timeout`
+Select the method as `POST`, you can leave `HTTP success status code` and `Asynchronous Reply Timeout`
 to their default values.
 
 ![Configure HTTP API JSON trigger](../_static/http_api/06-1-set_endpoint_parameters.png "Create new workflow")

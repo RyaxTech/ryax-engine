@@ -31,17 +31,17 @@ Most fields have an associated `*Original` version that records what was specifi
 
 ### Core Fields
 
-**actionNix**: Commit hash of the `nixpkgs` repository used during build
-**actionNixOriginal**: User-specified `nixpkgs` version (from `spec.options.nixpkgs.version` in `ryax_metadata.yaml`)
-**nixpkgsPython**: Revision of [nixpkgs-python](https://github.com/cachix/nixpkgs-python) used to find Python versions
-**wrapperRevision**: Version of the build wrapper (used for debugging)
+- **actionNix**: Commit hash of the `nixpkgs` repository used during build
+- **actionNixOriginal**: User-specified `nixpkgs` version (from `spec.options.nixpkgs.version` in `ryax_metadata.yaml`)
+- **nixpkgsPython**: Revision of [nixpkgs-python](https://github.com/cachix/nixpkgs-python) used to find Python versions
+- **wrapperRevision**: Version of the build wrapper (used for debugging)
 
 ### Python Configuration
 
 The python object contains:
 
-**pythonVersion**: Locked Python version
-**pythonVersionOriginal**: Python version from `spec.option.python.version`
-**lockedRequirements**: Output of pip freeze showing all action dependencies
-**originalRequirements**: Content of the action's `requirements.txt` file
+- **pythonVersion**: Locked Python version
+- **pythonVersionOriginal**: Python version from `spec.options.python.version`
+- **lockedRequirements**: Output of pip freeze showing all action dependencies
+- **originalRequirements**: Content of the action's `requirements.txt` file
 

@@ -6,7 +6,7 @@ of AI workloads across any infrastructure (Cloud, On-Prem, Edge, HPC).
 
 Ryax is a low-code, API-first, AI-driven workflow management system for data analytics. It provides the means to create, deploy, update, execute and 
 monitor the execution of data processing workflows on hybrid Cloud, Edge, on-premises and  HPC computing infrastructures. It enables users to create their 
-data automations and expose them with APIs through fully customizable workflows using a low-code UI. It makes use of a powerful, hybrid serverless/microserverices-based runtime, 
+data automations and expose them with APIs through fully customizable workflows using a low-code UI. It makes use of a powerful, hybrid serverless/microservices-based runtime, 
 abstracting completely the complexity of building and deploying containers with their dependencies upon Cloud infrastructures. The software platform has been designed 
 with a focus on data analytics and offers a variety of built-in features and a repository of various integrations to facilitate users in the process of 
 industrializing various types of applications integrating complex data automations.
@@ -32,17 +32,17 @@ Ryax provides the following important features:
 ### Reproducible Environment packaging (Container creation)
 
 Environment packaging abstractions based on NIX functional package manager -> Users bring their code and Ryax builds the containers (multi-arch, polyglot).
-The build process is fully reproducibile thanks to the ryax lock file.
+The build process is fully reproducible thanks to the ryax lock file.
 
 ### Runtime engine
 
-Custom, hybrid microservices, serverless engine capable to deploy data analytics, AI, HPC apps on all type of hardware providing the right amount of resources 
+Custom, hybrid microservices, serverless engine capable of deploying data analytics, AI, HPC apps on all types of hardware providing the right amount of resources 
 (RAM, CPUs, GPUs, Duration, etc). Deploy apps based on a powerful custom serverless pay-as-you-go runtime agnostically using any K8S-based infra (Edge, Cloud, OnPrem) 
-and any type  of arch (x86, ARM, GPUs)
+and any type of architectures (x86, ARM, GPUs)
 
 ### Workflow View
 
-View and control of apps as workflows composed of different individual components (more intiutive design, more controlled and optimal execution) 
+View and control of apps as workflows composed of different individual components (more intuitive design, more controlled and optimal execution) 
 
 ### Logging, Debugging, Monitoring
 
@@ -96,7 +96,7 @@ The following list is not exhaustive but shows a portion of the new features to 
 - Resource Accounting and Quotas Management
 - Multi-Cluster Scheduling Optimizations (more efficient techniques, new objectives, etc)
 - Single-Cluster Scheduling Optimizations (Limit starvation, improve Bin Packing, improve cold start, etc)
-- Integration of Keycloak for single-sign on and support of OpenID, OAuth 2.0
+- Integration of Keycloak for single sign-on and support of OpenID, OAuth 2.0
 - Ryax Intelliscale optimizations (techniques to limit OOM kills)
 - Automated provisioning of resources based on Infrastructure from code techniques (Pulumi, Nitric)
 - Support of new types of deployments (lightVMs, unikernels, VMs, etc)
@@ -117,9 +117,10 @@ Automation of the aforementioned aspects of the orchestration process along with
 The Ryax platform abstracts the complexity of:
 
 1. developing data analytics pipelines by using workflows requiring developers only to describe the structure of what 
-   will be deployed, and how it will be connected through a simple to use, intuitive web interface and visual programming tools connected to a YAML- based declarative design ; 
+   will be deployed, and how it will be connected through a simple-to-use, intuitive web interface and visual programming tools connected to a YAML-based declarative design ; 
 2. building the environments to be deployed with the necessary dependencies through built-in internal mechanisms based on Nix functional package manager, 
-3. deploying and monitoring containers through a fine-integration with Kubernetes orchestrator and iv) providing various types of execution optimizations through optimal management of
+3. deploying and monitoring containers through a fine-integration with Kubernetes orchestrator
+4. providing various types of execution optimizations through optimal management of
    resources while combining various features such as efficient autoscaling capabilities based on built-in 
    resource management techniques considering the request demands and combining both Horizontal Pod Autoscaling (Kubernetes) and Cluster Node Autoscaling (Cloud Infrastructure provider). 
 

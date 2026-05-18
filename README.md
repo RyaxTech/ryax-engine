@@ -74,7 +74,7 @@ Deploying Ryax: [Kubernetes](https://kubernetes.io/), [Terraform](https://www.te
 
 All you need to install Ryax is a Kubernetes cluster. Supported versions are:
 
-* kubernetes > 1.19
+* kubernetes > 1.30
 
 Hardware:
 
@@ -83,11 +83,10 @@ Hardware:
 * 40GB of disk available
 
 ```bash
-helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.2 -n ryaxns --create-namespace
+helm install ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns --create-namespace
 ```
 
-**Note that depending on the Actions that you run on your cluster you might need
-more resources.**
+**Note that depending on the Actions that you run on your cluster you might need more resources.**
 
 ### On an existing Kubernetes cluster
 
@@ -101,15 +100,25 @@ For more details on the configuration, see [our documentation](https://docs.ryax
 We recommend this option if you wish to test our product with a minimal amount of configuration steps, and if you have enough RAM (~3GB) and disk (20GB) available.
 
 **/!\ Warning**: **Do not use this setup in production!**
+
 **/!\ Warning**: To make it easier for you to access the cluster from your
 browser, we expose the ports 80 (http) and 443 (https) on your local machine.
 Make sure these aren't already used!
 
-Copy the [docker-compose.yml](https://gitlab.com/ryax-tech/ryax/ryax-main/-/blob/master/docker-compose.yml) file form this repository and run:
+Copy the [docker-compose.yml](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/raw/master/docker-compose.yml?inline=false) and the [minimal.yaml](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/raw/master/charts/ryax/env/minimal.yaml?inline=false) files form this repository and run:
 ```sh
 docker-compose up -d
+```
 
-helm install ryax oci://registry.ryax.org/release-charts/ryax-engine:26.2 -n ryaxns --create-namespace
+Check that your local k3s is started with:
+```sh
+export KUBECONFIG=$PWD/kubeconfig.yaml
+kubectl get pods -A
+```
+
+Once all podes are Running run:
+```sh
+helm install ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns --create-namespace -f ./minimal.yaml
 ```
 
 Be patient, this may take some minutes depending on your internet connection.
@@ -118,8 +127,26 @@ Once its done you can access to your cluster with:
 [http://localhost/app/login]()
 
 Default credentials are:
+
 - user: `user1`
 - password: `pass1`
+
+Go to the **Infrastructure** > **New Site** and create a Kubernetes Site called "Local"
+Now click on **Add nood pool** and add a "k3s" node pool with the quantity of resources you want to give to Ryax actions, for example: 1000 mCPU and 2GB of memory
+Copy the Site ID and the Node pool ID into variables or directly in the command and run:
+```sh
+helm install ryax-worker oci://registry.ryax.org/release-charts/ryax-worker -n ryaxns \
+  --set config.site.id=$SITE_ID \
+  --set 'config.site.spec.nodePools[0].id'=$NODE_POOL_ID \
+  --set 'config.site.spec.nodePools[0].selector.node\.kubernetes\.io/instance-type'=k3s
+```
+
+Now you can add Actions to your **Library** by adding the default-action repository: https://gitlab.com/ryax-tech/workflows/default-actions.git
+Scan it, build usefull Triggers like for example ***Emit Every***, ***HTTP API JSON***, ***Run once*** and ***HTTP POST***.
+Also, build some example Actions like ***Echo*** and ***Cat content of a file***.
+Then, you can create your own workflows from the **Dashboard** and Deploy it on your cluster !
+
+For more detailed use case see the [Quick Start Guide](https://docs.ryax.tech/tutorials/quick_start_guide/)
 
 To uninstall your cluster, stop it with:
 ```sh
@@ -155,7 +182,7 @@ If you want to say thank you and/or support the active development of Ryax:
 2. Talk about the project on your favorite social network.
 3. Write a review or tutorial on Medium, Dev.to or personal blog.
 4. Share some triggers and actions with the [community](https://discord.gg/bg7s7Es8).
-5. Fix bugs and implement features to [our code](https://gitlab.com/ryax-tech/ryax/ryax-main).
+5. Fix bugs and implement features to [our code](https://gitlab.com/ryax-tech/ryax/ryax-engine).
 
 
 [Discord](https://discord.gg/bg7s7Es8),

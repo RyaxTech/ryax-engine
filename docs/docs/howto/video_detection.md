@@ -1,4 +1,4 @@
-# Run a Video Detaection in Jupyter-Notebook
+# Run a Video Detection in Jupyter-Notebook
 
 
 Many developers, analysts and data scientists use [Jupyter Notebook](https://jupyter.org/) to develop new algorithms.
@@ -165,7 +165,7 @@ Finally, the "Frame" input of "Create a video from multiple images" will assembl
 
 The workflow is ready to be deployed.
 
-Deploying a workflow conists of launching all actions in the infrastructure so that they are ready to ingest data. More info [here](../concepts/concepts.md).
+Deploying a workflow consists of launching all actions in the infrastructure so that they are ready to ingest data. More info [here](../concepts/concepts.md).
 
 Click on the *deploy* button.
 Refresh the page until all actions are deployed (the status should be green), and the workflow is in the "deployed" status.

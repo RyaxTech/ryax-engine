@@ -79,7 +79,7 @@ After setting scaled resources, we can configure some resource-specific args. We
 
 --gpu-mig-instances-support string ("1g.10gb,3g.40gb,7g.80gb") : [For GPU MIG instance] Comma separated list of all GPU MIG instances that we want to support. This should be the subset of all supported MIG profiles by the GPU. THIS LIST SHOULD BE SYNCHRONIZED WITH RYAX PLATFORM. DONT MODIFY HERE. SHOULD BE SET IN HELM CHART values.yaml: .Values.config.MIG.supportedInstances
 
---gpu-oom-error-code int (26) : [For GPU MIG instance] When the user program inside container encounters an GPU OOM kill, it should return with this error code to let VPA know the occurance of the GPU OOM. Because GPU OOM is only handled by user program not the linux. The VPA cannot know from Kubernetes unless the user raises this code by themselves. Code number range should be 1 to 255.
+--gpu-oom-error-code int (26) : [For GPU MIG instance] When the user program inside container encounters an GPU OOM kill, it should return with this error code to let VPA know the occurrence of the GPU OOM. Because GPU OOM is only handled by user program not the linux. The VPA cannot know from Kubernetes unless the user raises this code by themselves. Code number range should be 1 to 255.
 ```
 
 ```plaintext
@@ -208,12 +208,12 @@ More detailed architectures and implementations are shown in the figure and desc
 
 ![Architecture diagram](../_static/vpa/vpa-arch.jpg "Ryax internal architecture")
 
-### Temporal description of the architechture
+### Temporal description of the architecture
 Every 1 second: to collect scaled targets, metrics, and OOMs from Kubernetes API and NVIDIA components (can be configured by `--record-interval`). 
 
 Every 5 minutes: (can be configured by `--recommend-interval`), the algorithm aggregates the histograms in the past 5min interval, run the algorithm and send recommendation of all workloads to the GRPC server. 
 
-### Spatial description of the architechture
+### Spatial description of the architecture
 
 The **dataio** module is used for the input and output interactions with outside (Kubernetes API, DCGM Exporter and GRPC server).
 

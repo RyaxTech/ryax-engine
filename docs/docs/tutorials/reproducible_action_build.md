@@ -37,7 +37,7 @@ The file lockfile should look like:
 ```
 ## Lock the Action Build Environment -- Commit Your Lockfile
 
-The lockfile should be commited to the action folder of the action, under the name `ryax_lock.json`, whith the content obtained from the previous section. During the scan of your repository on the web interface, the lockfile will be detected as part of the action. To ensure that it was detected, the lockfile can be seen in the repository page of your action, such as depicted in the image below.
+The lockfile should be committed to the action folder of the action, under the name `ryax_lock.json`, with the content obtained from the previous section. During the scan of your repository on the web interface, the lockfile will be detected as part of the action. To ensure that it was detected, the lockfile can be seen in the repository page of your action, such as depicted in the image below.
 
 ![](media_reproducible_action_build/repository_action.png)
 

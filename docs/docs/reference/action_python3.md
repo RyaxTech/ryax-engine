@@ -285,13 +285,13 @@ class RyaxSourceProtocol(metaclass=abc.ABCMeta):
 - `kind` changes: `Gateways` is now `Source`, `Functions` is now `Processor`, `Publishers` is now `Publisher`
 - `spec.detail` becomes `spec.description`
 
-The `requirements.txt` is now completly standard.
+The `requirements.txt` is now completely standard.
 
 `handler.py` has to be renamed `ryax_handler.py`.
 
 `run.py` has to be renamed `ryax_run.py`.
 Also, the content has to be changed, we do not use a class anymore.
-You have to use a `run` function has explained in the documentation above.
+You have to use a `run` function as explained in the documentation above.
 
 If the `ryax_metadata.yaml` file contains unknown fields, an error is thrown.
 

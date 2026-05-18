@@ -132,7 +132,7 @@ how to adapt that feature for advanced users.
 
 Note that several input parameters declared on `ryax_metadata.yaml` are optional
 and will have a default value assigned in case they are omitted. Moreover,
-the action also inherets from the Kubernetes addon, and some paramters: like
+the action also inherits from the Kubernetes addon, and some parameters: like
 `service_account_name` and `service_name` will appear because of the Kubernetes
 addon. Ryax action pod will be the Spark driver. This 
 will spawn multiple Spark executors across Kubernetes. We will then configure
@@ -156,7 +156,7 @@ nodes available that use the best effort policy. In this case we
 can make a bebida aware action by selecting the nodes where the Spark
 executors will run.
 
-To select nodes where to schedulle, we can edit `exporter-pod-template.yaml`.
+To select nodes where to schedule, we can edit `exporter-pod-template.yaml`.
 This file overrides toleration parameters and will make the executor.
 
 ```yaml
