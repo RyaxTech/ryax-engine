@@ -60,7 +60,7 @@ namespace Ryax {
 ```
 
 To allow Ryax to find the entrypoint of your program it requires you to create
-a `Ryax.Handler.handler` method that take a Dictionary as input and returns
+a `Ryax.Handler.handler` method that takes a Dictionary as input and returns
 also a Dictionary.
 
 Now create a `ryax_metadata.yaml` file where you define inputs and outputs with

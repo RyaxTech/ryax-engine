@@ -13,7 +13,7 @@ data:
         type: tempo
         access: proxy
         orgId: 1
-        url: http://{{ .Release.Name }}-tempo:3100
+        url: http://{{ .Release.Name }}-tempo:3200
         basicAuth: false
         version: 1
         editable: false

@@ -1,6 +1,6 @@
 # action-builder
 
-![Version: 0.0.0-dev](https://img.shields.io/badge/Version-0.0.0--dev-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: latest](https://img.shields.io/badge/AppVersion-SERVICE--VERSION-informational?style=flat-square)
+![Version: 26.4.0](https://img.shields.io/badge/Version-26.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.4.0](https://img.shields.io/badge/AppVersion-26.4.0-informational?style=flat-square)
 
 The Ryax action builder creates container images with Ryax wrapper injected
 
@@ -50,7 +50,7 @@ The Ryax action builder creates container images with Ryax wrapper injected
 | brokerSecret | string | `"ryax-broker-secret"` |  |
 | extraEnv | list | `[]` |  |
 | grpcAPI.enabled | bool | `false` |  |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"action-builder","tag":"latest"}` | container image name and version |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"action-builder","tag":"26.4.0"}` | container image name and version |
 | internalRegistry | string | `"ryax-registry:5000"` |  |
 | logLevel | string | `nil` | log level of the service |
 | nix | object | `{"storeSize":"50Gi"}` | Nix store can be put in a persistent storage or a ephemeral one |

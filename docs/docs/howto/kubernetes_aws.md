@@ -569,7 +569,7 @@ helm repo add nvidia https://nvidia.github.io/gpu-operator
 helm repo update
 ```
 
-Now let's edit a values file to parametize the `nvidia/gpu-operator`. It is important to allow the nvidia operator deamonsets to run on
+Now let's edit a values file to parameterize the `nvidia/gpu-operator`. It is important to allow the nvidia operator deamonsets to run on
 the gpu nodes by adding tolerations for the 2 added taints.
 
 ```shell

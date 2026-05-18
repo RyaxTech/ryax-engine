@@ -19,7 +19,7 @@ From only the previous image it may be clear what this workflow does. Here's the
 1. Trigger an execution every so often (defined by the user) with the "Emit Every Gateway"
 2. Pull a user defined amount of tweets and tweet metadata off of the twitter API according to some query, organize them and store them.
 3. Take the data from the tweets and use an off-the-shelf DistilBERT model (fine tuned for text classification) to evaluate the sentiment in those segments of text. Then organize this data and pass it along.
-4. Take the scored data and publish it all in a stuctured manner to a Google Sheet.
+4. Take the scored data and publish it all in a structured manner to a Google Sheet.
 
 #### Why is this interesting?
 
@@ -27,7 +27,7 @@ There are a few key points about this workflow that make it appealing from a bus
 
 * We can easily leverage two different external APIs in this workflow to get value out of data and into the hands of our team.
 * Once running, no maintenance is needed unless functional changes are desired. The workflow can be scheduled to run as much as the user defines. In this way, once it's set up, no more babysitting is needed and all the results can be accessed directly through the Google Sheet.
-* As we will see, adapting this workflow to do different things is very easy, as the modules are not bound to eachother, and any additional data requirements can be added with a few lines of code.
+* As we will see, adapting this workflow to do different things is very easy, as the modules are not bound to each other, and any additional data requirements can be added with a few lines of code.
 
 Now, let's take a look at each module in a bit more detail.
 

@@ -42,15 +42,15 @@ Clicking on the activation/deactivation button on the top right of each partitio
 
 ![constraints](../_static/concepts/multi-site-constraints-partitions.png)
 
-Similarly to the Kubernetes case once selecting Slurm site or parition as "hard" constraint, the action will be deployed there through an ssh connection to the site and an adapted sbatch script submission using the appropriate parameters.
+Similarly to the Kubernetes case once selecting Slurm site or partition as "hard" constraint, the action will be deployed there through an SSH connection to the site and an adapted sbatch script submission using the appropriate parameters.
 
-Even if the underlying executions are not done in the same way when using Kubernetes or Slurm orchestrators; Ryax brings the necessary abstractions in order to facilitate the user and allow them to provide one code which will then be packaged in
+Even if the underlying executions are not done in the same way when using Kubernetes or Slurm orchestrators; Ryax brings the necessary abstractions in order to assist the user and allow them to provide one code which will then be packaged in
 different ways to be executed either on Kubernetes for typical Cloud-native deployments (based on Docker-based containers) or on Slurm for typical HPC deployments (based on Singularity or Apptainer containers).
 
 ## Objectives: Configure an action to be scheduled by the Ryax scheduler
 
 The constraints explained previously provide the means to execute precisely where a user needs to do so. Now in some cases users may not have the expertise to have a view on where to execute or they may need an optimal decision based on some metrics.
-In Ryax we have implemented a multi-objective scheduling technique to address exactly this need. In particular the technique is based upon a formula considering objectives' scores configured per site and combined with objectives weights 
+In Ryax we have implemented a multi-objective scheduling technique to address exactly this need. In particular the technique is based on a formula considering objectives' scores configured per site and combined with objectives weights 
 as given by the user. Based on that Ryax offers the ability to configure different scheduling policies to perform the resources/actions matching (placement).
 
 Currently 3 objectives are defined and the user can configure them per action. These are the following:

@@ -7,7 +7,6 @@
 Jef, a tool to help you release and maintain Ryax.
 """
 
-import yaml
 import os
 import re
 import subprocess
@@ -34,9 +33,6 @@ REPOS_TO_BE_RELEASED = {
     "intelliscale": {"gitlab_project": "ryax-tech/ryax/ryax-intelliscale"},
     "authorization": {
         "gitlab_project": "ryax-tech/ryax/ryax-authorization",
-    },
-    "common-helm-charts": {
-        "gitlab_project": "ryax-tech/ryax/common-helm-charts",
     },
     "default-actions": {
         "gitlab_project": "ryax-tech/workflows/default-actions",
@@ -265,27 +261,6 @@ def command_remove_local_tags(args) -> None:
     _run_cmd('git submodule foreach "git fetch --tags"')
 
 
-def command_update_ryax_adm_version(args):
-    """
-    Update the RYAX_ADM_VERSION in the .gitlab-ci.yml file for each submodule.
-
-    Parameters:
-    submodules (list of str): List of submodule directories to update.
-    new_version (str): The new RYAX_ADM_VERSION to set.
-    """
-    version = args.version
-    try:
-        # Run the sed command to replace the RYAX_ADM_VERSION in the .gitlab-ci.yml file
-        sed_command = f"git submodule foreach 'sed -i \"s/RYAX_ADM_VERSION: .*/RYAX_ADM_VERSION: {version}/\" .gitlab-ci.yml && git diff  || true'"
-
-        subprocess.run(sed_command, shell=True, check=True)
-
-        print(f"Updated RYAX_ADM_VERSION to {version} in all submodules .gitlab-ci.yml")
-
-    except subprocess.CalledProcessError as e:
-        print(f"Error updating ref in submodules: {e}")
-
-
 def command_update_ci_common_version(args):
     """
     Update the ref version in the include section of .gitlab-ci.yml for each submodule using `git submodule foreach` and `sed`.
@@ -305,6 +280,96 @@ def command_update_ci_common_version(args):
 
     except subprocess.CalledProcessError as e:
         print(f"Error updating ref in submodules: {e}")
+
+
+def command_update_charts_version(args):
+    """
+    Update the image tag in all Ryax services Helm charts.
+    """
+    version = args.version
+    app_version = args.app_version if args.app_version else version
+    try:
+        # Files to update
+        files_to_update = [
+            "charts/ryax/subcharts/authorization/values.yaml",
+            "charts/ryax/subcharts/repository/values.yaml",
+            "charts/ryax/subcharts/action-builder/values.yaml",
+            "charts/ryax/subcharts/studio/values.yaml",
+            "charts/ryax/subcharts/runner/values.yaml",
+            "charts/ryax/subcharts/front/values.yaml",
+            "charts/worker/subcharts/intelliscale/values.yaml",
+            "charts/worker/values.yaml",
+        ]
+
+        for file_path in files_to_update:
+            if os.path.exists(file_path):
+                # Replace tag: "..." or tag: ... with tag: "app_version"
+                # We want to keep the indentation.
+                sed_command = (
+                    f"sed -i 's/\\(tag: \\).*/\\1\"{app_version}\"/' {file_path}"
+                )
+                subprocess.run(sed_command, shell=True, check=True)
+                print(f"Updated image tag to {app_version} in {file_path}")
+
+        # Update version and appVersion in all Chart.yaml files
+        for root, dirs, files in os.walk("charts"):
+            for file in files:
+                if file == "Chart.yaml":
+                    chart_path = os.path.join(root, file)
+                    # Update version
+                    sed_command_v = (
+                        f"sed -i 's/^version: .*/version: \"{version}\"/' {chart_path}"
+                    )
+                    subprocess.run(sed_command_v, shell=True, check=True)
+                    # Update appVersion
+                    sed_command_av = f"sed -i 's/^appVersion: .*/appVersion: \"{app_version}\"/' {chart_path}"
+                    subprocess.run(sed_command_av, shell=True, check=True)
+                    print(
+                        f"Updated version to {version} and appVersion to {app_version} in {chart_path}"
+                    )
+
+        # Update local dependencies in parent charts
+        for parent_chart_path in ["charts/ryax/Chart.yaml", "charts/worker/Chart.yaml"]:
+            if os.path.exists(parent_chart_path):
+                with open(parent_chart_path, "r") as f:
+                    content = f.read()
+
+                # Split by dependency entry
+                # It can be '  - name:' or '- name:'
+                parts = re.split(r"(\n\s*-\s+name:)", content)
+                new_parts = [parts[0]]
+                for i in range(1, len(parts), 2):
+                    header = parts[i]
+                    block = parts[i + 1]
+                    if (
+                        'repository: "file://' in block
+                        or "repository: 'file://" in block
+                    ):
+                        block = re.sub(r"(version: ).*", rf'\1"{version}"', block)
+                    new_parts.append(header)
+                    new_parts.append(block)
+
+                with open(parent_chart_path, "w") as f:
+                    f.write("".join(new_parts))
+                print(
+                    f"Updated local dependencies version to {version} in {parent_chart_path}"
+                )
+
+        # Update Chart.lock
+        for parent_dir in ["charts/ryax", "charts/worker"]:
+            if os.path.exists(parent_dir):
+                print(f"Updating Chart.lock for {parent_dir}...")
+                subprocess.run(
+                    f"helm dependency update {parent_dir}", shell=True, check=True
+                )
+
+        # Update chart READMEs with helm-docs
+        if os.path.exists("charts"):
+            print("Updating chart READMEs with helm-docs...")
+            subprocess.run("helm-docs", cwd="charts", shell=True, check=True)
+
+    except Exception as e:
+        print(f"Error updating charts version: {e}")
 
 
 def get_last_pipe(projgit, tag) -> Dict:
@@ -460,17 +525,24 @@ if __name__ == "__main__":
     sp.add_argument("tag", type=str)
     sp.set_defaults(func=command_wait_all_pipes)
 
-    description = "Update RYAX_ADM_VERSION in all Gitlab config"
-    sp = subparsers.add_parser("adm_update", description=description, help=description)
-    sp.add_argument("-v", "--version")
-    sp.set_defaults(func=command_update_ryax_adm_version)
-
     description = "Update CI Common version in all Gitlab config"
     sp = subparsers.add_parser(
         "ci_common_update", description=description, help=description
     )
     sp.add_argument("-v", "--version")
     sp.set_defaults(func=command_update_ci_common_version)
+
+    description = "Update image version in all Ryax services Helm charts"
+    sp = subparsers.add_parser(
+        "charts_update", description=description, help=description
+    )
+    sp.add_argument("-v", "--version", required=True)
+    sp.add_argument(
+        "-a",
+        "--app-version",
+        help="The app version to use for images and appVersion field. Defaults to version if not set.",
+    )
+    sp.set_defaults(func=command_update_charts_version)
 
     description = "Force all submodule staging branch to align with current version"
     sp = subparsers.add_parser(

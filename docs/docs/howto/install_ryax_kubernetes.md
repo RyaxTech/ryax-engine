@@ -1,7 +1,7 @@
 # Installation
 
 !!! tip
-    For a local development installation please refers the [Getting Started Guide](https://gitlab.com/ryax-tech/ryax/ryax-engine#getting-started-with-ryax)
+    For a local development installation please refer to the [Getting Started Guide](https://gitlab.com/ryax-tech/ryax/ryax-engine#getting-started-with-ryax)
 
 !!! note
     Previous installation method with `ryax-adm` is **deprecated**: You can still find the documentation [here](./install_ryax_kubernetes_old.md)
@@ -31,7 +31,7 @@ Hardware:
 !!! warning
     This guide assumes that you are comfortable with Kubernetes and Helm.
 
-- Make sure your configuration point to the intended cluster: `kubectl config current-context`.
+- Make sure your configuration points to the intended cluster: `kubectl config current-context`.
 - Your Kubernetes cluster dedicated to Ryax: we offer no guarantee that Ryax runs smoothly alongside other applications.
 - Make sure you have complete admin access to the cluster. Try to run `kubectl auth can-i create ns` or `kubectl auth can-i create pc`, for instance.
   ```sh
@@ -69,22 +69,30 @@ how to configure a kubernetes cluster before installing.
 * [AWS](kubernetes_aws.md) : requires tweaking so pods can have persistent volume claims (PVCs) and enable autoscaling support;
 * Scaleway : no specific tweaking for Ryax support is required.
 
-!!! note
-    We also provide a [script](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/987689da73f5875c52ca8fa4361c7082ed74a78f/chart/generate-secrets.py) to generate a base value.yaml generating secrets with the right formatting.
-    The output of this file can be used as the configuration file for your cluster.
-
 ## Installation
 
 !!! note
-    We also propose a **minimal** and a **dev** version. You can find the values here: https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/chart/env.
+    We also propose a **minimal** and a **dev** version. You can find the values here: https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/charts/ryax/env.
 
-First, download the configuration file `prod.yaml` in this [repository](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/chart/env).
+We provide a script to generate a `secrets.yaml` including secrets with the right formatting.
+```sh
+curl -s https://gitlab.com/ryax-tech/ryax/ryax-engine/-/raw/987689da73f5875c52ca8fa4361c7082ed74a78f/chart/generate-secrets.py | python > secrets.yaml
+```
+
+Then, download the configuration file `prod.yaml` in this [repository](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/master/charts/ryax/env/prod.yaml).
+Or using this command:
+```sh
+curl -O https://gitlab.com/ryax-tech/ryax/ryax-engine/-/raw/master/charts/ryax/env/prod.yaml
+```
 This file contains specific configuration with tls enabled and monitoring configured with tls.
 
-Next you can install Ryax with the `prod.yaml` configuration file, the only value you need to complete is `global.tls.hostname` with the intended domain name for your cluster.
+Next you can install Ryax with these configuration files.
+The only value you need to complete is `global.tls.hostname` with the intended domain name for your cluster.
 
 ```sh
-helm install ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns --create-namespace -f prod.yaml \
+helm install ryax oci://registry.ryax.org/release-charts/ryax-engine \
+  -n ryaxns --create-namespace \
+  -f prod.yaml -f secrets.yaml \
   --set global.tls.hostname='example.company.io'
 ```
 
@@ -102,7 +110,7 @@ helm install ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns -
 
 ### Configure the DNS
 
-To get a valid SSL certificate and to allow other Kubernetes sites to be join your Ryax main site, you have to associate a valid domain name by setting `global.tls.hostname`.
+To get a valid SSL certificate and to allow other Kubernetes sites to join your Ryax main site, you have to associate a valid domain name by setting `global.tls.hostname`.
 Then, you need to configure domain name resolution pointing to the correct Kubernetes cluster public IP address.
 
 The last step is configuring your DNS so that you can connect to your cluster.
@@ -124,7 +132,7 @@ Now create a DNS entry for the cluster and another for every subdomain using a s
 - ryax.example.com
 - \*.ryax.example.com
 
-Once your entries are created, and **only if tls is enabled**, you will have to wait for Let's Encrypt to provide you a valid
+Once your entries are created, and **only if tls is enabled**, you will have to wait for Let's Encrypt to provide you with a valid
 certificate. You can check with:
 
 ```sh
@@ -140,20 +148,21 @@ default one provided by the Kubernetes cluster for all services. But, the
 volumes are used to store the internal database (`datastore`), object store for
 workflows IO (`filestore`), and a container registry for the Ryax Actions
 containers (`registry`) which all affect your Ryax instance performance, so it
-is recommended to have SSD backed storage for all services to avoid delays
+it is recommended to have SSD backed storage for all services to avoid delays
 state persistence, deployments, and runs.
-For more fine grained settings you can set each storage class independently with the `storageClass` inside each service.
+For more fine-grained settings you can set each storage class independently with the `storageClass` inside each service.
 Regarding the volume size, we recommend that you start small, you can extend them later on with most Storage providers.
+
 The default values give comfortable volume sizes to start working on the platform.
 
 ## Access to your Cluster
 
 Now you can access your cluster with its IP address in your web browser.
 
-!!! tip
-    To get a DNS access with valid SSL certificate, please refer to the [Production Installation](#production-installation) section.
+Default credentials are:
 
-Default credentials are *user1/pass1*
+- user: `user1`
+- password: `pass1`
 
 !!! warning
     Change this password and user as soon as you're logged in!
@@ -168,44 +177,32 @@ The next step is to configure and install a worker in your cluster to start runn
 
 ### Worker configuration
 
-In order to configure your Worker, you will need to select one or more node pools (set of homogeneous nodes) and give to the Worker some information about the nodes.
-<!--
-!!! note
-    Why we use node pools? Because it allows Ryax to leverage the Kubernetes node **autoscaling with scale to zero !**
--->
+In order to configure your Worker, you will need to register a *Site* and or more *Node Pools* (set of homogeneous nodes) in the Ryax UI.
+To do so, go into the Infrastructure view of your Ryax installation (For example in https://ryax.example.com/app/infrastructure) and create a new Site.
+Then create a new Node pool that match the characteristics of the computing node (servers) that you want to attach to Ryax.
+
+Now that your Site and you Node Pools are created, we will need to their IDs to create the Worker configuration.
+Create a `worker-values.yaml` file and copy the Site and Node Pools IDs from the Ryax UI to add them to the configuration like in the following example.  
 
 Here is a simple example worker configuration using an AWS EKS managed cluster:
 
 ```yaml
 config:
   site:
-    name: aws-kubernetes-small
+    id: Site-1777021590-tq6kqbbe
     spec:
       nodePools:
-      - name: small
-        cpu: 2
-        # gpu: 1 # required if the nodepool has GPUs
-        memory: 4G
+      - id: NodePool-1777021590-n3y8xs0g
         selector:
           eks.amazonaws.com/nodegroup: default
-#
-postgresql:
-  auth:
-    password: elFy3uw3bS2z
-loki:
-  singleBinary:
-    persistence:
-      size: 10Gi
 ```
 
 Let's explain each field of the `config`:
 
-- **site.name**: the name of the site that identifies the site in Ryax
+- **site.id**: the id of the site copied from the Ryax UI.
 - **site.spec.nodePools**: the node pools definitions (a node pool is a set of homogeneous node. Each resource value is given by node).
-  - **name**: name of the node pool.
-  - **cpu**: amount of allocatable cpu core per node.
-  - **memory**: amount of allocatable memory in bytes per node.
-  - **selector**: node selector type within Kubernetes to precise which nodes will take part in the node pool.
+  - **id**: the id of the node pool copied from the Ryax UI.
+  - **selector**: node selector that precises within Kubernetes which nodes will take part in the node pool.
 
 
 These fields might change depending on the cloud provider. Below an example of configuration for Azure.
@@ -242,10 +239,15 @@ taints:
 !!! warning
     Before any updates, [do a backup](./create-backups.md) and have a look at the changelog to see if there is any extra step needed.
 
-
+!!! tip
+    If you have lost the values YAML files use for your cluster you can restore them using:
+    ```sh
+    helm get values -n ryaxns ryax --output yaml > values.yaml
+    ```
+     
 Run the upgrade with:
 ```sh
-helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns --reuse-values
+helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns -f values.yaml
 ```
 
 ## Troubleshooting
@@ -297,5 +299,4 @@ address. See also how to [Configure the DNS](#configure-the-dns).
 If you do not want to configure external access to your cluster you won't be able
 to connect external kubernetes workers, but you can always have a local worker.
 In this case, to configure the internal registry refer to [Use local registry only](#use-local-only-registry).
-
 

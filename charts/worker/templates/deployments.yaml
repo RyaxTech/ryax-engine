@@ -23,6 +23,9 @@ spec:
       annotations:
         # Force restart on config changes
         checksum/config: {{ .Values.config | toYaml | sha256sum }}
+        {{- if .Values.hpcPrivateKeyFile }}
+        checksum/sshkey: {{ .Values.hpcPrivateKeyFile | toYaml | sha256sum }}
+        {{- end }}
     spec:
       priorityClassName: {{ .Values.priorityClass }}
       serviceAccount: {{ include "worker.fullname" . }}
@@ -198,7 +201,7 @@ spec:
             - name: RYAX_LOKI_QUERY_INTERVAL_IN_SECONDS
               value: "{{ .Values.actionLogsQueryRate }}"
             - name: RYAX_OTLP_ENDPOINT
-              value: {{ .Values.global.monitoring.otlpEndpoint | default "" | quote }}
+              value: {{ tpl .Values.global.monitoring.otlpEndpoint . | default "" | quote }}
             - name: RYAX_INTELLISCALE_ENABLED
               value: {{ .Values.intelliscale.enabled | default "" | quote }}
             - name: RYAX_INTELLISCALE_SVC_HOST

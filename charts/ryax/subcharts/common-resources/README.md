@@ -1,6 +1,6 @@
 # common-resources
 
-![Version: 0.0.0-dev](https://img.shields.io/badge/Version-0.0.0--dev-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: latest](https://img.shields.io/badge/AppVersion-SERVICE--VERSION-informational?style=flat-square)
+![Version: 26.4.0](https://img.shields.io/badge/Version-26.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.4.0](https://img.shields.io/badge/AppVersion-26.4.0-informational?style=flat-square)
 
 Common secrets and configuration for the Ryax platform
 

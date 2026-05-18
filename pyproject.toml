@@ -20,3 +20,9 @@ dependencies = [
     "mkdocs-autorefs>=1.4.3",
     "mkdocs-render-swagger-plugin>=0.1.2",
 ]
+
+[dependency-groups]
+dev = [
+    "bandit>=1.9.4",
+    "vulture>=2.16",
+]

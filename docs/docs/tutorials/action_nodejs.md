@@ -14,7 +14,7 @@ function handle(ryax_input) {
 module.exports = handle;
 ```
 
-It is mandatory to have the `module.exports` assigned to the function to allow ryax to find the entrypoint of your applicaiton, you can add more files and functions but you must export only a single function on file `ryax_handler.js`.
+It is mandatory to have the `module.exports` assigned to the function to allow ryax to find the entrypoint of your application, you can add more files and functions but you must export only a single function on file `ryax_handler.js`.
 
 
 You can add dependencies in a `packages.json` file on the same directory.

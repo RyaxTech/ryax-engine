@@ -77,7 +77,7 @@ see in the following screenshot by the moment the pod appears in the system, the
 ![constraints](../_static/jupyter-deploying.png)
 
 The particular deployment is done in the Cloud and what is interesting is that the gpu-node was not reserved until the demand appeared. In particular the gpu-pool has been configured with autoscale activated hence whenever the need appears the node is 
-provisioned and once no Ryax workflow needs the node it is autoscaled back to 0. Hence the user pays only for the time the GPU is actually used. In the case of on-premise instance the GPU can be shut-down to minimize energy consumption or 
+provisioned and once no Ryax workflow needs the node it is autoscaled back to 0. Hence the user pays only for the time the GPU is actually used. In the case of on-premises instance the GPU can be shut-down to minimize energy consumption or 
 it can be used for other type of services. The serverless runtime of Ryax allows it to reserve GPUs for the time needed, which is an important advantage when compared to the typical serverless services
 (such as Amazon Lambda, Google Cloud functions, etc)
 

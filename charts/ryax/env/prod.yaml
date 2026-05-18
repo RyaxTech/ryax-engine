@@ -6,6 +6,7 @@ global:
     environment: production
   monitoring:
     enabled: true
+    otlpEndpoint: "{{ .Release.Name }}-tempo:4317"
 
 certManager:
   enabled: true

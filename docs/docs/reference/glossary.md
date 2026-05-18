@@ -45,7 +45,7 @@ When a workflow is deployed, its trigger is running, some [runs](#run) may be cr
 </strong></dt>
 <dd>
 
-A specific step of a defined worklfow. Actions that start a workflow are called [trigger](#trigger).
+A specific step of a defined workflow. Actions that start a workflow are called [trigger](#trigger).
 See [Workflows, Actions, and runs](../concepts/concepts) for more details.
 
 </dd>
@@ -86,7 +86,7 @@ A set of isolated actions, triggers, workflows, users, repositories, and runs. U
 </strong></dt>
 <dd>
 
-When an action recieve some inputs, it is executed to generate some outputs. We call this, an action run.
+When an action receive some inputs, it is executed to generate some outputs. We call this, an action run.
 
 </dd>
 <dt><a name="run"></a><strong>
@@ -150,11 +150,11 @@ A server or a cluster is a set of machines connected. See, [Wikipedia](https://e
 
 </dd>
 <dt><a name=""></a><strong>
-        On-premise
+        On-premises
 </strong></dt>
 <dd>
 
-Running Ryax *on-premise* means that Ryax runs on a cluster supplied by the client. See, [Wikipedia](https://en.wikipedia.org/wiki/On-premises_software).
+Running Ryax *on-premises* means that Ryax runs on a cluster supplied by the client. See, [Wikipedia](https://en.wikipedia.org/wiki/On-premises_software).
 
 </dd>
 <dt><a name=""></a><strong>

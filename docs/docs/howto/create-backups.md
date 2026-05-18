@@ -1,6 +1,6 @@
 # Backup Ryax with Velero
 
-To create a backup of Ryax you can use Velero. The process describe here is base on the Velero [FileStytemBackup](https://velero.io/docs/v1.13/file-system-backup/) that provides Persistent Volume backup in any Kubernetes installation.
+To create a backup of Ryax you can use Velero. The process described here is based on the Velero [FileSystemBackup](https://velero.io/docs/v1.13/file-system-backup/) that provides Persistent Volume backup in any Kubernetes installation.
 
 ## Prerequisites
 

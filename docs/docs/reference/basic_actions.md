@@ -446,7 +446,7 @@ max-width: 500px;
         <div class="ng-star-inserted">
             <p class="ryax-card-title">Print Environment</p>
             <span class="ryax-card-version">1.1</span>
-            <p class="ryax-card-description">Print the environment of the module: all the environements variables and all the files.</p>
+            <p class="ryax-card-description">Print the environment of the module: all the environment variables and all the files.</p>
         </div>
     </div>
 </nz-card>

@@ -8,13 +8,13 @@
 
 A kubernetes installed and running following the [Ryax requirements](https://docs.ryax.tech/howto/install_ryax_kubernetes.html#requirements).
 
-If you don't have an airgapped kubernetes environment, we propose to use k3s inside a virutal machine, and disconnect it from internet. K3s features an airgap installation procedure that you can follow: [Air-Gap installation](https://docs.k3s.io/installation/airgap).
+If you don't have an airgapped kubernetes environment, we propose to use k3s inside a virtual machine, and disconnect it from internet. K3s features an airgap installation procedure that you can follow: [Air-Gap installation](https://docs.k3s.io/installation/airgap).
 
 A machine with an internet connection, the same architecture as the airgap environment, and the package manager [nix](https://nixos.org/) installed.
 
 ## Configuration
 
-The first step, is to gather all the files needed by the installation of ryax airgap. Namely:
+The first step, is to gather all the files needed by the installation of Ryax airgap. Namely:
 
 - The ryax helm package (ryax-engine-{ryax-version}.tgz) that will be installed on the airgapped kubernetes cluster.
 - The list of container images containing ryax code (ryax-airgap-images-amd64.tar.gz).
@@ -23,15 +23,15 @@ The first step, is to gather all the files needed by the installation of ryax ai
     - ryax-airgap-helm-values.yaml.
 - The closure of nix packages to build actions.
 
-<!-- *We propose the a simple Ryax config for a k3s environement already package for you in the release page **(TODO)**.* -->
+<!-- *We propose a simple Ryax config for a k3s environment already packaged for you in the release page **(TODO)**.* -->
 
 ### Generate the package helm and the archive containing the folder
 
 To be able to install Ryax in an offline environment, you first need to create a package containing all container images and Helm charts required for your setup.
 
-Optionaly, you can create your Ryax configuration following the Ryax install documentation and run the package generation script on top of it to capture all containers required.
+Optionally, you can create your Ryax configuration following the Ryax install documentation and run the package generation script on top of it to capture all containers required.
 
-To do so, you will need a set of script to create a list of images a generate all you need.
+To do so, you will need a set of scripts to create a list of images and generate all you need.
 
 ```bash
 git clone https://gitlab.com/ryax-tech/ryax/ryax-engine
@@ -39,7 +39,7 @@ cd ryax-engine && git submodule update --init
 ./airgap/create-airgap-package.sh
 ```
 
-This script creates two file, one containing the images necessary to run ryax, and the helm package required for the installation. Additionnaly, you need to copy the two following file for your aigap installation:
+This script creates two files, one containing the images necessary to run Ryax, and the helm package required for the installation. Additionally, you need to copy the two following files for your airgap installation:
 
 - [ryax-airgap-helm-values](https://raw.githubusercontent.com/RyaxTech/ryax-engine/refs/heads/master/airgap/ryax-airgap-helm-values.yaml)
 - [minimal.yaml](https://raw.githubusercontent.com/RyaxTech/ryax-engine/refs/heads/master/chart/env/minimal.yaml) 
@@ -60,7 +60,7 @@ nix-store --query --requisites ./result
 nix-store --export $(nix-store --query --requisites ./result) > ryax-build-deps.nixexport
 ```
 
-After this step, you should have a new file named `ryax-build-deps.nixexport` that is required for the airgap ryax installation.
+After this step, you should have a new file named `ryax-build-deps.nixexport` that is required for the airgap Ryax installation.
 
 ## Installation
 
@@ -83,7 +83,7 @@ Ryax gets Action definitions from Git repositories. To inject Ryax default actio
 !!! info
     Other Ryax actions that might interest you depending on your use case are available in https://gitlab.com/ryax-tech/workflows 
 
-**If you have a git server accessible withing the airgap installation, you can directly go to following section.**
+**If you have a git server accessible within the airgap installation, you can directly go to the following section.**
 
 If you don't have a git server, you can directly copy the repository into the ryax-repository pod with `kubectl cp`.
 
@@ -105,12 +105,12 @@ Now in the web UI Library, create a new repository with this URL: `file:///tmp/d
 In order to build Ryax actions, the Ryax Action Builder requires an access to software packages inside you airgapped environment.
 Depending on the action type you use you need to configure package servers and/or import packages in the Builder
 
-You can configure the build using environement variables in the Builder: All variables prefixed by `RYAX_BUILD_ENV_` are exposed during the build phase.
+You can configure the build using environment variables in the Builder: All variables prefixed by `RYAX_BUILD_ENV_` are exposed during the build phase.
 
 !!! warning
     The support of action build in airgapped is in **TECHNOLOGICAL PREVIEW**.
     Only the `python3` action type is supported for now.
-    You can follow the futur developement here: https://gitlab.com/groups/ryax-tech/ryax/-/epics/33
+    You can follow the future development here: https://gitlab.com/groups/ryax-tech/ryax/-/epics/33
     
 
 #### Python packages
@@ -146,7 +146,7 @@ Install a Nix Binary cache, for example:
 - [nix serve](https://github.com/edolstra/nix-serve) a basic nix binary cache server
 - [Attic](https://github.com/zhaofengli/attic) more advanced with access rights and storage optimisation
 
-Then configure the Builder to use it as a substituer (Change with server host name): 
+Then configure the Builder to use it as a substituter (Change with server host name): 
 ```yaml
 action-builder:
   extraEnv:
@@ -154,7 +154,7 @@ action-builder:
       value: --option substituters my-nix-cache.example.com
 ```
 
-Now you need to inject, in you cache the bundle created at the end of the configuration step: `ryax-build-deps.nixexport`
+Now you need to inject, in your cache the bundle created at the end of the configuration step: `ryax-build-deps.nixexport`
 
 #### Inject packages in the Builder
 
@@ -163,7 +163,7 @@ Now you need to inject, in you cache the bundle created at the end of the config
 
 If you don't have a server, you can directly import packages into the Ryax Action Builder Nix store with `kubectl cp`.
 
-Transfert the bundle into the airgapped environment, and inject the bundle into the action builder local store with:
+Transfer the bundle into the airgapped environment, and inject the bundle into the action builder local store with:
 ```bash
 # Find the name of the pod
 BUILDER_POD=$(kubectl -n ryaxns get pod -l ryax.tech/resource-name=action-builder -o jsonpath='{.items[0].metadata.name}')
@@ -187,7 +187,7 @@ kubectl exec -ti -n ryaxns ${BUILDER_POD} -- nix-store --import < ryax-build-dep
 !!! warning
     Updates may require some extra steps, be sure that you have read the [release note](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/releases) before proceeding.
 
-To trigger an update of Ryax in n offline environment, you  can reuse the installation process to create new airgapped bundle and then inject the images and run the helm upgrade command:
+To trigger an update of Ryax in an offline environment, you can reuse the installation process to create a new airgapped bundle and then inject the images and run the helm upgrade command:
 ```sh
 sudo k3s ctr images import ./ryax-airgap-images-amd64.tar.gz
 helm upgrade --install ryax ./ryax-engine-*.tgz -n ryaxns --reuse-values
@@ -201,4 +201,3 @@ Example tools:
 - [Hauler](https://github.com/hauler-dev/hauler)
 - [Harbor](https://goharbor.io/)
 TODO: explain how to overrride image repo with k3s mirror or helm chart override -->
-

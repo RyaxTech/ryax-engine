@@ -10,7 +10,7 @@ The internal architecture of Ryax platform is split into 3 main parts: The Ryax 
 
 *The architecture design is done in a way so that our code can evolve quickly while keeping good quality.*
 
-Micro-services are designed to manage one functional scope only. They do not share common libraries and avoid coupling to other micro-services as much as possible. They are following the Domain-Driven Design principles and more especially the guidelines provided by the [Architechture Patterns with Python Book](https://www.cosmicpython.com/book/preface.html).
+Micro-services are designed to manage one functional scope only. They do not share common libraries and avoid coupling to other micro-services as much as possible. They are following the Domain-Driven Design principles and more especially the guidelines provided by the [Architecture Patterns with Python Book](https://www.cosmicpython.com/book/preface.html).
 
 They communicate through the broker with each others using a specific message for each interaction (no reuse of data structure to avoid coupling). The definition of messages is defined in the Protobuf format. The definition of these messages is owned by the service that **produces** this message.  Because those services are not sharing code if the inter-services message definition changes it has to be **copied from the owner code base to the consumers**.
 
@@ -87,7 +87,7 @@ class SuperService:
 As mentioned before, no data is directly modified here. However, we catch exceptions and use object methods to apply the right business rules.
 
 
-#### Infratructure
+#### Infrastructure
 
 Manage all the interactions with external systems like databases, file systems, networks, APIs, etc.
 
@@ -102,7 +102,7 @@ Most of the time they return nothing, or they return how well the command perfor
 This section contains the list of all Ryax services. 
 
 !!! note
-    If a action is *accessible by users*, the accessible endpoints require to be protected using the `authentification` microservice.
+    If a action is *accessible by users*, the accessible endpoints require to be protected using the `authentication` microservice.
 
 
 #### Authorization

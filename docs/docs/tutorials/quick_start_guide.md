@@ -193,7 +193,7 @@ Ryax will crawl the Git URL you provided and list all recognizable actions in th
     For more information on how to build recognizable actions for Ryax, please refer to the "How-to" section of this documentation.
 
 Reviewing the result list, we can for example see the "SQL Query" action.
-Let's say this is the one we've just developed and wants to add to our workflow!
+Let's say this is the one we've just developed and want to add to our workflow!
 
 
 Now you may launch this specific action's build by clicking on the **Build** button to the top right.
