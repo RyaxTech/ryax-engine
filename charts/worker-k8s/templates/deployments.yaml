@@ -1,0 +1,166 @@
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: {{ include "worker-k8s.fullname" . }}
+  labels: {{- include "worker-k8s.labels" . | nindent 4}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "worker-k8s.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: "Recreate"
+  template:
+    metadata:
+      labels:
+        {{- include "worker-k8s.labels" . | nindent 8 }}
+        app.kubernetes.io/component: "internal"
+        ryax.tech/resource-type: "internal"
+      annotations:
+        # Force restart on config changes
+        checksum/config: {{ .Values.config | toYaml | sha256sum }}
+    spec:
+      priorityClassName: {{ .Values.priorityClass }}
+      serviceAccount: {{ include "worker-k8s.fullname" . }}
+      securityContext:
+        fsGroup: 1200
+      imagePullSecrets:
+      {{- with .Values.global.imagePullSecrets }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      nodeSelector:
+      {{- with .Values.global.nodeSelector }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - emptyDir: { }
+          name: "tmp-dir"
+        - emptyDir: { }
+          name: "tmp-var-dir"
+        {{- if .Values.config }}
+        - name: config
+          configMap:
+            name: {{ include "worker-k8s.fullname" . }}-config
+        {{- end }}
+        {{- if .Values.actionRegistrySecret }}
+        - name: action-registry-creds
+          secret:
+            secretName: {{ .Values.actionRegistrySecret }}
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+        {{- end }}
+      initContainers:
+        - name: {{ include "worker-k8s.fullname" . | printf "%s-database-migration" }}
+          image: {{ include "worker-k8s.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            - name: "tmp-dir"
+              mountPath: "/tmp"
+          command:
+            - "ryax-worker-k8s-update-db"
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            {{- if not .Values.databaseURL }}
+            - name: RYAX_WORKER_K8S_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "worker-k8s.postgresql.secret" . }}
+                  key: "datastore-worker-k8s"
+            {{- else }}
+            - name: RYAX_WORKER_K8S_DATABASE_URL
+              value: {{ .Values.databaseURL }}
+            {{- end }}
+            - name: RYAX_LOG_LEVEL
+              value: {{ .Values.logLevel | default .Values.global.ryax.logLevel | default "warning" }}
+      containers:
+        - name: {{ include "worker-k8s.fullname" . }}
+          image: {{ include "worker-k8s.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: "tmp-dir"
+              mountPath: "/tmp"
+            - name: "tmp-var-dir"
+              mountPath: "/var/tmp"
+            {{- if .Values.config }}
+            - name: config
+              mountPath: /data/config
+            {{- end }}
+            {{- if .Values.actionRegistrySecret }}
+            - mountPath: /home/ryax/.docker
+              name: action-registry-creds
+              readOnly: true
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: "/healthz"
+              port: {{ .Values.apiPort }}
+            initialDelaySeconds: 5
+            failureThreshold: 3
+            periodSeconds: 20
+            successThreshold: 1
+            timeoutSeconds: 1
+          livenessProbe:
+            httpGet:
+              path: "/healthz"
+              port: {{ .Values.apiPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+          env:
+            - name: RYAX_LOG_LEVEL
+              value: {{ .Values.logLevel | default .Values.global.ryax.logLevel | default "warning" }}
+            {{- if not .Values.databaseURL }}
+            - name: RYAX_WORKER_K8S_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "worker-k8s.postgresql.secret" . }}
+                  key: "datastore-worker-k8s"
+            {{- else }}
+            - name: RYAX_WORKER_K8S_DATABASE_URL
+              value: {{ .Values.databaseURL }}
+            {{- end }}
+            {{- if .Values.actionRegistrySecret }}
+            - name: RYAX_ACTIONS_PULL_SECRET
+              value: {{ .Values.actionRegistrySecret }}
+            {{- end }}
+            - name: RYAX_BROKER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.brokerSecret }}
+                  key: "broker"
+            - name: RYAX_FILESTORE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: "filestore"
+            - name: RYAX_FILESTORE_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: "filestore-access"
+            - name: RYAX_FILESTORE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: "filestore-secret"
+            - name: RYAX_FILESTORE_BUCKET
+              value: {{ .Values.filestoreName }}
+            - name: RYAX_LOKI_QUERY_INTERVAL_IN_SECONDS
+              value: "{{ .Values.actionLogsQueryRate }}"
+            - name: RYAX_OTLP_ENDPOINT
+              value: {{ .Values.global.monitoring.otlpEndpoint | default "" | quote }}
+            {{- if .Values.config }}
+            - name: RYAX_CONFIG
+              value: /data/config/config.yaml
+            {{- end  }}
+            {{- if .Values.extraEnv }}
+              {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}
