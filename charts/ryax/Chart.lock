@@ -41,5 +41,11 @@ dependencies:
 - name: tempo
   repository: https://grafana.github.io/helm-charts
   version: 1.24.4
-digest: sha256:b1a5b3dada35f9fe855870cde773a7a10c9cb4ec1cdb4ba18cde89714670928a
-generated: "2026-05-07T17:26:07.052081047+02:00"
+- name: loki
+  repository: https://grafana.github.io/helm-charts
+  version: 6.16.0
+- name: promtail
+  repository: https://grafana.github.io/helm-charts
+  version: 6.16.6
+digest: sha256:93c9c4a315ed3d72f7795a02c8404c6835e9a047beef8c34ef4a1d1063226cb0
+generated: "2026-06-12T12:12:55.347398355+02:00"

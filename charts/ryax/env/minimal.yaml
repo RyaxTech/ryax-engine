@@ -76,6 +76,12 @@ kube-prometheus-stack:
 tempo:
   enabled: false
 
+loki:
+  enabled: false
+
+promtail:
+  enabled: false
+
 traefik:
   metrics:
     prometheus:
