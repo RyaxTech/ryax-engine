@@ -79,9 +79,6 @@ tempo:
 loki:
   enabled: false
 
-promtail:
-  enabled: false
-
 traefik:
   metrics:
     prometheus:
