@@ -260,22 +260,6 @@ kube-prometheus-stack:
               # Labels - additional labels to be attached to the alert
               labels:
                 severity: critical
-    errors:
-      groups:
-        - name: errors
-          rules:
-            - alert: RyaxErrorsInLogs
-              expr: sum(increase(promtail_custom_ryax_internal_error_in_logs_sum[1m])) > 2
-              for: 2m
-              labels:
-                severity: warning
-              annotations:
-                summary: |
-                  {{ `"Error in Ryax internal servies (container {{ $labels.container }})"` }}
-                description: |
-                  {{ `"Ryax internal services logs issues more then 2 errors in 1 minute\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"` }}
-                dashboards: "{{ .Values.dashboardUrl }}/2D4_jbdGz"
-
   alertmanager:
     enabled: false
 
@@ -409,25 +393,103 @@ loki:
     query_scheduler:
       max_outstanding_requests_per_tenant: 2048
 
-# -- Promtail is an external dependency that provides log collection on Kubernetes.
-promtail:
+# -- Alloy is an external dependency that provides log collection on Kubernetes.
+# It replaces the deprecated Promtail.
+alloy:
   serviceMonitor:
     enabled: true
-  # -- Be sure that Promtail runs on every node
-  tolerations:
-    - effect: NoSchedule
-      operator: Exists
-  config:
-    clients:
-      # -- Required to match the release name
-      - url: '{{ printf "http://%s-loki:3100/loki/api/v1/push" .Release.Name }}'
-    snippets:
-      # -- Drop labels to avoid the "too many labels" error
-      extraRelabelConfigs:
-        - action: labelmap
-          regex: __meta_kubernetes_pod_label_(.+)
-        - action: labeldrop
-          regex: app_kubernetes_io_(.+)
+  # -- No need for the PodLogs CRD: logs are collected from the node filesystem
+  crds:
+    create: false
+  controller:
+    # -- Be sure that Alloy runs on every node
+    tolerations:
+      - effect: NoSchedule
+        operator: Exists
+  alloy:
+    # -- Mount /var/log from the host to read the pod log files, as Promtail did
+    mounts:
+      varlog: true
+    # -- Required to read the pod log files on the host
+    securityContext:
+      runAsUser: 0
+      runAsGroup: 0
+    configMap:
+      # -- Equivalent of the previous Promtail configuration: collect the logs
+      # of all the pods of the node and push them to Loki.
+      # The loki.write url is templated to match the release name.
+      content: |-
+        // Collect logs only from the pods of the node Alloy runs on.
+        // K8S_NODE_NAME is set by the Alloy chart.
+        discovery.kubernetes "pods" {
+          role = "pod"
+          selectors {
+            role  = "pod"
+            field = "spec.nodeName=" + sys.env("K8S_NODE_NAME")
+          }
+        }
+
+        discovery.relabel "pod_logs" {
+          targets = discovery.kubernetes.pods.targets
+
+          rule {
+            source_labels = ["__meta_kubernetes_namespace"]
+            target_label  = "namespace"
+          }
+          rule {
+            source_labels = ["__meta_kubernetes_pod_name"]
+            target_label  = "pod"
+          }
+          rule {
+            source_labels = ["__meta_kubernetes_pod_container_name"]
+            target_label  = "container"
+          }
+          rule {
+            source_labels = ["__meta_kubernetes_pod_node_name"]
+            target_label  = "node_name"
+          }
+          rule {
+            source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name"]
+            separator     = "/"
+            target_label  = "job"
+          }
+          // Map the pod labels then drop some to avoid the "too many labels" error
+          rule {
+            action = "labelmap"
+            regex  = "__meta_kubernetes_pod_label_(.+)"
+          }
+          rule {
+            action = "labeldrop"
+            regex  = "app_kubernetes_io_(.+)"
+          }
+          rule {
+            source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+            separator     = "/"
+            replacement   = "/var/log/pods/*$1/*.log"
+            target_label  = "__path__"
+          }
+        }
+
+        local.file_match "pod_logs" {
+          path_targets = discovery.relabel.pod_logs.output
+        }
+
+        loki.source.file "pod_logs" {
+          targets    = local.file_match.pod_logs.targets
+          forward_to = [loki.process.pod_logs.receiver]
+        }
+
+        loki.process "pod_logs" {
+          // Parse the containerd (CRI) log format
+          stage.cri {}
+          forward_to = [loki.write.loki.receiver]
+        }
+
+        loki.write "loki" {
+          endpoint {
+            url = "{{ printf "http://%s-loki:3100/loki/api/v1/push" .Release.Name }}"
+          }
+        }
 
 
 traefik:
