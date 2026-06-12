@@ -329,6 +329,107 @@ tempo:
     enabled: true
     size: "10Gi"
 
+# -- Loki is an external dependency that provides log collection on Kubernetes.
+loki:
+  enabled: true
+  resultsCache:
+    enabled: false
+  test:
+    enabled: false
+  chunksCache:
+    enabled: false
+  lokiCanary:
+    enabled: false
+
+  deploymentMode: SingleBinary
+  singleBinary:
+    # -- Avoid Loki using too many resources: Increase this if you experience OOM errors
+    resources:
+      requests:
+        cpu: 0.5
+        memory: 512Mi
+      limits:
+        cpu: 1
+        memory: 512Mi
+    replicas: 1
+    # Fix cluster node discovery issues
+    extraArgs:
+      - -config.expand-env=true
+    extraEnv:
+      - name: POD_IP
+        valueFrom:
+          fieldRef:
+            fieldPath: status.podIP
+  read:
+    replicas: 0
+  backend:
+    replicas: 0
+  write:
+    replicas: 0
+  gateway:
+    enabled: false
+
+  loki:
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: 'filesystem'
+    schemaConfig:
+      configs:
+      - from: "2024-01-01"
+        store: tsdb
+        index:
+          prefix: loki_index_
+          period: 24h
+        # -- storing on filesystem, so there's no real persistence here.
+        # if you want to persist logs on S3 change this config.
+        # See https://grafana.com/docs/loki/latest/operations/storage/
+        object_store: filesystem
+        schema: v13
+
+    # Extra config
+    # Fix loki-memberlist unreachable error, see this issue fo rmore details:
+    # https://github.com/grafana/loki/issues/6370#issuecomment-2260528852
+    extraMemberlistConfig:
+      bind_addr:
+        - ${POD_IP}
+    # Avoid too many logs from loki itself
+    server:
+      log_level: warn
+    # -- Avoid "No Org id error" in Grafana datasource.
+    # See Helm chart documentation for more details
+    auth_enabled: false
+    limits_config:
+      # -- Keep only one week of logs
+      retention_period: 7d
+      # -- Increase the number of labels or logs from ryax services can be ignored
+      max_label_names_per_series: 30
+    # -- Adding this to avoid "too many outstanding requests" errors on the API
+    # See https://github.com/grafana/loki/issues/4613
+    query_scheduler:
+      max_outstanding_requests_per_tenant: 2048
+
+# -- Promtail is an external dependency that provides log collection on Kubernetes.
+promtail:
+  serviceMonitor:
+    enabled: true
+  # -- Be sure that Promtail runs on every node
+  tolerations:
+    - effect: NoSchedule
+      operator: Exists
+  config:
+    clients:
+      # -- Required to match the release name
+      - url: '{{ printf "http://%s-loki:3100/loki/api/v1/push" .Release.Name }}'
+    snippets:
+      # -- Drop labels to avoid the "too many labels" error
+      extraRelabelConfigs:
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - action: labeldrop
+          regex: app_kubernetes_io_(.+)
+
+
 traefik:
   deployment:
     enabled: true
