@@ -36,6 +36,7 @@ spec:
           name: "tmp-dir"
         - emptyDir:
           name: "tmp-var-dir"
+      enableServiceLinks: false  # Avoid collision with injected env var like RYAX_RUNNER_PORT 
       containers:
         - name: {{ include "runner.fullname" . }}
           image: {{ include "runner.image" . }}
