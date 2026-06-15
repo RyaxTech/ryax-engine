@@ -19,3 +19,19 @@ data:
         editable: false
         apiVersion: 1
         uid: tempo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-datasource
+  labels: {{- include "common-resources.labels" . | nindent 4 }}
+    grafana_datasource: "1"
+data:
+  loki-datasource.yaml: |
+    apiVersion: 1
+    datasources:
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://{{ .Release.Name }}-loki:3100
+      version: 1
