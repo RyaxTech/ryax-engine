@@ -82,13 +82,13 @@ spec:
           resources: {{- toYaml .Values.resources | nindent 12 }}
           env:
             {{- if not .Values.databaseURL }}
-            - name: RYAX_WORKER_DATABASE_URL
+            - name: RYAX_WORKER_SSH_SLURM_DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: {{ include "worker-ssh-slurm.postgresql.secret" . }}
                   key: "datastore-worker-ssh-slurm"
             {{- else }}
-            - name: RYAX_WORKER_DATABASE_URL
+            - name: RYAX_WORKER_SSH_SLURM_DATABASE_URL
               value: {{ .Values.databaseURL }}
             {{- end }}
             - name: RYAX_LOG_LEVEL
@@ -141,13 +141,13 @@ spec:
             - name: RYAX_LOG_LEVEL
               value: {{ .Values.logLevel | default .Values.global.ryax.logLevel | default "warning" }}
             {{- if not .Values.databaseURL }}
-            - name: RYAX_WORKER_DATABASE_URL
+            - name: RYAX_WORKER_SSH_SLURM_DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: {{ include "worker-ssh-slurm.postgresql.secret" . }}
                   key: "datastore-worker-ssh-slurm"
             {{- else }}
-            - name: RYAX_WORKER_DATABASE_URL
+            - name: RYAX_WORKER_SSH_SLURM_DATABASE_URL
               value: {{ .Values.databaseURL }}
             {{- end }}
             {{- if .Values.actionRegistrySecret }}
