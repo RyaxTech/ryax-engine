@@ -1,0 +1,189 @@
+{{- $home := "/home/ryax" }}
+{{- if .Values.hpcOffloading }}
+{{- $home = "/root" }}
+{{- end }}
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: {{ include "worker-ssh-slurm.fullname" . }}
+  labels: {{- include "worker-ssh-slurm.labels" . | nindent 4}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "worker-ssh-slurm.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: "Recreate"
+  template:
+    metadata:
+      labels:
+        {{- include "worker-ssh-slurm.labels" . | nindent 8 }}
+        app.kubernetes.io/component: "internal"
+        ryax.tech/resource-type: "internal"
+      annotations:
+        # Force restart on config changes
+        checksum/config: {{ .Values.config | toYaml | sha256sum }}
+        {{- if .Values.hpcPrivateKeyFile }}
+        checksum/sshkey: {{ .Values.hpcPrivateKeyFile | toYaml | sha256sum }}
+        {{- end }}
+    spec:
+      priorityClassName: {{ .Values.priorityClass }}
+      securityContext:
+        fsGroup: 1200
+        {{- if .Values.hpcOffloading }}
+        runAsGroup: 0
+        runAsUser: 0
+        {{- end }}
+      imagePullSecrets:
+      {{- with .Values.global.imagePullSecrets }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      nodeSelector:
+      {{- with .Values.global.nodeSelector }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - emptyDir: { }
+          name: "tmp-dir"
+        - emptyDir: { }
+          name: "tmp-var-dir"
+        {{- if .Values.config }}
+        - name: config
+          configMap:
+            name: {{ include "worker-ssh-slurm.fullname" . }}-config
+        {{- end }}
+        {{- if .Values.hpcPrivateKeyFile }}
+        - name: ssh-config
+          secret:
+            secretName: {{ include "worker-ssh-slurm.fullname" . }}-hpc-key
+            defaultMode: 0400
+        {{- end }}
+        {{- if .Values.actionRegistrySecret }}
+        - name: action-registry-creds
+          secret:
+            secretName: {{ .Values.actionRegistrySecret }}
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+        {{- end }}
+      initContainers:
+        - name: {{ include "worker-ssh-slurm.fullname" . | printf "%s-database-migration" }}
+          image: {{ include "worker-ssh-slurm.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            - name: "tmp-dir"
+              mountPath: "/tmp"
+          command:
+            - "ryax-worker-ssh-slurm-update-db"
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            {{- if not .Values.databaseURL }}
+            - name: RYAX_WORKER_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "worker-ssh-slurm.postgresql.secret" . }}
+                  key: "datastore-worker-ssh-slurm"
+            {{- else }}
+            - name: RYAX_WORKER_DATABASE_URL
+              value: {{ .Values.databaseURL }}
+            {{- end }}
+            - name: RYAX_LOG_LEVEL
+              value: {{ .Values.logLevel | default .Values.global.ryax.logLevel | default "warning" }}
+      containers:
+        - name: {{ include "worker-ssh-slurm.fullname" . }}
+          image: {{ include "worker-ssh-slurm.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: "tmp-dir"
+              mountPath: "/tmp"
+            - name: "tmp-var-dir"
+              mountPath: "/var/tmp"
+            {{- if .Values.config }}
+            - name: config
+              mountPath: /data/config
+            {{- end }}
+            {{- if .Values.hpcPrivateKeyFile }}
+            - mountPath: {{ $home }}/.ssh
+              name: ssh-config
+              readOnly: true
+            {{- end }}
+            {{- if .Values.actionRegistrySecret }}
+            - mountPath: {{ $home }}/.docker
+              name: action-registry-creds
+              readOnly: true
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: "/healthz"
+              port: {{ .Values.apiPort }}
+            initialDelaySeconds: 5
+            failureThreshold: 3
+            periodSeconds: 20
+            successThreshold: 1
+            timeoutSeconds: 1
+          livenessProbe:
+            httpGet:
+              path: "/healthz"
+              port: {{ .Values.apiPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+          env:
+            - name: RYAX_LOG_LEVEL
+              value: {{ .Values.logLevel | default .Values.global.ryax.logLevel | default "warning" }}
+            {{- if not .Values.databaseURL }}
+            - name: RYAX_WORKER_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "worker-ssh-slurm.postgresql.secret" . }}
+                  key: "datastore-worker-ssh-slurm"
+            {{- else }}
+            - name: RYAX_WORKER_DATABASE_URL
+              value: {{ .Values.databaseURL }}
+            {{- end }}
+            {{- if .Values.actionRegistrySecret }}
+            - name: RYAX_ACTIONS_PULL_SECRET
+              value: {{ .Values.actionRegistrySecret }}
+            {{- end }}
+            - name: RYAX_INTERNAL_REGISTRY_OVERRIDE
+              value: {{ .Values.internalRegistryOverride }}
+            - name: RYAX_BROKER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.brokerSecret }}
+                  key: "broker"
+            - name: RYAX_FILESTORE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: "filestore"
+            - name: RYAX_FILESTORE_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: "filestore-access"
+            - name: RYAX_FILESTORE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: "filestore-secret"
+            - name: RYAX_FILESTORE_BUCKET
+              value: {{ .Values.filestoreName }}
+            - name: RYAX_OTLP_ENDPOINT
+              value: {{ tpl .Values.global.monitoring.otlpEndpoint . | default "" | quote }}
+            {{- if .Values.config }}
+            - name: RYAX_CONFIG
+              value: /data/config/config.yaml
+            {{- end  }}
+            {{- if .Values.extraEnv }}
+              {{- toYaml .Values.extraEnv | nindent 12 }}
+            {{- end }}

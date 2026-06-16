@@ -1,0 +1,12 @@
+{{- if and .Values.global.monitoring.enabled .Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "worker-ssh-slurm.fullname" . }}
+  labels: {{- include "worker-ssh-slurm.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels: {{ include "worker-ssh-slurm.selectorLabels" . | nindent 6 }}
+  endpoints:
+  - port: metrics
+{{- end }}
