@@ -1,0 +1,146 @@
+global:
+  # -- Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # @section -- Global
+  nodeSelector: {}
+  # -- Global container image registry
+  # @section -- Global
+  imageRegistry:
+  # -- Global container registry secret names as an array
+  # Example:
+  #   - name: myPullSercret
+  # @section -- Global
+  imagePullSecrets: []
+  # --	Global default StorageClass for Persistent Volume(s)
+  # @section -- Global
+  defaultStorageClass:
+
+  monitoring:
+    # -- Enables service monitoring
+    # @section -- Global
+    enabled: false
+    # -- Traces collector (Tempo) endpoint Trace collection (disabled if empty)
+    # @section -- Global
+    otlpEndpoint: ""
+
+  ryax:
+    logLevel:
+    userNamespace: ryaxns-execs
+
+# -- Name of the secret that contains credentials to access the registry hosting Ryax actions.
+# Leave empty to use public access registry
+# Secret must be of type: kubernetes.io/dockerconfigjson
+actionRegistrySecret: ryax-registry-creds-secret
+
+# -- Ryax Worker configuration use for the registration. See documentation for more details:
+# https://docs.ryax.tech/reference/configuration.html#worker-ssh-slurm-configuration
+# Example:
+# site:
+#   id: Site-iahoindsoia-ae
+#   spec:
+#     credentials:
+#        ...
+#     partitions:
+#     - name: debug
+#       id: NodePool-10I31U3421-azea
+# @section -- Ryax
+config:
+  site:
+    type: SSH_SLURM
+    spec:
+      partitions:
+        
+      credentials: 
+
+# -- container image name and version
+image:
+  tag: "26.6.0"
+  registry: docker.io/ryaxtech
+  repository: worker-ssh-slurm
+  digest: ""
+  ## Specify a imagePullPolicy
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+  ##
+  pullPolicy: IfNotPresent
+
+# -- log level of the service (override global.ryax.logLevel)
+logLevel:
+  
+# -- Add priority class
+priorityClass:
+
+apiPort: 8084
+metricsPort: 8093
+
+brokerSecret: ryax-broker-secret
+
+filestoreSecret: ryax-minio-secret
+filestoreName: ryax-filestore
+
+# -- this is used for SLURM_SSH deployment mode on a private network mode.
+# Don't change it unless you know what you are doing
+internalRegistryOverride: 'ryax-registry:5000'
+
+# -- Set as true to enable ssh slurm hpc offloading,
+# will run worker-ssh-slurm container as root so singularity build works without --fakeroot
+# Disable it to avoid running as root inside the container
+# @section -- Important Settings
+hpcOffloading: true
+
+# -- Inject the private key to SSH to the HPC site with `--set-file hpcPrivateKeyFile=./my-private.key`
+hpcPrivateKeyFile:
+
+# -- Inject the SSH config to customize the access to the HPC site here with `--set-file`
+hpcConfigFile:
+
+# -- Recommended resources request
+# This is needed because the Worker build the action using Singularity which requires some memory.
+# @section -- Resource Settings
+# Example:
+#   requests:
+#     memory: "4Gi"
+#     cpu: "1000m"
+#   limits:
+#     memory: "4Gi"
+resources: {}
+
+
+# -- Add extra environment variables
+extraEnv: []
+
+# -- Add affinity injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
+# Example:
+#   nodeAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       nodeSelectorTerms:
+#       - matchExpressions:
+#         - key: topology.kubernetes.io/zone
+#           operator: In
+#           values:
+#           - antarctica-east1
+#           - antarctica-west1
+affinity: {}
+
+# -- To override the default posgresql URL. Database URL in a SQLAlchemy compatible format.
+databaseURL:
+
+
+postgresql:
+  # -- Enables PostgreSQL local database instead of remote or local sqlite
+  enabled: true
+  auth:
+    existingSecret: '{{ include "worker-ssh-slurm.postgresql.secret" . }}'
+    database: worker-ssh-slurm
+    username: worker-ssh-slurm
+  image:
+    repository: bitnamilegacy/postgresql
+  metrics:
+    image:
+        repository: bitnamilegacy/postgres-exporter
+  primary:
+    persistence:
+      size: 1Gi
+ 
+monitoring:
+  # -- Enable service monitor for prometheus using ServiceMonitor CRD
+  serviceMonitor:
+    enabled: false
