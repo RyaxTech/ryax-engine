@@ -134,5 +134,10 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.datastoreSecret }}
                   key: "datastore-studio"
+            - name: "RYAX_PASSWORD_ENCRYPTION_KEY"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.passwordEncryptionKeySecret }}
+                  key: encryption-key
             - name: RYAX_LOG_LEVEL
               value: {{ .Values.logLevel | default .Values.global.ryax.logLevel | default "warning" }}

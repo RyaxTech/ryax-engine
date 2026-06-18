@@ -26,6 +26,7 @@ if __name__ == "__main__":
     registry_pass = password()
     runner_frenet_key = frenet_key()
     repository_frenet_key = frenet_key()
+    studio_frenet_key = frenet_key()
     worker_pg_pass = password()
     rabbitmq_pg_pass = password()
 
@@ -35,6 +36,8 @@ runner:
   fernetEncryptionKey: {runner_frenet_key}
 repository:
   fernetEncryptionKey: {repository_frenet_key}
+studio:
+  fernetEncryptionKey: {studio_frenet_key}
 worker:
   postgresql:
     auth:

@@ -60,6 +60,11 @@ apiMaxUploadSizeInBytes: "1073741824"
 
 apiPort: 8080
 datastoreSecret: "ryax-datastore-secret"
+# -- Name of the secret holding the Fernet key used to encrypt PASSWORD values at rest
+passwordEncryptionKeySecret: studio-password-encryption-key
+# -- Fernet key used to encrypt PASSWORD values at rest. Leave empty to let Helm
+# generate one (preserved across upgrades), or set it (see generate-secrets.py).
+fernetEncryptionKey:
 jwtSecret: "api-jwt-secret-key"
 brokerSecret: "ryax-broker-secret"
 filestoreSecret: "ryax-minio-secret"
