@@ -22,7 +22,7 @@
   </p>
 </div>
 
-**WARNING: We use GitLab for our development. If you want to see the whole application code, see https://gitlab.com/ryax-tech/ryax/**
+**WARNING: We develop on GitLab. The [GitHub repository](https://github.com/RyaxTech/ryax-engine/) is a read-only mirror — please open issues and merge requests on [GitLab](https://gitlab.com/ryax-tech/ryax/) instead. To see the whole application code, see https://gitlab.com/ryax-tech/ryax/**
 
 ## ⭐ About the project
 
