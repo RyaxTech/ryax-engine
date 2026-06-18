@@ -1,11 +1,11 @@
 variables:
-  CHARTS: "charts/ryax charts/worker"
-  FILES_TO_PREPROCESS: "charts/ryax/Chart.yaml charts/worker/Chart.yaml"
+  CHARTS: "charts/ryax charts/worker charts/worker-k8s charts/worker-ssh-slurm"
+  FILES_TO_PREPROCESS: "charts/ryax/Chart.yaml charts/worker/Chart.yaml charts/worker-k8s/Chart.yaml charts/worker-ssh-slurm/Chart.yaml"
 
 include:
   - project: ryax-tech/ryax/ci_common
     # Update on the latest release (see https://gitlab.com/ryax-tech/ryax/ci_common/-/tags)
-    ref: 5.7.2
+    ref: 6.0.1
     file: common-steps-gitlab-ci.yml
 
 stages:
