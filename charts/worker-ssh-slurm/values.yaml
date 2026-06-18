@@ -68,7 +68,7 @@ logLevel:
 # -- Add priority class
 priorityClass:
 
-apiPort: 8083
+apiPort: 8084
 metricsPort: 8093
 
 brokerSecret: ryax-broker-secret
