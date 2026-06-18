@@ -106,6 +106,11 @@ spec:
               value: {{ .Values.apiPort | quote }}
             - name: RYAX_MAX_UPLOAD_SIZE
               value: "{{ .Values.apiMaxUploadSizeInBytes }}"
+            - name: "RYAX_PASSWORD_ENCRYPTION_KEY"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.passwordEncryptionKeySecret }}
+                  key: encryption-key
             {{- if .Values.extraEnv }}
               {{- toYaml .Values.extraEnv | nindent 12 }}
             {{- end }}
