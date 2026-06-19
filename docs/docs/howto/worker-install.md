@@ -6,12 +6,9 @@
 
 Ryax is able to use multiple computing infrastructure at once, even during the single run of a workflow.
 To enable the multi-site mode you will need to install a Ryax Worker for each site.
-Ryax provides a dedicated Worker chart per site type:
+Ryax Worker currently supports two type of sites `SLURM_SSH` and `KUBERNETES`.
 
-- `SLURM_SSH` sites: the `ryax-worker-slurm-ssh` chart (see [SLURM_SSH Worker](#slurm_ssh-worker)).
-- `KUBERNETES` sites: the `ryax-worker-k8s` chart (see [Kubernetes Worker](#kubernetes-worker)).
-
-This document explains how to install and configure both Workers.
+This document explains how to install and configure Workers.
 
 ## SLURM_SSH Worker
 
@@ -47,6 +44,7 @@ like in the following example:
 config:
   site:
     id: Site-1777021590-tq6kqbbe
+    type: SLURM_SSH
     spec:
       partitions:
         - name: default # name of the partition as define in Slurm
@@ -54,18 +52,21 @@ config:
       credentials:
         server: my.hpc-site.com
         username: ryax
+loki:
+  enabled: false
+intelliscale:
+  enabled: false
 ```
 Each field explained in details:
 
 - **site.id**: the name of the site that identifies the site in Ryax
+- **site.type**: the type of the site (can SLURM_SSH or KUBERNETES)
 - **site.spec.partitions**: the partition definitions. **Ryax only supports partition with homogeneous node for now.** Each resource value is given by node.
   - **name**: name of the partition in Slurm (Will be use to target the partition).
   - **id**: id of the partition provided by the Ryax UI.
 - **site.spec.credentials**: Contains credential to SSH to HPC cluster login server. The private key will be injected during the installation phase.
 
-The site type is determined by the Worker chart you install, so you don't need to set it in your values file.
-
-For more details about the Ryax Worker configuration please see the [Worker reference documentation](../reference/configuration.md#worker-ssh-slurm-configuration)
+For more details about the Ryax Worker configuration please see the [Worker reference documentation](../reference/configuration.md#worker-configuration)
 
 ### Installation
 
@@ -74,7 +75,8 @@ Now you can install the Worker on the Ryax main site. To do so, we will use the 
 Also, we will inject the SSH private key required to access the SSH cluster.
 ```sh
 helm upgrade --install ryax-worker-hpc \
-  oci://registry.ryax.org/release-charts/ryax-worker-slurm-ssh \
+  oci://registry.ryax.org/release-charts/worker  \
+  --version 26.4.0 \
   --namespace ryaxns \
   --values worker-values.yaml \
   --set-file hpcPrivateKeyFile=./my-ssh-private-key
@@ -126,6 +128,9 @@ Hardware Requirements:
 **Note that resource requirements really depends on your usage of the cluster.**
 
 ### Configuration
+
+<!-- TODO: This is the exact copy of the install worker configuration part -->
+<!-- reformat or use include-markdown https://pypi.org/project/mkdocs-include-markdown-plugin/ -->
 
 In order to configure your Worker, you will need to register a *Site* and or more *Node Pools* (set of homogeneous nodes) in the Ryax UI.
 To do so, go into the Infrastructure view of your Ryax installation (For example in https://ryax.example.com/app/infrastructure) and create a new Site.
@@ -295,7 +300,7 @@ The registry is already exposed on the internet so only the secrets are required
 
 * Now that we have the configuration and a secure connection with the credentials we will use Helm to install the latest Ryax Worker:
   ```sh
-  helm upgrade --install ryax-worker oci://registry.ryax.org/release-charts/ryax-worker-k8s --values worker.yaml -n ryaxns
+  helm upgrade --install ryax-worker oci://registry.ryax.org/release-charts/worker --values worker.yaml -n ryaxns
   ```
 
 ---

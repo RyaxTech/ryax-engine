@@ -45,6 +45,7 @@ actionRegistrySecret: ryax-registry-creds-secret
 # @section -- Ryax
 config:
   site:
+    type: SSH_SLURM
     spec:
       partitions:
         

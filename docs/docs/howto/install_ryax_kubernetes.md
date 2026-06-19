@@ -234,17 +234,6 @@ taints:
    value: only
 ```
 
-### Install the worker
-
-Once your `worker-values.yaml` is ready, install the Kubernetes Worker (`ryax-worker-k8s` chart) in the same cluster and namespace as Ryax:
-
-```sh
-helm upgrade --install ryax-worker oci://registry.ryax.org/release-charts/ryax-worker-k8s --values worker-values.yaml -n ryaxns
-```
-
-Once the worker is up and running, a new site becomes available in the UI, in the *Deploy* tab of each action.
-To attach another Kubernetes cluster or an HPC/Slurm cluster as an additional site, follow the [multi-site worker installation guide](./worker-install.md).
-
 ## Cluster Update
 
 !!! warning

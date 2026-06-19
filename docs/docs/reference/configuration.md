@@ -34,18 +34,13 @@ See the [Helm chart documentation](https://gitlab.com/ryax-tech/ryax/ryax-studio
 
 ## Worker configuration
 
-Ryax workers register a *Site* with Ryax. There are two site types, each handled by its own dedicated Worker Helm chart:
-
-- `KUBERNETES` sites are handled by the `ryax-worker-k8s` chart (documented below).
-- `SLURM_SSH` sites are handled by the `ryax-worker-slurm-ssh` chart (see [Worker SSH SLURM configuration](#worker-ssh-slurm-configuration)).
-
-The site type is determined by the Worker chart you install, so it is not part of the configuration.
-
+There is two type of site, `SLURM_SSH` and `KUBERNETES` with according configuration spec.
 Here is a complete configuration for a KUBERNETES site type example with two node pools. Defining the Objective scores (`objectiveScores`) enable scheduling by Objectives (higher is better):
 ```yaml
 config:
   site:
     name: local
+    type: KUBERNETES
     spec:
       nodePools:  # list of node pools to be used by Ryax to deploy actions
         - name: gpu-h100
@@ -72,14 +67,12 @@ config:
           selector:
             kubernetes.azure.com/agentpool: default
 ```
-
-## Worker SSH SLURM configuration
-
-Configuration for a `SLURM_SSH` site type with two partitions and some extra configuration for credentials and cache dir (partitions use the same fields as the Kubernetes node pools above):
+And for SLURM_SSH site type with two partitions and some extra configuration for credentials and cache dir:
 ```yaml
 config:
   site:
     name: Azure-1
+    type: SLURM_SSH
     spec:
       credentials:  # Use for SSH connection to the SLURM cluster
         server: hpc.example.com
@@ -102,10 +95,8 @@ config:
           memory: 24G
 ```
 
-## Worker references
+### References
 
-- Step-by-step configuration instructions can be found in the [Worker installation Howto](../howto/worker-install.md)
-- Worker Helm Chart configuration values can be found in the Helm chart documentation:
-    - Kubernetes Worker: [`ryax-worker-k8s` chart](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/master/charts/worker-k8s/README.md?ref_type=heads)
-    - SSH/Slurm Worker: [`ryax-worker-slurm-ssh` chart](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/master/charts/worker-ssh-slurm/README.md?ref_type=heads)
+- Step-by-step configuration instructions can be found the [Worker installation Howto](../howto/worker-install.md)
+- Worker Helm Chart configuration values can be found in the [Helm chart documentation](https://gitlab.com/ryax-tech/ryax/ryax-runner/-/blob/master/charts/worker/README.md?ref_type=heads)
 - Ryax IntelliScale Helm Chart configuration can be found in the [Ryax IntelliScale Helm chart documentation](https://gitlab.com/ryax-tech/ryax/ryax-intelliscale/-/blob/master/chart/README.md?ref_type=heads)

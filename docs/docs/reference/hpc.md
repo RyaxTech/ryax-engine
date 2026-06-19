@@ -8,7 +8,7 @@ It means that in the same workflow, some actions will run on Ryax Kubernetes clu
 
 ## Requirements
 
-First add a SLURM_SSH site to Ryax by installing the `ryax-worker-slurm-ssh` chart: see [configure and install a Ryax Worker](../howto/worker-install.md#slurm_ssh-worker).
+First add a SLURM_SSH site to Ryax using this documentation: [configure and install a Ryax Worker](../howto/worker-install.md#slurm_ssh-worker).
 
 Regarding the SLURM cluster, here is a list of requirements.
 
