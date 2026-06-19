@@ -1,5 +1,5 @@
 apiVersion: v2
-name: ryax-worker-ssh-slurm
+name: ryax-worker-slurm-ssh
 description: Ryax Worker that manages execution of Actions on SLURM cluster through SSH.
 home: https://ryax.tech
 keywords:
