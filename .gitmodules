@@ -16,9 +16,6 @@
 [submodule "action-wrappers"]
 	path = action-wrappers
 	url = git@gitlab.com:ryax-tech/ryax/ryax-action-wrappers.git
-[submodule "draft-actions"]
-	path = actions/draft-actions
-	url = git@gitlab.com:ryax-tech/workflows/draft-actions.git
 [submodule "default-modules"]
 	path = actions/default-actions
 	url = git@gitlab.com:ryax-tech/workflows/default-actions.git
