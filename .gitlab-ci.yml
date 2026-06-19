@@ -44,6 +44,38 @@ pages:
     url: $CI_PAGES_URL
   
 
+security_checks:
+  stage: verify
+  image: python:3.13
+  tags: [docker]
+  variables:
+    # lint.sh runs vulture/bandit/uv-audit across every submodule, so they must
+    # be checked out. FORCE_HTTPS rewrites the git@ SSH submodule URLs to HTTPS
+    # so the CI job token can authenticate (requires the submodule projects to
+    # allow this project in their CI/CD job token allowlist).
+    GIT_SUBMODULE_STRATEGY: recursive
+    GIT_SUBMODULE_FORCE_HTTPS: "true"
+    GIT_SUBMODULE_DEPTH: 1
+    UV_LINK_MODE: copy
+    UV_CACHE_DIR: .uv-cache
+  cache:
+    - key:
+        files:
+          - uv.lock
+        prefix: $CI_RUNNER_EXECUTABLE_ARCH
+      paths:
+        - .uv-cache
+  before_script:
+    - pip install uv
+  script:
+    - uv sync --all-groups
+    - export PATH="$PWD/.venv/bin:$PATH"
+    - ./lint.sh
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - when: on_success
+
 verify_helm_charts:
   extends: .verify_helm_charts
   # Exhaustive list of charts here for linter
