@@ -36,7 +36,6 @@ actionRegistrySecret: ryax-registry-creds-secret
 # @section -- Ryax
 config:
   site:
-    type: KUBERNETES
     spec:
       namespace: "{{ .Values.global.ryax.userNamespace }}"
 

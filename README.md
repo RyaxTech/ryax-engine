@@ -133,7 +133,7 @@ Go to the **Infrastructure** > **New Site** and create a Kubernetes site called 
 Now click on **Add node pool** and add a "k3s" node pool with the quantity of resources you want to give to Ryax actions, for example: 1000 mCPU and 2GB of memory.
 Copy the Site ID and the Node pool ID into variables or directly in the command and run:
 ```sh
-helm install ryax-worker oci://registry.ryax.org/release-charts/ryax-worker -n ryaxns \
+helm install ryax-worker oci://registry.ryax.org/release-charts/ryax-worker-k8s -n ryaxns \
   --set config.site.id=$SITE_ID \
   --set 'config.site.spec.nodePools[0].id'=$NODE_POOL_ID \
   --set 'config.site.spec.nodePools[0].selector.node\.kubernetes\.io/instance-type'=k3s

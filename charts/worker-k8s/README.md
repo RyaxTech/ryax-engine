@@ -1,4 +1,4 @@
-# worker-k8s
+# ryax-worker-k8s
 
 ![Version: 0.0.0-dev](https://img.shields.io/badge/Version-0.0.0--dev-informational?style=flat-square) ![AppVersion: SERVICE-VERSION](https://img.shields.io/badge/AppVersion-SERVICE--VERSION-informational?style=flat-square)
 
@@ -29,7 +29,7 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| config | object | `{"site":{"spec":{"namespace":"{{ .Values.global.ryax.userNamespace }}"},"type":"KUBERNETES"}}` | Ryax Worker configuration use for the registration. See documentation for more details: https://docs.ryax.tech/reference/configuration.html#worker-configuration |
+| config | object | `{"site":{"spec":{"namespace":"{{ .Values.global.ryax.userNamespace }}"}}}` | Ryax Worker configuration use for the registration. See documentation for more details: https://docs.ryax.tech/reference/configuration.html#worker-configuration |
 
 ### Global
 
