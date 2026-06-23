@@ -83,3 +83,12 @@ spec:
             {{- end }}
             - name: RYAX_CONFIG_APP
               value: /intelliscale-config/config.yaml
+            {{- if .Values.brokerSecret }}
+            # Master-site (multi-site) mode: consume execution metrics and publish
+            # recommendations over the central broker, alongside the gRPC server.
+            - name: RYAX_BROKER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.brokerSecret }}
+                  key: "broker"
+            {{- end }}

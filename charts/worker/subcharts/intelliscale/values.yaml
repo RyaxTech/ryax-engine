@@ -42,6 +42,14 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+# -- Name of the secret holding the central RabbitMQ broker URL (key "broker").
+# When set, IntelliScale runs at the master site and consumes execution metrics /
+# publishes recommendations over the broker (multi-site mode) in addition to the
+# legacy per-site gRPC interface. Leave empty for the legacy gRPC-only V1 worker
+# deployment.
+# @section -- Ryax
+brokerSecret: ""
+
 # -- This is for setting Kubernetes Annotations to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 podAnnotations: {}
