@@ -297,7 +297,7 @@ def command_update_charts_version(args):
             "charts/ryax/subcharts/studio/values.yaml",
             "charts/ryax/subcharts/runner/values.yaml",
             "charts/ryax/subcharts/front/values.yaml",
-            "charts/worker/subcharts/intelliscale/values.yaml",
+            "charts/ryax/subcharts/intelliscale/values.yaml",
             "charts/worker/values.yaml",
         ]
 
