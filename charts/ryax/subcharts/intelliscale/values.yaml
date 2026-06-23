@@ -43,12 +43,12 @@ nameOverride: ""
 fullnameOverride: ""
 
 # -- Name of the secret holding the central RabbitMQ broker URL (key "broker").
-# When set, IntelliScale runs at the master site and consumes execution metrics /
+# IntelliScale runs at the master site and consumes execution metrics /
 # publishes recommendations over the broker (multi-site mode) in addition to the
-# legacy per-site gRPC interface. Leave empty for the legacy gRPC-only V1 worker
-# deployment.
+# legacy per-site gRPC interface. Set to "" to disable the broker interface
+# (legacy gRPC-only).
 # @section -- Ryax
-brokerSecret: ""
+brokerSecret: "ryax-broker-secret"
 
 # -- This is for setting Kubernetes Annotations to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
@@ -79,8 +79,13 @@ affinity: {}
 # -- Deployment prority class
 priorityClass:
 
-# -- Container images used by the labeler daemonSet
+# -- GPU node labeler (MIG) DaemonSet.
+# This patches `nvidia.com/mig.config` on GPU nodes and therefore must run where
+# the GPU action nodes live (the worker sites), NOT on the master site where the
+# recommender now runs. Disabled by default for the master-site deployment.
 labeler:
+  # -- Deploy the MIG node-labeler DaemonSet. Keep false at the master site.
+  enabled: false
   image: bitnamilegacy/kubectl:latest
   pauseImage: k8s.gcr.io/pause:3.1
 
@@ -134,10 +139,11 @@ config:
 
 ryax:
   worker:
-    # -- ConfigMap name to be mounted in the VPA pod to get information about node pools
-    # Name of configmap that will be used to inject worker configuration into VPA (will be filled from outside the project if there is)
+    # -- ConfigMap with a single site's node pools, mounted as RYAX_CONFIG_SITE.
+    # Empty at the master site: a central multi-site IntelliScale learns each
+    # site's data from the broker metrics instead of one per-site config map.
     # @section -- Ryax
-    configMapName: ryax-worker-config
+    configMapName: ""
     # -- Ryax worker service name
     # @section -- Ryax
     serviceName: ryax-worker

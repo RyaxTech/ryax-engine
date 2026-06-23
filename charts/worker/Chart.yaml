@@ -14,10 +14,6 @@ icon: https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd
 version: "26.4.0"
 appVersion: "26.4.0"
 dependencies:
-- name: intelliscale
-  version: "26.4.0"
-  repository: "file://subcharts/intelliscale"
-  condition: intelliscale.enabled
 - name: loki
   version: ~6.16.0
   repository: "https://grafana.github.io/helm-charts"
