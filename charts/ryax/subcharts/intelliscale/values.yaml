@@ -79,15 +79,9 @@ affinity: {}
 # -- Deployment prority class
 priorityClass:
 
-# -- GPU node labeler (MIG) DaemonSet.
-# This patches `nvidia.com/mig.config` on GPU nodes and therefore must run where
-# the GPU action nodes live (the worker sites), NOT on the master site where the
-# recommender now runs. Disabled by default for the master-site deployment.
-labeler:
-  # -- Deploy the MIG node-labeler DaemonSet. Keep false at the master site.
-  enabled: false
-  image: bitnamilegacy/kubectl:latest
-  pauseImage: k8s.gcr.io/pause:3.1
+# GPU MIG partitioning is configured by the cluster administrator by labeling
+# the GPU nodes with `nvidia.com/mig.config` (consumed by the NVIDIA GPU
+# Operator / MIG Manager). See the worker installation How-To for details.
 
 # -- Intelliscalse configuration
 config:

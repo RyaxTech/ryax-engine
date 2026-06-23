@@ -20,7 +20,7 @@ spec:
         {{- include "intelliscale.labels" . | nindent 8 }}
         app.kubernetes.io/component: "internal"
         ryax.tech/resource-type: "internal"
-        ryax.tech/endpoint: "intelliscale-main" # Let service find this pod and not the node labelers.
+        ryax.tech/endpoint: "intelliscale-main" # Selected by the intelliscale Service.
     spec:
       priorityClassName: {{ .Values.priorityClass }}
       securityContext:
