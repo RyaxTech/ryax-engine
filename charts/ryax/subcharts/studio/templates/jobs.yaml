@@ -86,7 +86,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "{{ .Release.Name }}-db-migration"
+  name: "{{ include "studio.fullname" . }}-db-migration"
   labels: {{- include "studio.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": pre-upgrade
@@ -95,7 +95,7 @@ metadata:
 spec:
   template:
     metadata:
-      name: "{{ .Release.Name }}-db-migration"
+      name: "{{ include "studio.fullname" . }}-db-migration"
       labels: {{- include "studio.labels" . | nindent 8 }}
     spec:
       restartPolicy: Never

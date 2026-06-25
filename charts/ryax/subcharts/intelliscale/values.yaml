@@ -130,17 +130,3 @@ config:
 
   message_bus:
       keep_event_history: false
-
-ryax:
-  worker:
-    # -- ConfigMap with a single site's node pools, mounted as RYAX_CONFIG_SITE.
-    # Empty at the master site: a central multi-site IntelliScale learns each
-    # site's data from the broker metrics instead of one per-site config map.
-    # @section -- Ryax
-    configMapName: ""
-    # -- Ryax worker service name
-    # @section -- Ryax
-    serviceName: ryax-worker
-    # -- Namespace where the Ryax actions are deployed
-    # @section -- Ryax
-    actionNamespace: ryaxns-execs

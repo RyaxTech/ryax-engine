@@ -40,12 +40,14 @@ The Ryax Studio manages the creation and edition of the workflows
 | brokerSecret | string | `"ryax-broker-secret"` |  |
 | datastoreSecret | string | `"ryax-datastore-secret"` |  |
 | extraEnv | object | `{}` | Add extra environment variables Example:   name: TEST   value: TOTO |
+| fernetEncryptionKey | string | `nil` | Fernet key used to encrypt PASSWORD values at rest. Leave empty to let Helm generate one (preserved across upgrades), or set it (see generate-secrets.py). |
 | filestoreName | string | `"ryax-filestore"` |  |
 | filestoreSecret | string | `"ryax-minio-secret"` |  |
 | global.ryax.logLevel | string | `nil` |  |
 | image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"studio","tag":"26.4.0"}` | container image name and version |
 | jwtSecret | string | `"api-jwt-secret-key"` |  |
 | logLevel | string | `nil` | log level of the service |
+| passwordEncryptionKeySecret | string | `"studio-password-encryption-key"` | Name of the secret holding the Fernet key used to encrypt PASSWORD values at rest |
 | priorityClass | string | `nil` | Deployment prority class |
 | resources | object | `{}` | resources for the pod Example:  requests:    memory: "200Mi"    cpu: "100m"  limits:    memory: "200Mi" |
 | updaterImage | string | `"docker.io/bitnamilegacy/kubectl:1.33"` | Image used by the updater job pod |
