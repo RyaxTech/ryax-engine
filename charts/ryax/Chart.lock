@@ -11,6 +11,9 @@ dependencies:
 - name: front
   repository: file://subcharts/front
   version: 26.4.0
+- name: intelliscale
+  repository: file://subcharts/intelliscale
+  version: 26.4.0
 - name: repository
   repository: file://subcharts/repository
   version: 26.4.0
@@ -47,5 +50,5 @@ dependencies:
 - name: alloy
   repository: https://grafana.github.io/helm-charts
   version: 1.9.0
-digest: sha256:16f319f1b2a2cebed5432e6a4b070c19286192b38b2e48ad2708e23a23599a5b
-generated: "2026-06-12T15:44:27.282345409+02:00"
+digest: sha256:77cb3ce8b84138106c34d87c759274268ed3ce637ef6a9e221e50d323af816e8
+generated: "2026-06-23T14:55:20.106627292+02:00"

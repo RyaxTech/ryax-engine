@@ -12,7 +12,7 @@ spec:
     metadata:
       annotations:
         # Force restart on config changes
-        checksum/config: {{ tpl .Values.ryax.worker.configMapName . | sha256sum }}
+        checksum/config: {{ tpl (toYaml .Values) . | sha256sum }}
       {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -20,7 +20,7 @@ spec:
         {{- include "intelliscale.labels" . | nindent 8 }}
         app.kubernetes.io/component: "internal"
         ryax.tech/resource-type: "internal"
-        ryax.tech/endpoint: "intelliscale-main" # Let service find this pod and not the node labelers.
+        ryax.tech/endpoint: "intelliscale-main" # Selected by the intelliscale Service.
     spec:
       priorityClassName: {{ .Values.priorityClass }}
       securityContext:
@@ -45,11 +45,6 @@ spec:
         - name: {{ include "intelliscale.fullname" . }}-config
           configMap:
             name: {{ include "intelliscale.fullname" . }}-config
-        {{- if .Values.ryax.worker.configMapName }}
-        - name: site-config
-          configMap:
-            name: {{ tpl .Values.ryax.worker.configMapName . }}
-        {{- end }}
       containers:
         - name: {{ include "intelliscale.fullname" . }}
           image: {{ include "intelliscale.image" . }}
@@ -59,10 +54,6 @@ spec:
               name: tmptraces-volume
             - name: {{ include "intelliscale.fullname" . }}-config
               mountPath: /intelliscale-config
-            {{- if .Values.ryax.worker.configMapName }}
-            - name: site-config
-              mountPath: /site-config
-            {{- end }}
           ports:
             - name: api-port
               containerPort: {{ .Values.config.server_ports.api_grpc_server_port }}
@@ -77,9 +68,12 @@ spec:
               path: /metrics
               port: metrics-port
           env:
-            {{- if .Values.ryax.worker.configMapName }}
-            - name: RYAX_CONFIG_SITE
-              value: /site-config/config.yaml
-            {{- end }}
             - name: RYAX_CONFIG_APP
               value: /intelliscale-config/config.yaml
+            {{- if .Values.brokerSecret | required "The brokerSecret name is required" }}
+            - name: RYAX_BROKER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.brokerSecret }}
+                  key: "broker"
+            {{- end }}

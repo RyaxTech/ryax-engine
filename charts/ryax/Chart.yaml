@@ -31,6 +31,10 @@ dependencies:
   - name: front
     version: "26.4.0"
     repository: "file://subcharts/front"
+  - name: intelliscale
+    version: "26.4.0"
+    repository: "file://subcharts/intelliscale"
+    condition: intelliscale.enabled
   - name: repository
     version: "26.4.0"
     repository: "file://subcharts/repository"
