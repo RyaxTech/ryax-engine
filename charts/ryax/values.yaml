@@ -73,6 +73,14 @@ action-builder:
 runner:
   priorityClass: microservices
 
+# IntelliScale runs centrally at the master site (multi-site). It consumes
+# execution metrics and publishes recommendations over the broker. Set
+# intelliscale.enabled=false to opt out.
+intelliscale:
+  enabled: true
+  priorityClass: microservices
+  # brokerSecret defaults to "ryax-broker-secret" in the subchart.
+
 studio:
   priorityClass: microservices
 

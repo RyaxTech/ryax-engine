@@ -42,6 +42,14 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+# -- Name of the secret holding the central RabbitMQ broker URL (key "broker").
+# IntelliScale runs at the master site and consumes execution metrics /
+# publishes recommendations over the broker (multi-site mode) in addition to the
+# legacy per-site gRPC interface. Set to "" to disable the broker interface
+# (legacy gRPC-only).
+# @section -- Ryax
+brokerSecret: "ryax-broker-secret"
+
 # -- This is for setting Kubernetes Annotations to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 podAnnotations: {}
@@ -71,10 +79,9 @@ affinity: {}
 # -- Deployment prority class
 priorityClass:
 
-# -- Container images used by the labeler daemonSet
-labeler:
-  image: bitnamilegacy/kubectl:latest
-  pauseImage: k8s.gcr.io/pause:3.1
+# GPU MIG partitioning is configured by the cluster administrator by labeling
+# the GPU nodes with `nvidia.com/mig.config` (consumed by the NVIDIA GPU
+# Operator / MIG Manager). See the worker installation How-To for details.
 
 # -- Intelliscalse configuration
 config:
@@ -123,16 +130,3 @@ config:
 
   message_bus:
       keep_event_history: false
-
-ryax:
-  worker:
-    # -- ConfigMap name to be mounted in the VPA pod to get information about node pools
-    # Name of configmap that will be used to inject worker configuration into VPA (will be filled from outside the project if there is)
-    # @section -- Ryax
-    configMapName: ryax-worker-config
-    # -- Ryax worker service name
-    # @section -- Ryax
-    serviceName: ryax-worker
-    # -- Namespace where the Ryax actions are deployed
-    # @section -- Ryax
-    actionNamespace: ryaxns-execs

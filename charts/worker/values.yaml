@@ -287,10 +287,11 @@ promtail:
         - action: labeldrop
           regex: app_kubernetes_io_(.+)
 
+# IntelliScale now runs centrally at the master site (installed with the ryax
+# chart over the broker), not co-located with the worker. The worker's legacy
+# per-site gRPC querier is therefore disabled by default. Set enabled=true and
+# point server_host/server_port at a reachable IntelliScale to use it.
 intelliscale:
-  enabled: true
-  ryax:
-    worker:
-      # Use tpl to render inside vpa config
-      configMapName: '{{ .Release.Name }}-config'
-      serviceName: '{{ .Release.Name }}'
+  enabled: false
+  # server_host: "<release>-intelliscale"  # defaulted in the deployment template
+  # server_port: 8326

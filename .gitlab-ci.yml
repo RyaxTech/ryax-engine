@@ -87,12 +87,12 @@ verify_helm_charts:
       charts/ryax/subcharts/common-resources
       charts/ryax/subcharts/datastore
       charts/ryax/subcharts/front
+      charts/ryax/subcharts/intelliscale
       charts/ryax/subcharts/registry
       charts/ryax/subcharts/repository
       charts/ryax/subcharts/runner
       charts/ryax/subcharts/studio
       charts/worker
-      charts/worker/subcharts/intelliscale
 
 package_helm_charts:
   extends: .package_helm_charts

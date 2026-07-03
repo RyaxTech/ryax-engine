@@ -298,5 +298,7 @@ address. See also how to [Configure the DNS](#configure-the-dns).
 
 If you do not want to configure external access to your cluster you won't be able
 to connect external kubernetes workers, but you can always have a local worker.
-In this case, to configure the internal registry refer to [Use local registry only](#use-local-only-registry).
+In this case, run the worker on the same cluster as Ryax (see [Install a Worker](#install-a-worker));
+a local worker reaches the in-cluster registry directly, so no external registry
+access is required.
 

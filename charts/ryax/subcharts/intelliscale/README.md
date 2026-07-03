@@ -12,6 +12,16 @@ Ryax Intelliscale, the AI-empowered vertical autoscaler for Ryax action executio
 
 ## Values
 
+### Ryax
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| brokerSecret | string | `"ryax-broker-secret"` | Name of the secret holding the central RabbitMQ broker URL (key "broker"). IntelliScale runs at the master site and consumes execution metrics / publishes recommendations over the broker (multi-site mode) in addition to the legacy per-site gRPC interface. Set to "" to disable the broker interface (legacy gRPC-only). |
+| global.ryax.logLevel | string | `nil` | Global Ryax log level to use, ignored if empty |
+| ryax.worker.actionNamespace | string | `"ryaxns-execs"` | Namespace where the Ryax actions are deployed |
+| ryax.worker.configMapName | string | `""` | ConfigMap with a single site's node pools, mounted as RYAX_CONFIG_SITE. Empty at the master site: a central multi-site IntelliScale learns each site's data from the broker metrics instead of one per-site config map. |
+| ryax.worker.serviceName | string | `"ryax-worker"` | Ryax worker service name |
+
 ### Global
 
 | Key | Type | Default | Description |
@@ -20,15 +30,6 @@ Ryax Intelliscale, the AI-empowered vertical autoscaler for Ryax action executio
 | global.imageRegistry | string | `nil` | Global container image registry |
 | global.monitoring.enabled | bool | `false` | Enables service monitoring |
 | global.nodeSelector | object | `{}` | Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) |
-
-### Ryax
-
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| global.ryax.logLevel | string | `nil` | Global Ryax log level to use, ignored if empty |
-| ryax.worker.actionNamespace | string | `"ryaxns-execs"` | Namespace where the Ryax actions are deployed |
-| ryax.worker.configMapName | string | `"ryax-worker-config"` | ConfigMap name to be mounted in the VPA pod to get information about node pools Name of configmap that will be used to inject worker configuration into VPA (will be filled from outside the project if there is) |
-| ryax.worker.serviceName | string | `"ryax-worker"` | Ryax worker service name |
 
 ### Required for Production
 
@@ -45,7 +46,6 @@ Ryax Intelliscale, the AI-empowered vertical autoscaler for Ryax action executio
 | fullnameOverride | string | `""` |  |
 | image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io","repository":"ryaxtech/intelliscale","tag":"26.4.0"}` | container image name and version |
 | imagePullSecrets | list | `[]` | This is for the secretes for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
-| labeler | object | `{"image":"bitnamilegacy/kubectl:latest","pauseImage":"k8s.gcr.io/pause:3.1"}` | Container images used by the labeler daemonSet |
 | nameOverride | string | `""` | This is to override the chart name. |
 | podAnnotations | object | `{}` | This is for setting Kubernetes Annotations to a Pod. For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ |
 | podLabels | object | `{}` | This is for setting Kubernetes Labels to a Pod. For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/ |
