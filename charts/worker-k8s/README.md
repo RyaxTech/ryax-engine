@@ -1,6 +1,6 @@
 # ryax-worker-k8s
 
-![Version: 0.0.0-dev](https://img.shields.io/badge/Version-0.0.0--dev-informational?style=flat-square) ![AppVersion: SERVICE-VERSION](https://img.shields.io/badge/AppVersion-SERVICE--VERSION-informational?style=flat-square)
+![Version: 26.7.0-rc0](https://img.shields.io/badge/Version-26.7.0--rc0-informational?style=flat-square) ![AppVersion: 26.7.0-rc0](https://img.shields.io/badge/AppVersion-26.7.0--rc0-informational?style=flat-square)
 
 The Ryax Worker service manages deployments and executions on Kubernetes
 

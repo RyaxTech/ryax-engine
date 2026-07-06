@@ -1,6 +1,6 @@
 # ryax-engine
 
-![Version: 26.4.0](https://img.shields.io/badge/Version-26.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.4.0](https://img.shields.io/badge/AppVersion-26.4.0-informational?style=flat-square)
+![Version: 26.7.0-rc0](https://img.shields.io/badge/Version-26.7.0--rc0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.7.0-rc0](https://img.shields.io/badge/AppVersion-26.7.0--rc0-informational?style=flat-square)
 
 Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows and applications on multiple infrastructure.
 
@@ -14,15 +14,16 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 
 | Repository | Name | Version |
 |------------|------|---------|
-| file://subcharts/action-builder | action-builder | 26.4.0 |
-| file://subcharts/authorization | authorization | 26.4.0 |
-| file://subcharts/common-resources | common-resources | 26.4.0 |
-| file://subcharts/datastore | datastore | 26.4.0 |
-| file://subcharts/front | front | 26.4.0 |
-| file://subcharts/registry | registry | 26.4.0 |
-| file://subcharts/repository | repository | 26.4.0 |
-| file://subcharts/runner | runner | 26.4.0 |
-| file://subcharts/studio | studio | 26.4.0 |
+| file://subcharts/action-builder | action-builder | 26.7.0-rc0 |
+| file://subcharts/authorization | authorization | 26.7.0-rc0 |
+| file://subcharts/common-resources | common-resources | 26.7.0-rc0 |
+| file://subcharts/datastore | datastore | 26.7.0-rc0 |
+| file://subcharts/front | front | 26.7.0-rc0 |
+| file://subcharts/intelliscale | intelliscale | 26.7.0-rc0 |
+| file://subcharts/registry | registry | 26.7.0-rc0 |
+| file://subcharts/repository | repository | 26.7.0-rc0 |
+| file://subcharts/runner | runner | 26.7.0-rc0 |
+| file://subcharts/studio | studio | 26.7.0-rc0 |
 | https://grafana.github.io/helm-charts | alloy | ~1.9.0 |
 | https://grafana.github.io/helm-charts | loki | ~6.16.0 |
 | https://grafana.github.io/helm-charts | tempo | 1.x.x |
@@ -61,6 +62,8 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | global.tls.enabled | bool | `false` |  |
 | global.tls.environment | string | `nil` | development or production |
 | global.tls.hostname | string | `""` | must be a valid FQDN like "local.ryax.io", leave empty for local install |
+| intelliscale.enabled | bool | `true` |  |
+| intelliscale.priorityClass | string | `"microservices"` |  |
 | kube-prometheus-stack | object | `{"additionalPrometheusRulesMap":{"meta-monitoring":{"groups":[{"name":"meta-monitoring","rules":[{"alert":"InstanceDown","annotations":{"dashboards":"{{ .Values.dashboardUrl }}/HKcS6KdGk","description":"{{ `'{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute.'` }}\n","summary":"{{ `'Instance {{ $labels.instance }} down'` }}\n"},"expr":"up == 0","for":"5m","labels":{"severity":"critical"}}]}]},"resource-usage":{"groups":[{"name":"resource-usage","rules":[{"alert":"RyaxContainerCpuUsage","annotations":{"dashboards":"{{ .Values.dashboardUrl }}/6581e46e4e5c7ba40a07646395ef7b23","description":"{{ `\"Container CPU usage is above 95% for 15 minutes\\n  VALUE = {{ $value }}\\n  LABELS: {{ $labels }}\"` }}\n","summary":"{{ `\"Container CPU usage (instance {{ $labels.instance }})\"` }}\n"},"expr":"(sum(rate(container_cpu_usage_seconds_total{container=~\"ryax-.*\"}[15m])) BY (instance, name) * 100) > 95","for":"5m","labels":{"severity":"warning"}},{"alert":"RyaxContainerVolumeUsage","annotations":{"description":"{{ `\"Container Volume usage is above 80%\\n  VALUE = {{ $value }}\\n  LABELS: {{ $labels }}\"` }}\n","summary":"{{ `\"Container Volume usage (instance {{ $labels.instance }})\"` }}\n"},"expr":"(1 - (sum(container_fs_inodes_free{container=~\"ryax-.*\"}) BY (instance) / sum(container_fs_inodes_total{container=~\"ryax-.*\"}) BY (instance)) * 100) > 80","for":"5m","labels":{"severity":"warning"}},{"alert":"RyaxContainerVolumeIoUsage","annotations":{"description":"{{ `\"Container Volume IO usage is above 80%\\n  VALUE = {{ $value }}\\n  LABELS: {{ $labels }}\"` }}\n","summary":"{{ `\"Container Volume IO usage (instance {{ $labels.instance }})\"` }}\n"},"expr":"(sum(container_fs_io_current{container=~\"ryax-.*\"}) BY (instance, name) * 100) > 80","for":"5m","labels":{"severity":"warning"}}]}]}},"alertmanager":{"enabled":false},"crds":{"enabled":true,"upgradeJob":{"enabled":true,"forceConflicts":true}},"enabled":true,"grafana":{"admin":{"existingSecret":"grafana-credentials","passwordKey":"admin-password","userKey":"admin-user"},"enabled":true,"grafana.ini":{"auth.anonymous":{"enabled":false},"users":{"allow_org_create":false,"allow_sign_up":false}},"ingress":{"enabled":false},"persistence":{"enabled":true,"size":"1Gi"},"plugins":["grafana-piechart-panel","grafana-clock-panel","vonage-status-panel"],"sidecar":{"dashboards":{"enabled":true,"label":"grafana_dashboard"},"datasources":{"enabled":true,"label":"grafana_datasource"}}},"kubeProxy":{"service":{"selector":{"component":"kube-proxy"}}},"prometheus":{"prometheusSpec":{"additionalScrapeConfigs":[{"job_name":"kubernetes-gpu-pod","kubernetes_sd_configs":[{"role":"pod"}],"relabel_configs":[{"action":"keep","regex":"nvidia-dcgm-exporter","source_labels":["__meta_kubernetes_pod_label_app"]},{"action":"keep","regex":"kube-system","source_labels":["__meta_kubernetes_namespace"]},{"action":"keep","regex":"9400","source_labels":["__meta_kubernetes_pod_container_port_number"]},{"action":"replace","separator":":","source_labels":["__meta_kubernetes_pod_ip","__meta_kubernetes_pod_container_port_number"],"target_label":"__address__"}],"scrape_interval":"5s"}],"externalLabels":{"cluster":"{{ .Values.global.tls.hostname }}","ryax-version":"{{ .Chart.Version }}"},"priorityClassName":"monitoring","serviceMonitorSelectorNilUsesHelmValues":false},"storage":{"volumeClaimTemplate":{"spec":{"resources":{"requests":{"storage":"10Gi"}}}}}},"prometheusOperator":{"priorityClassName":"monitoring"}}` | Configuration for kube-prometheus-chart |
 | kube-prometheus-stack.grafana | object | `{"admin":{"existingSecret":"grafana-credentials","passwordKey":"admin-password","userKey":"admin-user"},"enabled":true,"grafana.ini":{"auth.anonymous":{"enabled":false},"users":{"allow_org_create":false,"allow_sign_up":false}},"ingress":{"enabled":false},"persistence":{"enabled":true,"size":"1Gi"},"plugins":["grafana-piechart-panel","grafana-clock-panel","vonage-status-panel"],"sidecar":{"dashboards":{"enabled":true,"label":"grafana_dashboard"},"datasources":{"enabled":true,"label":"grafana_datasource"}}}` | Configuration for grafana component |
 | kube-prometheus-stack.grafana.admin.existingSecret | string | `"grafana-credentials"` | This secret is created by common-resources |

@@ -1,6 +1,6 @@
 # ryax-worker-slurm-ssh
 
-![Version: 26.6.0](https://img.shields.io/badge/Version-26.6.0-informational?style=flat-square) ![AppVersion: 26.6.0](https://img.shields.io/badge/AppVersion-26.6.0-informational?style=flat-square)
+![Version: 26.7.0-rc0](https://img.shields.io/badge/Version-26.7.0--rc0-informational?style=flat-square) ![AppVersion: 26.7.0-rc0](https://img.shields.io/badge/AppVersion-26.7.0--rc0-informational?style=flat-square)
 
 Ryax Worker that manages execution of Actions on SLURM cluster through SSH.
 

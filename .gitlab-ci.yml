@@ -1,6 +1,6 @@
 variables:
-  CHARTS: "charts/ryax charts/worker charts/worker-k8s charts/worker-ssh-slurm"
-  FILES_TO_PREPROCESS: "charts/ryax/Chart.yaml charts/worker/Chart.yaml charts/worker-k8s/Chart.yaml charts/worker-ssh-slurm/Chart.yaml"
+  CHARTS: "charts/ryax charts/worker-k8s charts/worker-ssh-slurm"
+  FILES_TO_PREPROCESS: "charts/ryax/Chart.yaml charts/worker-k8s/Chart.yaml charts/worker-ssh-slurm/Chart.yaml"
 
 include:
   - project: ryax-tech/ryax/ci_common
@@ -92,7 +92,8 @@ verify_helm_charts:
       charts/ryax/subcharts/repository
       charts/ryax/subcharts/runner
       charts/ryax/subcharts/studio
-      charts/worker
+      charts/worker-k8s
+      charts/worker-ssh-slurm
 
 package_helm_charts:
   extends: .package_helm_charts
@@ -106,11 +107,3 @@ release_charts:
   extends: .release_charts
   needs:
     - package_helm_charts
-
-release_charts_latest:
-  extends: .release_charts
-  needs:
-    - release_charts
-  variables:
-    CHART_VERSION: 0.0.0-latest
-
