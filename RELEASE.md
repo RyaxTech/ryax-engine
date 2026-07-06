@@ -53,9 +53,14 @@ customize Promtail (`promtail` section), port that configuration to Grafana Allo
 (`alloy` section).
 
 Then, run the upgrade with:
+!!! note  
+    `--take-ownership` is required because loki migrate from the worker chart to the ryax one`
+
+
 ```sh
 helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine:26.7.0 \
   -n ryaxns \
+  --take-ownership \
   -f values.yaml
 ```
 
@@ -80,7 +85,7 @@ old `ryax-worker` chart), it must now be installed from the dedicated
 [SLURM_SSH Worker documentation](https://docs.ryax.tech/howto/worker-install.html#slurm_ssh-worker)
 to write the new values file, then replace your old Worker with:
 ```sh
-helm uninstall -n ryaxns ryax-worker
+helm uninstall -n ryaxns ryax-worker-hpc
 helm install ryax-worker-slurm oci://registry.ryax.org/release-charts/ryax-worker-slurm-ssh:26.7.0 \
   -n ryaxns \
   -f worker.yaml \

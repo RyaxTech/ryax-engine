@@ -63,7 +63,7 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 | filestoreSecret | string | `"ryax-minio-secret"` |  |
 | global.ryax.logLevel | string | `nil` |  |
 | global.ryax.userNamespace | string | `"ryaxns-execs"` |  |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker-k8s","tag":"SERVICE-VERSION"}` | container image name and version |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker-k8s","tag":"26.7.0-rc0"}` | container image name and version |
 | logLevel | string | `nil` | log level of the service (override global.ryax.logLevel) |
 | metricsPort | int | `8092` |  |
 | monitoring.serviceMonitor | object | `{"enabled":true}` | Enable service monitor for prometheus using ServiceMonitor CRD |
