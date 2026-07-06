@@ -84,6 +84,10 @@ check_helm_deps:
   # blocking unrelated merge requests. Drop `allow_failure` to make it blocking.
   allow_failure: true
   variables:
+    # Full history + tags are required: the check reads the previous release's
+    # Chart.lock/Chart.yaml (via `git show <tag>:...`) to cap upgrades at one
+    # major per release. A shallow clone would hide older release tags.
+    GIT_DEPTH: 0
     UV_LINK_MODE: copy
     UV_CACHE_DIR: .uv-cache
   cache:

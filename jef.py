@@ -507,18 +507,91 @@ def _current_major(locked: str, constraint: str) -> Optional[int]:
     return _constraint_major(constraint)
 
 
+def _major_of(value: str) -> Optional[int]:
+    """Major version of a concrete version (16.0.10) or a constraint (16.x.x)."""
+    try:
+        return Version(value).major
+    except ValueError:
+        return _constraint_major(value)
+
+
+def _previous_release_ref() -> Optional[str]:
+    """
+    Highest final (non pre-release) semver tag strictly older than the version
+    declared in charts/ryax/Chart.yaml.
+
+    Used as the upgrade baseline so that at most one major upgrade is proposed
+    per release, no matter how often the check (or --update) is run within a
+    release cycle.
+    """
+    try:
+        repo = Repo(".")
+    except Exception:
+        return None
+
+    current = None
+    try:
+        with open("charts/ryax/Chart.yaml") as f:
+            current = Version(str((yaml.safe_load(f) or {}).get("version", "")))
+    except (OSError, ValueError):
+        current = None
+
+    finals = []
+    for tag in repo.tags:
+        try:
+            v = Version(tag.name)
+        except ValueError:
+            continue
+        if v.prerelease is not None:
+            continue
+        if current is not None and v >= current:
+            continue
+        finals.append((v, tag.name))
+    if not finals:
+        return None
+    finals.sort(key=lambda x: x[0], reverse=True)
+    return finals[0][1]
+
+
+def _previous_release_versions(ref: str, chart_file: str) -> Dict[str, str]:
+    """
+    {dependency_name: version} as pinned at the given git ref, read from
+    Chart.lock and falling back to the Chart.yaml constraint.
+    """
+    versions: Dict[str, str] = {}
+    chart_dir = os.path.dirname(chart_file)
+    for fname in ("Chart.lock", "Chart.yaml"):
+        path = f"{chart_dir}/{fname}"
+        out = subprocess.run(
+            ["git", "show", f"{ref}:{path}"], capture_output=True, text=True
+        )
+        if out.returncode != 0:
+            continue
+        try:
+            data = yaml.safe_load(out.stdout) or {}
+        except yaml.YAMLError:
+            continue
+        for dep in data.get("dependencies") or []:
+            name = dep.get("name")
+            version = str(dep.get("version", ""))
+            if name and version and name not in versions:
+                versions[name] = version
+    return versions
+
+
 def _recommended_version(
-    versions: List[Version], cmajor: Optional[int]
+    versions: List[Version], baseline_major: Optional[int]
 ) -> Optional[Version]:
     """
-    Recommend the +1 major (when it exists) at its latest minor and patch;
-    otherwise the latest release of the current major. Never jumps more than
-    one major to limit upgrade breakage.
+    Recommend the +1 major above the baseline (when it exists) at its latest
+    minor and patch; otherwise the latest release of the baseline major. Never
+    goes more than one major above the baseline, which is the previous release,
+    so at most one major upgrade is proposed per release cycle.
     """
     if not versions:
         return None
-    if cmajor is not None:
-        candidates = [v for v in versions if v.major <= cmajor + 1]
+    if baseline_major is not None:
+        candidates = [v for v in versions if v.major <= baseline_major + 1]
     else:
         candidates = versions
     if not candidates:
@@ -573,23 +646,36 @@ def _edit_chart_constraints(chart_file: str, bumps: Dict[str, str]) -> None:
 
 def _apply_helm_updates(report: List[tuple]) -> None:
     """
-    Edit the constraints in each Chart.yaml to the recommended versions and
-    run `helm dependency update` to regenerate the Chart.lock files.
+    Edit the constraints in each Chart.yaml to the recommended versions and run
+    `helm dependency update` to regenerate the Chart.lock files.
+
+    Only upgrades are applied: a dependency already at (or beyond) its
+    recommendation is left untouched, so an over-shot dependency is never
+    silently downgraded.
     """
     print(f"\n{TCOLOR.BOLD}Applying updates{TCOLOR.ENDC}")
     for chart_file, rows, _internal in report:
         bumps: Dict[str, str] = {}
+        need_refresh = False
         for r in rows:
             rec = r.get("recommended")
             if rec is None:
                 continue
+            try:
+                locked_v = Version(r["locked"]) if r["locked"] != "-" else None
+            except ValueError:
+                locked_v = None
+            # Skip deps already up to date or beyond the recommendation.
+            if locked_v is not None and rec <= locked_v:
+                continue
+            need_refresh = True
             new_constraint = _bump_constraint(r["constraint"], rec)
             if new_constraint != r["constraint"].strip():
                 bumps[r["name"]] = new_constraint
 
         print(f"\n{TCOLOR.HEADER}{TCOLOR.BOLD}{chart_file}{TCOLOR.ENDC}")
-        if not bumps:
-            print(f"  {TCOLOR.OKGREEN}constraints already up to date{TCOLOR.ENDC}")
+        if not need_refresh:
+            print(f"  {TCOLOR.OKGREEN}already up to date{TCOLOR.ENDC}")
             continue
 
         for r in rows:
@@ -598,7 +684,8 @@ def _apply_helm_updates(report: List[tuple]) -> None:
                     f"  {r['name']}: {r['constraint']} "
                     f"{TCOLOR.OKBLUE}->{TCOLOR.ENDC} {bumps[r['name']]}"
                 )
-        _edit_chart_constraints(chart_file, bumps)
+        if bumps:
+            _edit_chart_constraints(chart_file, bumps)
 
         chart_dir = os.path.dirname(chart_file)
         _run_cmd(f"helm dependency update {chart_dir}")
@@ -607,20 +694,34 @@ def _apply_helm_updates(report: List[tuple]) -> None:
 def command_check_helm_deps(args) -> int:
     """
     Check external Helm dependencies of charts/*/Chart.yaml against their
-    upstream repositories, and suggest an upgrade target (the latest minor/patch
-    within at most +1 major).
+    upstream repositories, and suggest an upgrade target: the latest minor/patch
+    within at most +1 major above the previous release (from its Chart.lock /
+    Chart.yaml), so that no more than one major is proposed per release cycle
+    regardless of how often the check runs.
 
     Returns 1 (unless --update is given) when at least one locked dependency is
-    behind its recommendation, so it can be used as a CI gate.
+    behind its recommendation or is already more than one major above the
+    previous release, so it can be used as a CI gate.
     """
     number = args.number
     has_skopeo = shutil.which("skopeo") is not None
+    prev_ref = _previous_release_ref()
 
     print(
         f"{TCOLOR.BOLD}Helm dependencies version check{TCOLOR.ENDC}  "
-        f"(recommended {TCOLOR.OKGREEN}→{TCOLOR.ENDC} = latest minor/patch, "
-        f"capped to at most +1 major)"
+        f"(recommended {TCOLOR.OKGREEN}→{TCOLOR.ENDC} = latest minor/patch, at "
+        f"most +1 major above the previous release baseline)"
     )
+    if prev_ref:
+        print(
+            f"Baseline: previous release {TCOLOR.BOLD}{prev_ref}{TCOLOR.ENDC} "
+            f"(RELEASE column) — at most one major upgrade per release."
+        )
+    else:
+        print(
+            f"{TCOLOR.WARNING}No previous release tag found: using the locked "
+            f"versions as baseline.{TCOLOR.ENDC}"
+        )
     if not has_skopeo:
         print(
             f"{TCOLOR.WARNING}skopeo not found: OCI (oci://) charts cannot be "
@@ -635,11 +736,15 @@ def command_check_helm_deps(args) -> int:
     charts = _load_chart_dependencies()
     report: List[tuple] = []  # (chart_file, rows, internal_names)
     outdated: List[tuple] = []  # (chart_file, name, locked, recommended)
+    overshoot: List[tuple] = []  # (chart_file, name, locked, allowed, baseline)
     unknown: List[str] = []  # deps whose available versions could not be found
 
     try:
         for chart_file, deps in charts.items():
             lock_map = _load_chart_lock(chart_file)
+            prev_versions = (
+                _previous_release_versions(prev_ref, chart_file) if prev_ref else {}
+            )
             rows = []
             internal = []
             for dep in deps:
@@ -677,15 +782,24 @@ def command_check_helm_deps(args) -> int:
                     versions = _helm_search_versions(repo_name, name)
 
                 locked = lock_map.get(name) or "-"
-                cmajor = _current_major(locked, constraint)
+                # Anchor the +1 major cap to the previous release so that
+                # repeated runs never propose more than one major per release.
+                # New deps (absent from the previous release) fall back to the
+                # currently locked version.
+                release = prev_versions.get(name)
+                if release:
+                    baseline = _major_of(release)
+                else:
+                    baseline = _current_major(locked, constraint)
                 rows.append(
                     {
                         "name": name,
                         "constraint": constraint,
                         "locked": locked,
+                        "release": release or "-",
                         "versions": versions,
-                        "cmajor": cmajor,
-                        "recommended": _recommended_version(versions, cmajor),
+                        "cmajor": baseline,
+                        "recommended": _recommended_version(versions, baseline),
                     }
                 )
             report.append((chart_file, rows, internal))
@@ -695,6 +809,7 @@ def command_check_helm_deps(args) -> int:
         name_w = max([len(r["name"]) for r in all_rows], default=10)
         cons_w = max([len(r["constraint"]) for r in all_rows] + [len("CONSTRAINT")])
         lock_w = max([len(r["locked"]) for r in all_rows] + [len("LOCKED")])
+        rel_w = max([len(r["release"]) for r in all_rows] + [len("RELEASE")])
         lat_w = max(
             [len(r["versions"][0].txt) for r in all_rows if r["versions"]]
             + [len("LATEST")]
@@ -708,8 +823,8 @@ def command_check_helm_deps(args) -> int:
             else:
                 print(
                     f"  {'DEPENDENCY': <{name_w}}  {'CONSTRAINT': <{cons_w}}  "
-                    f"{'LOCKED': <{lock_w}}  {'LATEST': <{lat_w}}  "
-                    f"{'RECOMMENDED': <{rec_w}}  AVAILABLE"
+                    f"{'LOCKED': <{lock_w}}  {'RELEASE': <{rel_w}}  "
+                    f"{'LATEST': <{lat_w}}  {'RECOMMENDED': <{rec_w}}  AVAILABLE"
                 )
             for r in rows:
                 versions = r["versions"]
@@ -740,6 +855,22 @@ def command_check_helm_deps(args) -> int:
                         unknown.append(r["name"])
                         rec_color = TCOLOR.OKBLUE
                         marker = "→"
+                    elif (
+                        r["cmajor"] is not None
+                        and locked_v.major > r["cmajor"] + 1
+                    ):
+                        # More than one major above the previous release.
+                        overshoot.append(
+                            (
+                                chart_file,
+                                r["name"],
+                                r["locked"],
+                                recommended_v.txt,
+                                r["cmajor"],
+                            )
+                        )
+                        rec_color = TCOLOR.FAIL
+                        marker = "⚠"
                     elif locked_v < recommended_v:
                         outdated.append(
                             (chart_file, r["name"], r["locked"], recommended_v.txt)
@@ -760,8 +891,8 @@ def command_check_helm_deps(args) -> int:
 
                 print(
                     f"  {r['name']: <{name_w}}  {r['constraint']: <{cons_w}}  "
-                    f"{r['locked']: <{lock_w}}  {latest}{latest_pad}  "
-                    f"{recommended}{rec_pad}  {available}"
+                    f"{r['locked']: <{lock_w}}  {r['release']: <{rel_w}}  "
+                    f"{latest}{latest_pad}  {recommended}{rec_pad}  {available}"
                 )
             if internal:
                 print(
@@ -781,7 +912,18 @@ def command_check_helm_deps(args) -> int:
                 "Run 'jef.py check_helm_deps --update' to apply the "
                 "recommended versions."
             )
-        else:
+        if overshoot:
+            print(
+                f"{TCOLOR.FAIL}{TCOLOR.BOLD}{len(overshoot)} dependency(ies) more "
+                f"than one major above the previous release "
+                f"({prev_ref}):{TCOLOR.ENDC}"
+            )
+            for cf, name, locked, allowed, base in overshoot:
+                print(
+                    f"  {cf}: {name} locked {locked} but the release baseline is "
+                    f"major {base} (max allowed this release: {allowed})"
+                )
+        if not outdated and not overshoot:
             print(
                 f"{TCOLOR.OKGREEN}All dependencies are up to date with the "
                 f"recommendation.{TCOLOR.ENDC}"
@@ -802,7 +944,7 @@ def command_check_helm_deps(args) -> int:
 
     if args.update:
         return 0
-    return 1 if outdated else 0
+    return 1 if (outdated or overshoot) else 0
 
 
 def get_last_pipe(projgit, tag) -> Dict:
