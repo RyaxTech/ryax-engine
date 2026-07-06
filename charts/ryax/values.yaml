@@ -93,6 +93,11 @@ repository:
 minio:
   image:
     repository: bitnamilegacy/minio
+  console:
+    # -- enable this to add internal Web console to browse Minio content
+    enabled: false
+    image:
+      repository: bitnamilegacy/minio-object-browser
   auth:
     existingSecret: ryax-minio-secret
   commonLabels:
