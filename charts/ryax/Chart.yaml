@@ -55,21 +55,21 @@ dependencies:
     repository: "file://subcharts/datastore"
   # S3 compatible storage
   - name: minio
-    version: 16.x.x
+    version: 17.x.x
     repository: 'oci://registry-1.docker.io/bitnamicharts'
   # Reverse proxy
   - name: traefik
-    version: 39.x.x
+    version: 41.x.x
     repository: 'https://helm.traefik.io/traefik'
     condition: traefik.deployment.enabled
   # rabbitmq message broker
   - name: rabbitmq
-    version: 15.x.x
+    version: 16.x.x
     repository: 'oci://registry-1.docker.io/bitnamicharts'
   # Observability
   # Prometheus stack with grafana
   - name: kube-prometheus-stack
-    version: 81.x.x
+    version: 85.x.x
     repository: 'https://prometheus-community.github.io/helm-charts'
     condition: kube-prometheus-stack.enabled
   # Tracing
@@ -79,10 +79,10 @@ dependencies:
     condition: tempo.enabled
   # Logging
   - name: loki
-    version: ~6.16.0
+    version: ~7.0.0
     repository: "https://grafana.github.io/helm-charts"
     condition: loki.enabled
   - name: alloy
-    version: ~1.9.0
+    version: ~1.10.0
     repository: "https://grafana.github.io/helm-charts"
     condition: loki.enabled

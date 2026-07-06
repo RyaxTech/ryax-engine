@@ -76,6 +76,39 @@ security_checks:
       when: never
     - when: on_success
 
+check_helm_deps:
+  stage: verify
+  image: python:3.13
+  tags: [docker]
+  # Upstream Helm charts release very often, so a drift here should warn without
+  # blocking unrelated merge requests. Drop `allow_failure` to make it blocking.
+  allow_failure: true
+  variables:
+    UV_LINK_MODE: copy
+    UV_CACHE_DIR: .uv-cache
+  cache:
+    - key:
+        files:
+          - uv.lock
+        prefix: $CI_RUNNER_EXECUTABLE_ARCH
+      paths:
+        - .uv-cache
+  before_script:
+    # skopeo lists tags for OCI (oci://) charts; the check degrades gracefully
+    # to "skipped" if it is missing, so do not fail the job when it cannot install.
+    - apt-get update -qq && apt-get install -y -qq --no-install-recommends skopeo || echo "skopeo unavailable, OCI charts will be skipped"
+    - curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    - pip install uv
+    - uv sync
+  script:
+    - export PATH="$PWD/.venv/bin:$PATH"
+    # Exits 1 when a locked dependency is behind its recommended version.
+    - python jef.py check_helm_deps
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - when: on_success
+
 verify_helm_charts:
   extends: .verify_helm_charts
   # Exhaustive list of charts here for linter

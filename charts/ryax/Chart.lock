@@ -31,24 +31,24 @@ dependencies:
   version: 26.7.0-rc0
 - name: minio
   repository: oci://registry-1.docker.io/bitnamicharts
-  version: 16.0.10
+  version: 17.0.21
 - name: traefik
   repository: https://helm.traefik.io/traefik
-  version: 39.0.9
+  version: 41.0.1
 - name: rabbitmq
   repository: oci://registry-1.docker.io/bitnamicharts
-  version: 15.5.3
+  version: 16.0.14
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
-  version: 81.6.9
+  version: 85.4.0
 - name: tempo
   repository: https://grafana.github.io/helm-charts
   version: 1.24.4
 - name: loki
   repository: https://grafana.github.io/helm-charts
-  version: 6.16.0
+  version: 7.0.0
 - name: alloy
   repository: https://grafana.github.io/helm-charts
-  version: 1.9.0
-digest: sha256:cf533f4245f0e9554733eb460b867173307bffac2eda73b57df1d56f2648236f
-generated: "2026-07-06T12:14:49.407387883+02:00"
+  version: 1.10.0
+digest: sha256:5923ea80f9b16cb00cf72f8da0a0cfdefa1011090323011a39287c957449d850
+generated: "2026-07-06T18:01:57.617384982+02:00"
