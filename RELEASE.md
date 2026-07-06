@@ -48,6 +48,12 @@ it using:
 ```sh
 helm get values -n ryaxns ryax --output yaml > values.yaml
 ```
+
+Because we do a major update of the Minio Chart, a breaking change in the deployment selector requires you to run:
+```sh
+kubectl delete deployment ryax-minio -n ryaxns
+```
+
 IntelliScale is now part of the main chart and enabled by default. Also, if your values
 customize Promtail (`promtail` section), port that configuration to Grafana Alloy
 (`alloy` section).
@@ -55,7 +61,6 @@ customize Promtail (`promtail` section), port that configuration to Grafana Allo
 Then, run the upgrade with:
 !!! note  
     `--take-ownership` is required because loki migrate from the worker chart to the ryax one`
-
 
 ```sh
 helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine:26.7.0 \
