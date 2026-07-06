@@ -75,7 +75,7 @@ Now you can install the Worker on the Ryax main site. To do so, we will use the 
 Also, we will inject the SSH private key required to access the SSH cluster.
 ```sh
 helm upgrade --install ryax-worker-hpc \
-  oci://registry.ryax.org/release-charts/worker  \
+  oci://registry.ryax.org/release-charts/ryax-worker  \
   --version 26.4.0 \
   --namespace ryaxns \
   --values worker-values.yaml \
@@ -227,7 +227,7 @@ so that IntelliScale only recommends instances your nodes can actually provide.
 
 For the worker to communicate securely to the main Ryax site, we need to create a secure connection access between the two Kuberenetes clusters.
 In this How-To we will use [Skupper](https://skupper.io), but other multi-cluster network technology might work. 
-Make sure you have kubectl access to both clusters, we are going to reference as **main-site** the kubernetes that has all Ryax services including the UI and **worker-site** the kubernetes cluster that we will attach to run Ryax's actions.
+Make sure you have kubectl access to both clusters, we are going to reference as **main** the kubernetes that has all Ryax services including the UI and **worker** the kubernetes cluster that we will attach to run Ryax's actions.
 
 **local machine**
   
@@ -236,85 +236,187 @@ Make sure you have kubectl access to both clusters, we are going to reference as
   curl https://skupper.io/v2/install.sh | sh
   ```
 
-**main-site & worker-site**
+**main & worker**
   
 * Remove skupper v1 in both sites if installed, if not you can skip this step:
   ```shell
   kubectl delete -n ryaxns deployment.apps/skupper-router deployment.apps/skupper-service-controller service/skupper-router service/skupper-router-local
   ```
 
-**main-site & worker-site**
+**main & worker**
   
-* Install skupper v2 custom resources definition CRDs, in both sites:
+* Install skupper v2 custom resources definition CRDs and controller, in both sites:
   ```shell
   helm install skupper oci://quay.io/skupper/helm/skupper --version 2.1.3
   ```
 
-**worker-site**
+**main**
+
+* Disable the Skupper grant server on the main site. It is not needed with this setup (we do not use token grants) and it would otherwise create a `LoadBalancer` service that allocates an extra public IP. We also clean up the grant server resources the controller may have already auto-created (wait for the rollout to finish first, otherwise the old controller pod recreates them):
+  ```shell
+  kubectl -n default patch deployment skupper-controller --type json \
+    -p '[{"op":"replace","path":"/spec/template/spec/containers/0/args","value":[]}]'
+  kubectl -n default rollout status deployment skupper-controller
+  kubectl -n default delete securedaccess skupper-grant-server --ignore-not-found
+  kubectl -n default delete certificates.skupper.io skupper-grant-server skupper-grant-server-ca --ignore-not-found
+  kubectl -n default delete service skupper-grant-server --ignore-not-found
+  ```
+
+!!! note
+    The commands above assume the skupper helm chart was installed in the `default` namespace, adapt the `-n` flag if you installed it elsewhere.
+
+**worker**
  
-* Create namespaces `ryaxns` and `ryaxns-execs` required by Ryax on the worker-site:
+* Create namespaces `ryaxns` and `ryaxns-execs` required by Ryax on the worker:
   ```yaml
   kubectl create namespace ryaxns
   kubectl create namespace ryaxns-execs
   ```
 
 
-### Configure skupper
+### Why do I need skupper?
 
-To resume we need the **worker-site** to access **main-site** services. More precisely, we need to expose the following services:
+To resume we need the **worker** to access **main** services. More precisely, we need to expose the following services:
 
 - *registry*: to pull action images
 - *filestore*: to read and write files (actions static parameters, execution I/O)
 - *broker*: to communicate with other Ryax services
 
-The registry is already exposed on the internet so only the secrets are required to access it. For filestore and broker, however, we need to provide a mechanism to reach out from the **worker-site**. For that, we are going to install skupper in both sites and configure it accordingly to the procedure below. Note that a **worker-site** means the command should run on the **worker-site** only, likewise the **main-site** marks when a command must run ONLY on the **main-site**. All `skupper` cli commands will use the default kubectl configuration, so be careful to set you KUBECONFIG environment variable accordingly.
+The registry is already exposed through the traefik ingress, only the secrets are required to access it. For filestore and broker, however, we need to provide a mechanism to reach out from the **worker**. For that, we are going to install skupper in both sites and configure it accordingly to the procedure below. Note that a **worker** means the command should run on the **worker** only, likewise the **main** marks when a command must run ONLY on the **main**. All `skupper` cli commands will use the default kubectl configuration, so be careful to set you KUBECONFIG environment variable accordingly.
 
+The **main** site is the one that accepts incoming Skupper links: the **worker** connects out to it, which also works when the worker runs on a private network (on-premises, behind NAT).
+Instead of letting Skupper expose its router with a dedicated `LoadBalancer` service (which would allocate an extra public IP), we reuse the Traefik ingress already installed by Ryax on the **main** site and route the Skupper traffic by TLS SNI passthrough.
+For this you need a DNS entry, for example `skupper.ryax.example.com`, pointing to the same public IP as your Ryax installation (the `ryax-traefik` LoadBalancer). In the commands below, replace `skupper.ryax.example.com` with your own DNS name.
 
-**worker-site**
+**main**
 
-* On the **worker-site**, first create the skupper site, it is very important to enable link-access so it can have the services of the main site exposed later.
+* First create the skupper site on the **main** site. We intentionally do **not** use `--enable-link-access` here: that flag would expose the router through a `LoadBalancer` service. Link access is configured manually through Traefik in the next steps.
   ```shell
-  skupper -n ryaxns site create worker-site --enable-link-access
+  skupper -n ryaxns site create main
   ```
 
-**main-site**
+**main**
 
-* Second, create the skupper site resource.
-  ```shell
-  skupper -n ryaxns site create main-site
+* Configure the router access. The `accessType: local` only creates a cluster-internal service, no public IP. Because Skupper on Kubernetes cannot add extra DNS names to the certificate it generates, we disable the certificate generation (`generateTlsCredentials: false`) and define the server certificate ourselves, including the public DNS name in `hosts`. Save the following as `skupper-router-access.yaml` and apply it with `kubectl apply -f skupper-router-access.yaml`:
+  ```yaml
+  apiVersion: skupper.io/v2alpha1
+  kind: RouterAccess
+  metadata:
+    name: skupper-router
+    namespace: ryaxns
+  spec:
+    accessType: local
+    generateTlsCredentials: false
+    tlsCredentials: skupper-site-server
+    roles:
+    - name: inter-router
+      port: 55671
+    - name: edge
+      port: 45671
+  ---
+  apiVersion: skupper.io/v2alpha1
+  kind: Certificate
+  metadata:
+    name: skupper-site-server
+    namespace: ryaxns
+  spec:
+    ca: skupper-site-ca
+    subject: skupper-router
+    server: true
+    hosts:
+    - skupper-router
+    - skupper-router.ryaxns
+    - skupper.ryax.example.com
   ```
 
-**worker-site**
+**main**
 
-* Now create the token to redeem on the main site, keep secret.token in a secure location it will work for the first attempt to connect and then be useless.
-  ```shell
-  skupper -n ryaxns token issue ../secret.token
+* Expose the skupper router through Traefik with TLS passthrough. Skupper uses mutual TLS between routers, so Traefik must not terminate the connection: it only routes it based on the SNI hostname. Save as `skupper-ingressroute.yaml` and apply with `kubectl apply -f skupper-ingressroute.yaml`:
+  ```yaml
+  apiVersion: traefik.io/v1alpha1
+  kind: IngressRouteTCP
+  metadata:
+    name: skupper-router
+    namespace: ryaxns
+  spec:
+    entryPoints:
+    - websecure
+    routes:
+    - match: HostSNI(`skupper.ryax.example.com`)
+      services:
+      - name: skupper-router
+        port: 55671
+    tls:
+      passthrough: true
   ```
 
-**main-site**
-
-* Redeem the created token to allow connection with the worker.
+* You can now check that the site is ready:
   ```shell
-  skupper -n ryaxns token redeem ../secret.token
+  skupper -n ryaxns site status
   ```
 
-**worker-site**
+**worker**
 
-* The worker site must create a listener to have the main-site broker (ryax-broker-ext) and filestore (ryax-minio-ext) services exposed on its side.
+* Create the skupper site on the **worker**. No link access is needed on this side, the worker only initiates the connection:
   ```shell
-  skupper -n ryaxns listener create ryax-broker-ext 5672
-  skupper -n ryaxns listener create ryax-minio-ext 9000
+  skupper -n ryaxns site create worker
   ```
 
-**main-site**
+**main**
 
-* The main-site must create a connector to allow the listeners to reach its local services, note that we use `--workload` to specify the target service of the connector.
+* Generate the link definition that the worker will use to connect to the main site:
+  ```shell
+  skupper -n ryaxns link generate > link-to-main.yaml
+  ```
+  Since Skupper is not aware of the Traefik exposure, edit `link-to-main.yaml` and replace `spec.endpoints` of the `Link` resource so that the `inter-router` endpoint points to the DNS name on port `443` (the `edge` endpoint can be removed, it is not used for site-to-site links):
+  ```yaml
+  spec:
+    endpoints:
+    - name: inter-router
+      host: skupper.ryax.example.com
+      port: "443"
+  ```
+  The file also contains a `Secret` with the TLS credentials of the link, keep it in a secure location and delete it after the next step.
+
+**worker**
+
+* Apply the link on the **worker** and check that it becomes ready (`Ready` status may take a few seconds):
+  ```shell
+  kubectl -n ryaxns apply -f link-to-main.yaml
+  skupper -n ryaxns link status
+  ```
+
+**main**
+
+* The main site must create a connector to allow the listeners to reach its local services, note that we use `--workload` to specify the target service of the connector.
   ```shell
   skupper -n ryaxns connector create ryax-broker-ext 5672 --workload service/ryax-broker
   skupper -n ryaxns connector create ryax-minio-ext 9000 --workload service/ryax-minio
   ```
 
-**main-site**
+**worker**
+
+* The worker must create a listener to have the main site broker (ryax-broker-ext) and filestore (ryax-minio-ext) services exposed on its side.
+  ```shell
+  skupper -n ryaxns listener create ryax-broker-ext 5672
+  skupper -n ryaxns listener create ryax-minio-ext 9000
+  ```
+
+**worker**
+
+* Wait until the connector status is ok.
+  ```shell
+  skupper listener status -n ryaxns
+  ```
+
+* Expected output
+  ```shell
+  NAME            STATUS  ROUTING-KEY     HOST            PORT   MATCHING-CONNECTOR   MESSAGE
+  ryax-broker-ext Ready   ryax-broker-ext ryax-broker-ext 5672   true                 OK
+  ryax-minio-ext  Ready   ryax-minio-ext  ryax-minio-ext  9000   true                 OK
+  ```
+
+**main**
 
 * Save the secrets to access Ryax services, the secrets include sensitive information please keep this file safe and delete it as after the next step. We provide a small helper script to inject the "-ext" suffix needed for remote services mapping.
   ```shell
@@ -323,23 +425,22 @@ The registry is already exposed on the internet so only the secrets are required
   ./k8s-ryax-config.py
   ```
 
-**worker site**
+**worker**
 
-* Install saved secrets from previous step on the **worker-site** (after this command it is safe to delete the secrets file):
+* Install saved secrets from previous step on the **worker** (after this command it is safe to delete the secrets file):
   ```shell
   kubectl apply -f ./secrets
   ```
 
-**worker site**
+**worker**
 
 * Now that we have the configuration and a secure connection with the credentials we will use Helm to install the latest Ryax Worker:
   ```sh
-  helm upgrade --install ryax-worker oci://registry.ryax.org/release-charts/worker --values worker.yaml -n ryaxns
+  helm upgrade --install ryax oci://registry.ryax.org/release-charts/ryax-worker --version 26.4.0 --values worker-values.yaml -n ryaxns
   ```
+* For help `worker-values.yaml` see the guide [here](#configuration-1).
 
----
-
-That's it! Once the worker is up and running, you should see a new site available in UI, while editing the workflow in the *Deploy* tab for each action (might need to refresh if the workflow was already open on edit mode).
+That's it! Once the *ryax-worker* pod is up and running, you can test it by forcing to deploy on that worker on the deploy tab.
 
 ![Worker selection on Deploy tab](../_static/worker-ryax-ui.png)
 
