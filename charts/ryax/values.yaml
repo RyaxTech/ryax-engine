@@ -116,8 +116,10 @@ minio:
       memory: 1000Mi
   serviceAccount:
     create: false
-  volumePermissions:
-    enabled: false
+  defaultInitContainers:
+    # -- If you move data to NFS, enable this to force the permission of minio to match the one from ryax user (UID: 1200)
+    volumePermissions:
+      enabled: false
 
 rabbitmq:
   image:
