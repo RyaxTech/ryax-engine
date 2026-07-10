@@ -1,6 +1,6 @@
 # ryax-engine
 
-![Version: 26.7.0-rc0](https://img.shields.io/badge/Version-26.7.0--rc0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.7.0-rc0](https://img.shields.io/badge/AppVersion-26.7.0--rc0-informational?style=flat-square)
+![Version: 26.7.0-rc1](https://img.shields.io/badge/Version-26.7.0--rc1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.7.0-rc1](https://img.shields.io/badge/AppVersion-26.7.0--rc1-informational?style=flat-square)
 
 Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows and applications on multiple infrastructure.
 
@@ -14,16 +14,16 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 
 | Repository | Name | Version |
 |------------|------|---------|
-| file://subcharts/action-builder | action-builder | 26.7.0-rc0 |
-| file://subcharts/authorization | authorization | 26.7.0-rc0 |
-| file://subcharts/common-resources | common-resources | 26.7.0-rc0 |
-| file://subcharts/datastore | datastore | 26.7.0-rc0 |
-| file://subcharts/front | front | 26.7.0-rc0 |
-| file://subcharts/intelliscale | intelliscale | 26.7.0-rc0 |
-| file://subcharts/registry | registry | 26.7.0-rc0 |
-| file://subcharts/repository | repository | 26.7.0-rc0 |
-| file://subcharts/runner | runner | 26.7.0-rc0 |
-| file://subcharts/studio | studio | 26.7.0-rc0 |
+| file://subcharts/action-builder | action-builder | 26.7.0-rc1 |
+| file://subcharts/authorization | authorization | 26.7.0-rc1 |
+| file://subcharts/common-resources | common-resources | 26.7.0-rc1 |
+| file://subcharts/datastore | datastore | 26.7.0-rc1 |
+| file://subcharts/front | front | 26.7.0-rc1 |
+| file://subcharts/intelliscale | intelliscale | 26.7.0-rc1 |
+| file://subcharts/registry | registry | 26.7.0-rc1 |
+| file://subcharts/repository | repository | 26.7.0-rc1 |
+| file://subcharts/runner | runner | 26.7.0-rc1 |
+| file://subcharts/studio | studio | 26.7.0-rc1 |
 | https://grafana.github.io/helm-charts | alloy | ~1.10.0 |
 | https://grafana.github.io/helm-charts | loki | ~7.0.0 |
 | https://grafana.github.io/helm-charts | tempo | 1.x.x |
@@ -80,6 +80,8 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | loki.singleBinary.resources | object | `{"limits":{"cpu":1,"memory":"512Mi"},"requests":{"cpu":0.5,"memory":"512Mi"}}` | Avoid Loki using too many resources: Increase this if you experience OOM errors |
 | minio.auth.existingSecret | string | `"ryax-minio-secret"` |  |
 | minio.commonLabels."ryax.tech/resource-name" | string | `"minio"` |  |
+| minio.console.enabled | bool | `false` | enable this to add internal Web console to browse Minio content |
+| minio.console.image.repository | string | `"bitnamilegacy/minio-object-browser"` |  |
 | minio.containerSecurityContext.runAsUser | int | `1200` |  |
 | minio.defaultInitContainers.volumePermissions | object | `{"enabled":false}` | If you move data to NFS, enable this to force the permission of minio to match the one from ryax user (UID: 1200) |
 | minio.image.repository | string | `"bitnamilegacy/minio"` |  |

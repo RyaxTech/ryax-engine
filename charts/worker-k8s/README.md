@@ -1,6 +1,6 @@
 # ryax-worker-k8s
 
-![Version: 26.7.0-rc0](https://img.shields.io/badge/Version-26.7.0--rc0-informational?style=flat-square) ![AppVersion: 26.7.0-rc0](https://img.shields.io/badge/AppVersion-26.7.0--rc0-informational?style=flat-square)
+![Version: 26.7.0-rc1](https://img.shields.io/badge/Version-26.7.0--rc1-informational?style=flat-square) ![AppVersion: 26.7.0-rc1](https://img.shields.io/badge/AppVersion-26.7.0--rc1-informational?style=flat-square)
 
 The Ryax Worker service manages deployments and executions on Kubernetes
 
@@ -14,7 +14,7 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 
 | Repository | Name | Version |
 |------------|------|---------|
-| oci://registry-1.docker.io/bitnamicharts | postgresql | ~16.1.2 |
+| oci://registry-1.docker.io/bitnamicharts | postgresql | ~16.7.27 |
 
 ## Values
 
@@ -63,7 +63,7 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 | filestoreSecret | string | `"ryax-minio-secret"` |  |
 | global.ryax.logLevel | string | `nil` |  |
 | global.ryax.userNamespace | string | `"ryaxns-execs"` |  |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker-k8s","tag":"26.7.0-rc0"}` | container image name and version |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker-k8s","tag":"26.7.0-rc1"}` | container image name and version |
 | logLevel | string | `nil` | log level of the service (override global.ryax.logLevel) |
 | metricsPort | int | `8092` |  |
 | monitoring.serviceMonitor | object | `{"enabled":true}` | Enable service monitor for prometheus using ServiceMonitor CRD |
