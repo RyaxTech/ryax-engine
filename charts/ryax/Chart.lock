@@ -1,34 +1,34 @@
 dependencies:
 - name: common-resources
   repository: file://subcharts/common-resources
-  version: 26.7.0-rc1
+  version: 26.7.0-rc2
 - name: action-builder
   repository: file://subcharts/action-builder
-  version: 26.7.0-rc1
+  version: 26.7.0-rc2
 - name: authorization
   repository: file://subcharts/authorization
-  version: 26.7.0-rc1
+  version: 26.7.0-rc2
 - name: front
   repository: file://subcharts/front
-  version: 26.7.0-rc1
+  version: 26.7.0-rc2
 - name: intelliscale
   repository: file://subcharts/intelliscale
-  version: 26.7.0-rc1
+  version: 26.7.0-rc2
 - name: repository
   repository: file://subcharts/repository
-  version: 26.7.0-rc1
+  version: 26.7.0-rc2
 - name: runner
   repository: file://subcharts/runner
-  version: 26.7.0-rc1
+  version: 26.7.0-rc2
 - name: studio
   repository: file://subcharts/studio
-  version: 26.7.0-rc1
+  version: 26.7.0-rc2
 - name: registry
   repository: file://subcharts/registry
-  version: 26.7.0-rc1
+  version: 26.7.0-rc2
 - name: datastore
   repository: file://subcharts/datastore
-  version: 26.7.0-rc1
+  version: 26.7.0-rc2
 - name: minio
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 17.0.21
@@ -40,15 +40,15 @@ dependencies:
   version: 16.0.14
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
-  version: 87.12.3
+  version: 87.16.1
 - name: tempo
   repository: https://grafana.github.io/helm-charts
   version: 1.24.4
 - name: loki
   repository: https://grafana.github.io/helm-charts
-  version: 7.0.0
+  version: 7.1.0
 - name: alloy
   repository: https://grafana.github.io/helm-charts
-  version: 1.10.0
-digest: sha256:356237a354cee46fc91ed26fa77f2ab578d7cc42f549f6f360b950295453c2bf
-generated: "2026-07-10T09:52:26.903538432+02:00"
+  version: 1.10.1
+digest: sha256:4acea291dc594f4de09fceb6224ea95a9f86bff1df3d57f73704d9d7a0358c7b
+generated: "2026-07-16T16:31:36.218640771+02:00"
