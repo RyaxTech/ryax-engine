@@ -1,38 +1,41 @@
 # Configure Ryax
 
-To configure Ryax we use a single configuration file that you've created during the [installation of the cluster](../howto/install_ryax_kubernetes.md). You can set the configuration of any services of Ryax in this file of called `values.yaml`.
+To configure Ryax we use a single configuration file that you've created during the [installation of the cluster](../howto/install_ryax_kubernetes.md). You can set the configuration of any services of Ryax in the Helm configuration file.
+Then, apply the configuration using `helm upgrade`.
+See the [installation documentation](../howto/install_ryax_kubernetes.md#cluster-update) for more details.
 
-To set a configuration value for a specific service, add a values section in this service. For example, to set the default idle time before undeploying an Action, set in the `runner` section:
-
+Some configuration parameters are exposed in the Helm charts directly. For example you can set the user action default log level with:
 ```yaml
 runner:
-  # undeploy after 10s instead of 300s
-  userActionsRetentionTime: 10
+  defaultActionLogLevel: "debug"
 ```
 
-Then, apply the configuration using Helm. See the [installation documentation](../howto/install_ryax_kubernetes.md#cluster-update)
-
-Some configuration parameters are not exposed in the Helm charts directly. Thus, you can check at the source code in the `/ryax/<service name>/app.py` where all configuration environment variables are defined and add one using the `extraEnv` parameter. For example,
+For advanced configuration, you can look at the source code in `/ryax/<service name>/app.py` where all configuration environment variables are defined and add one using the `extraEnv` parameter in your values. For example,
 ```yaml
 runner:
   extraEnv:
-    - name: RYAX_SCHEDULER_MAX_ACTION_DEPLOYMENTS
-      value: "100"
+    - name: RYAX_LOGS_KUBERNETES
+      value: "debug"
 ```
 
-More details on each service configuration on the following sections
+More details on each service configuration on the following sections.
 
 ## Runner configuration
 
-Configuration parameter of Ryax regarding Action deployment and execution are set in the Runner service configuration under the name `runner`.
-See the [Helm chart documentation](https://gitlab.com/ryax-tech/ryax/ryax-runner/-/blob/master/charts/runner/README.md?ref_type=heads) for more details.
+Configuration parameters of Ryax regarding Workflow execution are set in the Runner service configuration under the name `runner`.
+See the [Helm chart documentation](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/tree/master/charts/ryax/subcharts/runner?ref_type=heads) for more details.
 
 ## Studio configuration
 
-Configuration parameter of Ryax regarding Workflow edition are set in the Studio service configuration under the name `studio`.
+Configuration parameters of Ryax regarding Workflow edition are set in the Studio service configuration under the name `studio`.
 See the [Helm chart documentation](https://gitlab.com/ryax-tech/ryax/ryax-studio/-/blob/master/chart/README.md?ref_type=heads) for more details.
 
-## Worker configuration
+## IntelliScale configuration
+
+Ryax IntelliScale provides resource recommendations to the Runner so Actions use the minimum amount of resources.
+Helm Chart configuration can be found in the [Ryax IntelliScale Helm chart documentation](https://gitlab.com/ryax-tech/ryax/ryax-intelliscale/-/blob/master/chart/README.md?ref_type=heads)
+
+## Workers configuration
 
 Ryax workers register a *Site* with Ryax. There are two site types, each handled by its own dedicated Worker Helm chart:
 
@@ -41,34 +44,27 @@ Ryax workers register a *Site* with Ryax. There are two site types, each handled
 
 The site type is determined by the Worker chart you install, so it is not part of the configuration.
 
-Here is a complete configuration for a KUBERNETES site type example with two node pools. Defining the Objective scores (`objectiveScores`) enable scheduling by Objectives (higher is better):
+Step-by-step configuration instructions can be found in the [Worker installation Howto](../howto/worker-install.md).
+
+The Worker Helm chart configuration values, depending on the Worker type, can be found in:
+
+- Kubernetes Worker: [`ryax-worker-k8s` chart](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/master/charts/worker-k8s/README.md?ref_type=heads)
+- Slurm over SSH Worker: [`ryax-worker-slurm-ssh` chart](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/master/charts/worker-ssh-slurm/README.md?ref_type=heads)
+
+
+## Worker Kubernetes configuration
+
+Here is a complete configuration for a KUBERNETES site type example with two node pools.
 ```yaml
 config:
   site:
-    name: local
+    id: Site-173885748-ijdij
     spec:
       nodePools:  # list of node pools to be used by Ryax to deploy actions
-        - name: gpu-h100
-          cpu: 24  # cpu core count per node
-          memory: 250G  # memory per node
-          gpu: 1  # (Optional) defaults to 0
-          time: 1h  # (Optional) maximum time accepted for an action run, unlimited by default
-          arch: arm64  # (Optional) hardware architecture, defaults to x86_64
-          objectiveScores:  # (Optional) defines static scores used by the scheduler for placement
-            cost: 0
-            energy: 0
-            performance: 100
+        - id: NodePool-176373899-akoks
           selector:  # the Kubernetes nodes labels to select the node pool
             k8s.scaleway.com/pool-name: gpu-h100
-          filter_no_gpu_action: true  # (Optional) If set to true (default) the node with GPU will not accept Action that are not explicitly asking for a GPU
-        - name: small
-          cpu: 4
-          memory: 6G
-          arch: arm64  # WARNING: Ryax only supports one arch at a time. Each node pool must have the same arch
-          objectiveScores:
-            cost: 70
-            energy: 30
-            performance: 80
+        - id: NodePool-18939392-ahal
           selector:
             kubernetes.azure.com/agentpool: default
 ```
@@ -79,33 +75,18 @@ Configuration for a `SLURM_SSH` site type with two partitions and some extra con
 ```yaml
 config:
   site:
-    name: Azure-1
+    id: Site-183948493-aiijd
     spec:
       credentials:  # Use for SSH connection to the SLURM cluster
         server: hpc.example.com
         username: ryax
         privateKeyFile: ./ryax-hpc.key  # defaults to ~/.ssh/id_rsa
         configFile: ./myconfig  # (Optional) defaults to ~/.ssh/config
-      cache_dir: /scratch/ryax  # Use to store Singularity images and action IO. defaults to ~/.ryax_cache
-      partitions:  # list of partition to be used by Ryax to deploy Actions (same field as Kubernetes node pools)
-        - name: default
-          cpu: 2
-          memory: 600M
-          time: 30s
-          gpu: 1
-          objectiveScores:
-            energy: 100
-            cost: 50
-            performance: 20
-        - name: large
-          cpu: 16
-          memory: 24G
+      cache_dir: /scratch/ryax  # (Optional) Used to store Singularity images and action IO. Defaults to ~/.ryax_cache
+      partitions:  # list of partition to be used by Ryax to deploy Actions
+        - id: NodePool-128394739-gadhj
+          name: default # The name of the partition in Slurm
+        - id: NodePool-128391092-aokde
+          name: large
 ```
 
-## Worker references
-
-- Step-by-step configuration instructions can be found in the [Worker installation Howto](../howto/worker-install.md)
-- Worker Helm Chart configuration values can be found in the Helm chart documentation:
-    - Kubernetes Worker: [`ryax-worker-k8s` chart](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/master/charts/worker-k8s/README.md?ref_type=heads)
-    - SSH/Slurm Worker: [`ryax-worker-slurm-ssh` chart](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/master/charts/worker-ssh-slurm/README.md?ref_type=heads)
-- Ryax IntelliScale Helm Chart configuration can be found in the [Ryax IntelliScale Helm chart documentation](https://gitlab.com/ryax-tech/ryax/ryax-intelliscale/-/blob/master/chart/README.md?ref_type=heads)
