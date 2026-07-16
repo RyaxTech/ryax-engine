@@ -65,6 +65,27 @@ MAIN_RELEASE_REPO = {
 
 MAX_REPO_NAME_LEN = max([len(r) for r in REPOS_TO_BE_RELEASED.keys()])
 
+# Upstream changelog / upgrade-instructions for each external Helm dependency.
+# Shown by check_helm_deps next to any dependency that is behind (or being
+# bumped) so the maintainer can quickly read the upgrade notes before applying.
+HELM_DEP_CHANGELOGS = {
+    "traefik": "https://github.com/traefik/traefik-helm-chart/blob/master/traefik/Changelog.md",
+    "kube-prometheus-stack": "https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/UPGRADE.md",
+    "minio": "https://github.com/bitnami/charts/tree/main/bitnami/minio#upgrading",
+    "rabbitmq": "https://github.com/bitnami/charts/tree/main/bitnami/rabbitmq#upgrading",
+    "postgresql": "https://github.com/bitnami/charts/tree/main/bitnami/postgresql#upgrading",
+    "tempo": "https://github.com/grafana/helm-charts/tree/main/charts/tempo",
+    "loki": "https://github.com/grafana/loki/blob/main/production/helm/loki/CHANGELOG.md",
+    "alloy": "https://github.com/grafana/alloy/blob/main/operations/helm/charts/alloy/CHANGELOG.md",
+}
+
+
+def _print_changelog_link(name: str, indent: str = "      ") -> None:
+    """Print the upstream changelog/upgrade doc link for a dependency, if known."""
+    link = HELM_DEP_CHANGELOGS.get(name)
+    if link:
+        print(f"{indent}{TCOLOR.UNDERLINE}changelog:{TCOLOR.ENDC} {link}")
+
 
 class Version:
     """
@@ -684,6 +705,7 @@ def _apply_helm_updates(report: List[tuple]) -> None:
                     f"  {r['name']}: {r['constraint']} "
                     f"{TCOLOR.OKBLUE}->{TCOLOR.ENDC} {bumps[r['name']]}"
                 )
+                _print_changelog_link(r["name"])
         if bumps:
             _edit_chart_constraints(chart_file, bumps)
 
@@ -908,6 +930,7 @@ def command_check_helm_deps(args) -> int:
             )
             for cf, name, locked, rec in outdated:
                 print(f"  {cf}: {name} {locked} {TCOLOR.OKBLUE}→{TCOLOR.ENDC} {rec}")
+                _print_changelog_link(name)
             print(
                 "Run 'jef.py check_helm_deps --update' to apply the "
                 "recommended versions."
@@ -923,6 +946,7 @@ def command_check_helm_deps(args) -> int:
                     f"  {cf}: {name} locked {locked} but the release baseline is "
                     f"major {base} (max allowed this release: {allowed})"
                 )
+                _print_changelog_link(name)
         if not outdated and not overshoot:
             print(
                 f"{TCOLOR.OKGREEN}All dependencies are up to date with the "
