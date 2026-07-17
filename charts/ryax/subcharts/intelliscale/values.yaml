@@ -18,6 +18,7 @@ global:
     # -- Enables service monitoring
     # @section -- Global
     enabled: false
+    otlpEndpoint: ""
 
   ryax:
     # -- Global Ryax log level to use, ignored if empty
