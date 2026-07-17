@@ -20,7 +20,7 @@ global:
     enabled: false
     # -- Traces collector (Tempo) endpoint Trace collection (disabled if empty)
     # @section -- Global
-    otlpEndpoint: ""
+    otlpEndpoint: ryax-tempo:4317
 
   ryax:
     logLevel:
