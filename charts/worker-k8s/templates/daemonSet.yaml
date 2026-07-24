@@ -62,6 +62,9 @@ spec:
         ryax.tech/resource-type: "internal"
     spec:
       serviceAccountName: {{ include "worker-k8s.fullname" . }}-gpu-node-labeler
+      nodeSelector:
+        # Only run this when the device plugin is up
+        nvidia.com/gpu.deploy.device-plugin: "true"
       tolerations:
       - effect: NoSchedule
         operator: Exists
@@ -81,29 +84,30 @@ spec:
 
             echo "Node name: $NODE_NAME"
 
-            LABEL_VALUES=$(kubectl get node "$NODE_NAME" -o jsonpath='{.metadata.labels.*}')
+            MIG_REQUESTED_CONFIG=$(kubectl get node "$NODE_NAME" -o jsonpath='{.metadata.labels.ryax\.tech/mig\.config"}')
+            MIG_CONFIG=$(kubectl get node "$NODE_NAME" -o jsonpath='{.metadata.labels.nvidia\.com/mig\.config"}')
+            MIG_STATE=$(kubectl get node "$NODE_NAME" -o jsonpath='{.metadata.labels.nvidia\.com/mig\.config\.state"}')
 
-            echo "All label values: $LABEL_VALUES"
+            echo "Ryax MIG Configuration
+            echo "Requested:\t $MIG_REQUESTED_CONFIG
+            echo "Found: \t $MIG_CONFIG
+            echo "Status:\t $MIG_STATE"
 
-            POOL_NAME_LABEL=""
-            for value in $LABEL_VALUES; do
-                case "$value" in
-                    all-*) 
-                        POOL_NAME_LABEL=$value
-                        break
-                        ;;
-                esac
+            if [ "$MIG_CONFIG" == "$MIG_REQUESTED_CONFIG" ] && [ "$MIG_STATE" == "failed"]
+            then
+                echo "Reset node pool MIG to all-disabled"
+                kubectl label node "$NODE_NAME" "nvidia.com/mig.config=all-disabled" --overwrite
+            fi
+            if [ "$MIG_CONFIG" != "$MIG_REQUESTED_CONFIG" ]
+                echo "Patch success for $NODE_NAME : $MIG_CONFIG"
+                kubectl label node "$NODE_NAME" "nvidia.com/mig.config=$MIG_REQUESTED_CONFIG" --overwrite
+            fi
+            
+            until [ $(kubectl get node "$NODE_NAME" -o jsonpath='{.metadata.labels.nvidia\.com/mig\.config\.state"}') == "success" ]
+            do
+                echo Current MIG state: $(kubectl get node "$NODE_NAME" -o jsonpath='{.metadata.labels.nvidia\.com/mig\.config\.state"}')
             done
-
-            if [ -n "$POOL_NAME_LABEL" ]; then
-                MIG_CONFIG=$(echo "$POOL_NAME_LABEL" | sed 's/^all-//')
-
-                MIG_FORMATTED=$(echo "$MIG_CONFIG" | sed 's/-/./g')
-
-                kubectl label node "$NODE_NAME" "nvidia.com/mig.config=all-$MIG_FORMATTED" --overwrite
-                echo "Patch success for $NODE_NAME : $MIG_CONFIG -> $MIG_FORMATTED"
-            else
-                echo "Skipping $NODE_NAME, not a GPU node"
+                echo "$NODE_NAME, is now comfigured with $MIG_CONFIG"
             fi
       containers:
         - name: pause-container
