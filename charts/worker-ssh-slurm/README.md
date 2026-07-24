@@ -1,8 +1,8 @@
-# ryax-worker-k8s
+# ryax-worker-slurm-ssh
 
 ![Version: 26.7.0](https://img.shields.io/badge/Version-26.7.0-informational?style=flat-square) ![AppVersion: 26.7.0](https://img.shields.io/badge/AppVersion-26.7.0-informational?style=flat-square)
 
-The Ryax Worker service manages deployments and executions on Kubernetes
+Ryax Worker that manages execution of Actions on SLURM cluster through SSH.
 
 **Homepage:** <https://ryax.tech>
 
@@ -18,18 +18,11 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 
 ## Values
 
-### Ryax User Actions Settings
-
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| actionLogsQueryRate | int | `5` | Rate at which the User Action logging system is queried to get the logs in seconds. |
-| userActionResources | object | `{"limit":{"memory":"64Mi"},"request":{"cpu":0.1,"memory":"64Mi"}}` | Resource limit and request for individual user actions if not set in the action `resources` section. Requires a LimitRange Kubernetes object. See for more details: https://kubernetes.io/docs/concepts/policy/limit-range/ |
-
 ### Ryax
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| config | object | `{"site":{"spec":{"namespace":"{{ .Values.global.ryax.userNamespace }}"}}}` | Ryax Worker configuration use for the registration. See documentation for more details: https://docs.ryax.tech/reference/configuration.html#worker-configuration |
+| config | object | `{"site":{"spec":{"credentials":null,"partitions":null}}}` | Ryax Worker configuration use for the registration. See documentation for more details: https://docs.ryax.tech/reference/configuration.html#worker-ssh-slurm-configuration Example: site:   id: Site-iahoindsoia-ae   spec:     credentials:        ...     partitions:     - name: debug       id: NodePool-10I31U3421-azea |
 
 ### Global
 
@@ -39,15 +32,20 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 | global.imagePullSecrets | list | `[]` | Global container registry secret names as an array Example:   - name: myPullSercret |
 | global.imageRegistry | string | `nil` | Global container image registry |
 | global.monitoring.enabled | bool | `false` | Enables service monitoring |
-| global.monitoring.otlpEndpoint | string | `"ryax-tempo:4317"` | Traces collector (Tempo) endpoint Trace collection (disabled if empty) |
+| global.monitoring.otlpEndpoint | string | `""` | Traces collector (Tempo) endpoint Trace collection (disabled if empty) |
 | global.nodeSelector | object | `{}` | Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) |
+
+### Important Settings
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| hpcOffloading | bool | `true` | Set as true to enable ssh slurm hpc offloading, will run worker-ssh-slurm container as root so singularity build works without --fakeroot Disable it to avoid running as root inside the container |
 
 ### Resource Settings
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| resources | object | `{}` | Recommended resource requirement Example:   requests:     memory: "2Gi"     cpu: "1000m"   limits:     memory: "2Gi" |
-| userNamespaceResources | object | `{}` | Activate this to limit users' resource total usage. Highly recommended in production! Resource quota for the user namespace set as-is in the Kubernetes ResourceQuota: Example:   requests.cpu: "2"   requests.memory: 2Gi   limits.cpu: "16"   limits.memory: 32Gi See for more details: https://kubernetes.io/docs/concepts/policy/resource-quotas/ |
+| resources | object | `{}` | Recommended resources request This is needed because the Worker build the action using Singularity which requires some memory. Example:   requests:     memory: "4Gi"     cpu: "1000m"   limits:     memory: "4Gi" |
 
 ### Other Values
 
@@ -55,20 +53,28 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 |-----|------|---------|-------------|
 | actionRegistrySecret | string | `"ryax-registry-creds-secret"` | Name of the secret that contains credentials to access the registry hosting Ryax actions. Leave empty to use public access registry Secret must be of type: kubernetes.io/dockerconfigjson |
 | affinity | object | `{}` | Add affinity injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) Example:   nodeAffinity:     requiredDuringSchedulingIgnoredDuringExecution:       nodeSelectorTerms:       - matchExpressions:         - key: topology.kubernetes.io/zone           operator: In           values:           - antarctica-east1           - antarctica-west1 |
-| apiPort | int | `8083` |  |
+| apiPort | int | `8084` |  |
 | brokerSecret | string | `"ryax-broker-secret"` |  |
-| databaseURL | string | `nil` | Use this to override the default postgresql database included in the Helm |
+| databaseURL | string | `nil` | To override the default posgresql URL. Database URL in a SQLAlchemy compatible format. |
 | extraEnv | list | `[]` | Add extra environment variables |
 | filestoreName | string | `"ryax-filestore"` |  |
 | filestoreSecret | string | `"ryax-minio-secret"` |  |
 | global.ryax.logLevel | string | `nil` |  |
 | global.ryax.userNamespace | string | `"ryaxns-execs"` |  |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker-k8s","tag":"26.7.0"}` | container image name and version |
+| hpcConfigFile | string | `nil` | Inject the SSH config to customize the access to the HPC site here with `--set-file` |
+| hpcPrivateKeyFile | string | `nil` | Inject the private key to SSH to the HPC site with `--set-file hpcPrivateKeyFile=./my-private.key` |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker-ssh-slurm","tag":"26.7.0"}` | container image name and version |
+| internalRegistryOverride | string | `"ryax-registry:5000"` | this is used for SLURM_SSH deployment mode on a private network mode. Don't change it unless you know what you are doing |
 | logLevel | string | `nil` | log level of the service (override global.ryax.logLevel) |
-| metricsPort | int | `8092` |  |
-| monitoring.serviceMonitor | object | `{"enabled":true}` | Enable service monitor for prometheus using ServiceMonitor CRD |
-| postgresql | object | `{"auth":{"database":"worker_k8s","existingSecret":"{{ include \"worker-k8s.postgresql.secret\" . }}","username":"worker_k8s"},"enabled":true,"fullNameOverride":"{{ include \"worker-k8s.postgresql.service\" . }}","image":{"repository":"bitnamilegacy/postgresql"},"metrics":{"image":{"repository":"bitnamilegacy/postgres-exporter"}},"primary":{"persistence":{"size":"1Gi"}}}` | local postgresql database |
-| postgresql.enabled | bool | `true` | Enables PostgreSQL local database |
+| metricsPort | int | `8093` |  |
+| monitoring.serviceMonitor | object | `{"enabled":false}` | Enable service monitor for prometheus using ServiceMonitor CRD |
+| postgresql.auth.database | string | `"worker-ssh-slurm"` |  |
+| postgresql.auth.existingSecret | string | `"{{ include \"worker-ssh-slurm.postgresql.secret\" . }}"` |  |
+| postgresql.auth.username | string | `"worker-ssh-slurm"` |  |
+| postgresql.enabled | bool | `true` | Enables PostgreSQL local database instead of remote or local sqlite |
+| postgresql.image.repository | string | `"bitnamilegacy/postgresql"` |  |
+| postgresql.metrics.image.repository | string | `"bitnamilegacy/postgres-exporter"` |  |
+| postgresql.primary.persistence.size | string | `"1Gi"` |  |
 | priorityClass | string | `nil` | Add priority class |
 
 ----------------------------------------------

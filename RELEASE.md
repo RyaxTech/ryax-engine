@@ -1,73 +1,103 @@
 We are proud to announce the release of:
 
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
-# Ryax 26.4.0
+# Ryax 26.7.0
 ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​ ​✨​
 
 ## New features
 
-### New scheduling policy
+### One Worker chart per site type
 
-We have added a new multi-objective scheduler that combines static scores, runtime prediction, node-pool pricing,
-and empirical execution history to automatically select the best execution pool according to performance and cost preferences.
+The generic `ryax-worker` chart is replaced by one dedicated chart per site type:
 
-### Site Registration
+- `ryax-worker-k8s` for Kubernetes sites
+- `ryax-worker-slurm-ssh` for SLURM HPC sites accessed over SSH
 
-The Ryax Site registration (from the main site to one with a Worker) is now done in the Ryax UI.
-This simplifies the Worker configuration make it more secure and fix issues with dynamic registration token.
-    
+The site type is now determined by the chart you install, which simplifies the
+configuration and reduces each Worker's footprint to what its site actually needs.
+
+### IntelliScale on the main site
+
+IntelliScale now runs on the main site as part of the `ryax-engine` chart, instead of
+being deployed within each Worker. It consumes execution metrics and publishes resource
+recommendations for all sites over the message broker. It is enabled by default and can
+be disabled with `intelliscale.enabled=false`.
+
+### Energy-aware scheduling
+
+The scheduler now runs energy models directly so that placement decisions can take the
+energy consumption of an execution into account, alongside performance and cost.
+
 ## Bug fixes and Improvements
 
-- Fix unable to create user in the UI
-- Centralized Helm repository in ryax-engine so simplify install and development
-- Emit Every and Stop action is now properly stopping in all case
-- Fix memory warm start with last successful allocation in Intelliscale
-- Reduce Intelliscale recommendation timeout to avoid stall deployment
-- Modularize scheduling policies to accommodate external policies support
+- GPU sharing with [NVIDIA MIG](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/) works again
+- Sites and Node Pools can now be activated and deactivated from the UI
+- Passwords handled by workflows are now encrypted at rest, with the encryption key automatically provisioned by the Helm chart
+- Log collection now uses Grafana Alloy, replacing the deprecated Promtail
+- Deployment management moved from the Runner to the Workers to improve the multi-site architecture
+- New MOS v1 placement policy and externalized scheduler to support custom scheduling policies
+- Memory warm start (bump-up) logic moved from IntelliScale to the Runner for more robust allocations
+- Fix Infrastructure view queries
+- Studio API migrated to FastAPI
+- Numerous dependency upgrades and security fixes across all services
 
 ## Upgrade to this version
 
-The Worker that was packaged inside the Ryax installation is now removed and the Worker install will be done separately.
-This simplifies the configuration and makes the Ryax installation independent of user code execution.
-
-To upgrade your main cluster, find the values file from your previous install or restore them using:
+To upgrade your main cluster, find the values file from your previous install or restore
+it using:
 ```sh
 helm get values -n ryaxns ryax --output yaml > values.yaml
 ```
-Then, run the upgrade with :
+
+Because we do a major update of the Minio Chart, a breaking change in the deployment selector requires you to run:
 ```sh
-helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine:26.4.0 \
+kubectl delete deployment ryax-minio -n ryaxns
+```
+
+IntelliScale is now part of the main chart and enabled by default. Also, if your values
+customize Promtail (`promtail` section), port that configuration to Grafana Alloy
+(`alloy` section).
+
+Then, run the upgrade with:
+!!! note  
+    `--take-ownership` is required because loki migrate from the worker chart to the ryax one`
+
+```sh
+helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine:26.7.0 \
   -n ryaxns \
+  --take-ownership \
   -f values.yaml
 ```
 
-To restore your local worker, we need to extract the worker config to be able to attach the database to the same volume.
-To do so extract the worker values with:
+To upgrade a Kubernetes Worker, note that the `ryax-worker` chart is replaced by
+`ryax-worker-k8s`. First, restore your Worker values with:
 ```sh
-yq -y .worker ./values.yaml > worker.yaml
+helm get values -n ryaxns ryax-worker --output yaml > worker.yaml
 ```
-The new registration mechanism requires you to enter the site and node pools ids.
-To do so, edit this file to add the `config.site.id` and the `config.spec.nodePools[].id` ids that
-you can find in the Web UI in the Infrastructure view.
+Then, remove the `intelliscale`, `loki`, and `promtail` sections from this file if
+present: IntelliScale now runs on the main site, and logs are collected by the main
+site's Grafana Alloy. Finally, upgrade the release to the new chart:
+```sh
+helm uninstall -n ryaxns ryax-worker
+helm install ryax-worker-k8s oci://registry.ryax.org/release-charts/ryax-worker-k8s:26.7.0 \
+  -n ryaxns \
+  -f worker.yaml
+```
 
-Here is an example of configuration:
-```yaml
-postgresql:
-  auth:
-    password: KSODJAOPP2
-config:
-  site:
-    id: Site-1777972967-vlyxkb72 # Add this field
-    spec:
-      nodePools:
-      - id: NodePool-1777972967-duf9w7tu # Add this field
-        selector:
-          k8s.scaleway.com/pool-name: default
-      - id: NodePool-1777984371-q43o0vc6 # Add this field
-        selector:
-          k8s.scaleway.com/pool-name: small
-```
-And then run:
+If your Worker was attached to a SLURM cluster (using the `hpcOffloading` option of the
+old `ryax-worker` chart), it must now be installed from the dedicated
+`ryax-worker-slurm-ssh` chart. Follow the
+[SLURM_SSH Worker documentation](https://docs.ryax.tech/howto/worker-install.html#slurm_ssh-worker)
+to write the new values file, then replace your old Worker with:
 ```sh
-helm install -n ryaxns ryax-worker oci://registry.ryax.org/release-charts/ryax-worker:26.4.0 -f worker.yaml
+helm uninstall -n ryaxns ryax-worker-hpc
+helm install ryax-worker-slurm oci://registry.ryax.org/release-charts/ryax-worker-slurm-ssh:26.7.0 \
+  -n ryaxns \
+  -f worker.yaml \
+  --set-file hpcPrivateKeyFile=./my-ssh-private-key
 ```
+
+Concerning the GPU sharing with [NVIDIA MIG](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/)
+the GPU nodes must now be pre-partitioned into MIG instances by the cluster administrator,
+as explained in the new [GPU node pools with MIG](https://docs.ryax.tech/howto/worker-install.html#gpu-node-pools-with-mig)
+section of the installation documentation.
