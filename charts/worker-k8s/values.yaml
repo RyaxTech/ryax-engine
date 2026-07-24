@@ -20,7 +20,7 @@ global:
     enabled: false
     # -- Traces collector (Tempo) endpoint Trace collection (disabled if empty)
     # @section -- Global
-    otlpEndpoint: ""
+    otlpEndpoint: ryax-tempo:4317
 
   ryax:
     logLevel:
@@ -35,11 +35,18 @@ actionRegistrySecret: ryax-registry-creds-secret
 # https://docs.ryax.tech/reference/configuration.html#worker-configuration
 # @section -- Ryax
 config:
+  # -- Enable NVIDIA MIG auto-labeler that partition the supported NVIDIA cards 
+  MIG:
+    enabled: true
   site:
-    type: KUBERNETES
     spec:
       namespace: "{{ .Values.global.ryax.userNamespace }}"
 
+# -- Container images used by the labeler daemonSet
+labeler:
+  image: bitnamilegacy/kubectl:latest
+  pauseImage: k8s.gcr.io/pause:3.1
+# 
 # -- Resource limit and request for individual user actions if not set in the action `resources` section.
 # Requires a LimitRange Kubernetes object. See for more details: https://kubernetes.io/docs/concepts/policy/limit-range/
 # @section -- Ryax User Actions Settings
@@ -67,7 +74,7 @@ userNamespaceResources: {}
 
 # -- container image name and version
 image:
-  tag: "SERVICE-VERSION"
+  tag: "26.7.0"
   registry: docker.io/ryaxtech
   repository: worker-k8s
   digest: ""

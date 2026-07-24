@@ -77,3 +77,5 @@ spec:
                   name: {{ .Values.brokerSecret }}
                   key: "broker"
             {{- end }}
+            - name: RYAX_OTLP_ENDPOINT
+              value: {{ tpl .Values.global.monitoring.otlpEndpoint . | default "" | quote }}

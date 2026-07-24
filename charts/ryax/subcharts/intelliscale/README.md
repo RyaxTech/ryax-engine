@@ -1,6 +1,6 @@
 # intelliscale
 
-![Version: 26.4.0](https://img.shields.io/badge/Version-26.4.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.4.0](https://img.shields.io/badge/AppVersion-26.4.0-informational?style=flat-square)
+![Version: 26.7.0](https://img.shields.io/badge/Version-26.7.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.7.0](https://img.shields.io/badge/AppVersion-26.7.0-informational?style=flat-square)
 
 Ryax Intelliscale, the AI-empowered vertical autoscaler for Ryax action executions
 
@@ -18,9 +18,6 @@ Ryax Intelliscale, the AI-empowered vertical autoscaler for Ryax action executio
 |-----|------|---------|-------------|
 | brokerSecret | string | `"ryax-broker-secret"` | Name of the secret holding the central RabbitMQ broker URL (key "broker"). IntelliScale runs at the master site and consumes execution metrics / publishes recommendations over the broker (multi-site mode) in addition to the legacy per-site gRPC interface. Set to "" to disable the broker interface (legacy gRPC-only). |
 | global.ryax.logLevel | string | `nil` | Global Ryax log level to use, ignored if empty |
-| ryax.worker.actionNamespace | string | `"ryaxns-execs"` | Namespace where the Ryax actions are deployed |
-| ryax.worker.configMapName | string | `""` | ConfigMap with a single site's node pools, mounted as RYAX_CONFIG_SITE. Empty at the master site: a central multi-site IntelliScale learns each site's data from the broker metrics instead of one per-site config map. |
-| ryax.worker.serviceName | string | `"ryax-worker"` | Ryax worker service name |
 
 ### Global
 
@@ -44,7 +41,8 @@ Ryax Intelliscale, the AI-empowered vertical autoscaler for Ryax action executio
 | affinity | object | `{}` | Kubernetes affinity |
 | config | object | `{"MIG":{"enabled":true},"algorithm_configs":{"memory_oom_processor":{"bump_up_ratio":2},"simple_mig_recommender":{"gpu_mig_instance":{"a":100,"b":200}},"vpa_pilot_rule":{"cpu_limit":{"data_source":"max","fluctuation_reducer_duration_in_seconds":3600,"max_range_samples":10,"policy":"max","safety_margin_lower":0.2,"safety_margin_upper":0.3,"weighted_avg_decay_half_life_in_seconds":43200},"cpu_request":{"data_source":"sp_95","fluctuation_reducer_duration_in_seconds":3600,"max_range_samples":10,"policy":"weighted_avg","safety_margin_lower":0.1,"safety_margin_upper":0.15,"weighted_avg_decay_half_life_in_seconds":43200},"memory":{"data_source":"sp_98","fluctuation_reducer_duration_in_seconds":3600,"max_range_samples":10,"policy":"max","safety_margin_lower":0.1,"safety_margin_upper":0.15,"weighted_avg_decay_half_life_in_seconds":43200}}},"message_bus":{"keep_event_history":false},"otlp_endpoint":"tempo:4317","server_ports":{"api_grpc_server_port":8326,"metrics_server_port":8090}}` | Intelliscalse configuration |
 | fullnameOverride | string | `""` |  |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io","repository":"ryaxtech/intelliscale","tag":"26.4.0"}` | container image name and version |
+| global.monitoring.otlpEndpoint | string | `""` |  |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io","repository":"ryaxtech/intelliscale","tag":"26.7.0"}` | container image name and version |
 | imagePullSecrets | list | `[]` | This is for the secretes for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ |
 | nameOverride | string | `""` | This is to override the chart name. |
 | podAnnotations | object | `{}` | This is for setting Kubernetes Annotations to a Pod. For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ |

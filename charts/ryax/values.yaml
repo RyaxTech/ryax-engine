@@ -93,6 +93,11 @@ repository:
 minio:
   image:
     repository: bitnamilegacy/minio
+  console:
+    # -- enable this to add internal Web console to browse Minio content
+    enabled: false
+    image:
+      repository: bitnamilegacy/minio-object-browser
   auth:
     existingSecret: ryax-minio-secret
   commonLabels:
@@ -116,8 +121,10 @@ minio:
       memory: 1000Mi
   serviceAccount:
     create: false
-  volumePermissions:
-    enabled: false
+  defaultInitContainers:
+    # -- If you move data to NFS, enable this to force the permission of minio to match the one from ryax user (UID: 1200)
+    volumePermissions:
+      enabled: false
 
 rabbitmq:
   image:

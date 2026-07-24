@@ -15,61 +15,61 @@ icon: https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd
 name: ryax-engine
 description: Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows and applications on multiple infrastructure.
 type: application
-version: "26.4.0"
-appVersion: "26.4.0"
+version: "26.7.0"
+appVersion: "26.7.0"
 dependencies:
   # Ryax internal subcharts
   - name: common-resources
-    version: "26.4.0"
+    version: "26.7.0"
     repository: "file://subcharts/common-resources"
   - name: action-builder
-    version: "26.4.0"
+    version: "26.7.0"
     repository: "file://subcharts/action-builder"
   - name: authorization
-    version: "26.4.0"
+    version: "26.7.0"
     repository: "file://subcharts/authorization"
   - name: front
-    version: "26.4.0"
+    version: "26.7.0"
     repository: "file://subcharts/front"
   - name: intelliscale
-    version: "26.4.0"
+    version: "26.7.0"
     repository: "file://subcharts/intelliscale"
     condition: intelliscale.enabled
   - name: repository
-    version: "26.4.0"
+    version: "26.7.0"
     repository: "file://subcharts/repository"
   - name: runner
-    version: "26.4.0"
+    version: "26.7.0"
     repository: "file://subcharts/runner"
   - name: studio
-    version: "26.4.0"
+    version: "26.7.0"
     repository: "file://subcharts/studio"
 
   # Docker registry
   - name: registry
-    version: "26.4.0"
+    version: "26.7.0"
     repository: "file://subcharts/registry"
   # Postgres database
   - name: datastore
-    version: "26.4.0"
+    version: "26.7.0"
     repository: "file://subcharts/datastore"
   # S3 compatible storage
   - name: minio
-    version: 16.x.x
+    version: 17.x.x
     repository: 'oci://registry-1.docker.io/bitnamicharts'
   # Reverse proxy
   - name: traefik
-    version: 39.x.x
+    version: 41.x.x
     repository: 'https://helm.traefik.io/traefik'
     condition: traefik.deployment.enabled
   # rabbitmq message broker
   - name: rabbitmq
-    version: 15.x.x
+    version: 16.x.x
     repository: 'oci://registry-1.docker.io/bitnamicharts'
   # Observability
   # Prometheus stack with grafana
   - name: kube-prometheus-stack
-    version: 81.x.x
+    version: 87.x.x
     repository: 'https://prometheus-community.github.io/helm-charts'
     condition: kube-prometheus-stack.enabled
   # Tracing
@@ -79,10 +79,10 @@ dependencies:
     condition: tempo.enabled
   # Logging
   - name: loki
-    version: ~6.16.0
+    version: ~7.1.0
     repository: "https://grafana.github.io/helm-charts"
     condition: loki.enabled
   - name: alloy
-    version: ~1.9.0
+    version: ~1.10.1
     repository: "https://grafana.github.io/helm-charts"
     condition: loki.enabled
