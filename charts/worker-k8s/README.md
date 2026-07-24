@@ -1,6 +1,6 @@
 # ryax-worker-k8s
 
-![Version: 26.7.0-rc2](https://img.shields.io/badge/Version-26.7.0--rc2-informational?style=flat-square) ![AppVersion: 26.7.0-rc2](https://img.shields.io/badge/AppVersion-26.7.0--rc2-informational?style=flat-square)
+![Version: 26.7.0](https://img.shields.io/badge/Version-26.7.0-informational?style=flat-square) ![AppVersion: 26.7.0](https://img.shields.io/badge/AppVersion-26.7.0-informational?style=flat-square)
 
 The Ryax Worker service manages deployments and executions on Kubernetes
 
@@ -39,7 +39,7 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 | global.imagePullSecrets | list | `[]` | Global container registry secret names as an array Example:   - name: myPullSercret |
 | global.imageRegistry | string | `nil` | Global container image registry |
 | global.monitoring.enabled | bool | `false` | Enables service monitoring |
-| global.monitoring.otlpEndpoint | string | `""` | Traces collector (Tempo) endpoint Trace collection (disabled if empty) |
+| global.monitoring.otlpEndpoint | string | `"ryax-tempo:4317"` | Traces collector (Tempo) endpoint Trace collection (disabled if empty) |
 | global.nodeSelector | object | `{}` | Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) |
 
 ### Resource Settings
@@ -63,7 +63,7 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 | filestoreSecret | string | `"ryax-minio-secret"` |  |
 | global.ryax.logLevel | string | `nil` |  |
 | global.ryax.userNamespace | string | `"ryaxns-execs"` |  |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker-k8s","tag":"26.7.0-rc2"}` | container image name and version |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker-k8s","tag":"26.7.0"}` | container image name and version |
 | logLevel | string | `nil` | log level of the service (override global.ryax.logLevel) |
 | metricsPort | int | `8092` |  |
 | monitoring.serviceMonitor | object | `{"enabled":true}` | Enable service monitor for prometheus using ServiceMonitor CRD |

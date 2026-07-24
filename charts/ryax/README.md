@@ -1,6 +1,6 @@
 # ryax-engine
 
-![Version: 26.7.0-rc2](https://img.shields.io/badge/Version-26.7.0--rc2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.7.0-rc2](https://img.shields.io/badge/AppVersion-26.7.0--rc2-informational?style=flat-square)
+![Version: 26.7.0](https://img.shields.io/badge/Version-26.7.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.7.0](https://img.shields.io/badge/AppVersion-26.7.0-informational?style=flat-square)
 
 Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows and applications on multiple infrastructure.
 
@@ -14,16 +14,16 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 
 | Repository | Name | Version |
 |------------|------|---------|
-| file://subcharts/action-builder | action-builder | 26.7.0-rc2 |
-| file://subcharts/authorization | authorization | 26.7.0-rc2 |
-| file://subcharts/common-resources | common-resources | 26.7.0-rc2 |
-| file://subcharts/datastore | datastore | 26.7.0-rc2 |
-| file://subcharts/front | front | 26.7.0-rc2 |
-| file://subcharts/intelliscale | intelliscale | 26.7.0-rc2 |
-| file://subcharts/registry | registry | 26.7.0-rc2 |
-| file://subcharts/repository | repository | 26.7.0-rc2 |
-| file://subcharts/runner | runner | 26.7.0-rc2 |
-| file://subcharts/studio | studio | 26.7.0-rc2 |
+| file://subcharts/action-builder | action-builder | 26.7.0 |
+| file://subcharts/authorization | authorization | 26.7.0 |
+| file://subcharts/common-resources | common-resources | 26.7.0 |
+| file://subcharts/datastore | datastore | 26.7.0 |
+| file://subcharts/front | front | 26.7.0 |
+| file://subcharts/intelliscale | intelliscale | 26.7.0 |
+| file://subcharts/registry | registry | 26.7.0 |
+| file://subcharts/repository | repository | 26.7.0 |
+| file://subcharts/runner | runner | 26.7.0 |
+| file://subcharts/studio | studio | 26.7.0 |
 | https://grafana.github.io/helm-charts | alloy | ~1.10.1 |
 | https://grafana.github.io/helm-charts | loki | ~7.1.0 |
 | https://grafana.github.io/helm-charts | tempo | 1.x.x |
