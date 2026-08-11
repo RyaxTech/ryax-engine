@@ -142,8 +142,10 @@ postgresql:
   primary:
     persistence:
       size: 1Gi
-  fullNameOverride: '{{ include "worker-k8s.postgresql.service" . }}'
- 
+  # -- No name override on purpose: the database URL follows whatever name the
+  # subchart picks (see "worker-k8s.postgresql.service"). Setting nameOverride or
+  # fullnameOverride here is supported and the URL follows it.
+
 monitoring:
   # -- Enable service monitor for prometheus using ServiceMonitor CRD
   serviceMonitor:
