@@ -119,8 +119,6 @@ spec:
               value: {{ .Values.global.ryax.userNamespace }}
             - name: RYAX_DEFAULT_ACTION_LOG_LEVEL
               value: {{ .Values.defaultActionLogLevel }}
-            - name: RYAX_UNDEPLOY_IDLE_ACTIONS_AFTER_SECONDS
-              value: "{{ .Values.userActionsRetentionTime }}"
             - name: RYAX_OTLP_ENDPOINT
               value: {{ tpl .Values.global.monitoring.otlpEndpoint . | default "" | quote }}
             - name: RYAX_BILLING_ENABLED
