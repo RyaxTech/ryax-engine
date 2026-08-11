@@ -29,7 +29,7 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| config | object | `{"site":{"spec":{"namespace":"{{ .Values.global.ryax.userNamespace }}"}}}` | Ryax Worker configuration use for the registration. See documentation for more details: https://docs.ryax.tech/reference/configuration.html#worker-configuration |
+| config | object | `{"MIG":{"enabled":true},"site":{"spec":{"namespace":"{{ .Values.global.ryax.userNamespace }}"}}}` | Ryax Worker configuration use for the registration. See documentation for more details: https://docs.ryax.tech/reference/configuration.html#worker-configuration |
 
 ### Global
 
@@ -57,6 +57,7 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 | affinity | object | `{}` | Add affinity injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) Example:   nodeAffinity:     requiredDuringSchedulingIgnoredDuringExecution:       nodeSelectorTerms:       - matchExpressions:         - key: topology.kubernetes.io/zone           operator: In           values:           - antarctica-east1           - antarctica-west1 |
 | apiPort | int | `8083` |  |
 | brokerSecret | string | `"ryax-broker-secret"` |  |
+| config.MIG | object | `{"enabled":true}` | Enable NVIDIA MIG auto-labeler that partition the supported NVIDIA cards  |
 | databaseURL | string | `nil` | Use this to override the default postgresql database included in the Helm |
 | extraEnv | list | `[]` | Add extra environment variables |
 | filestoreName | string | `"ryax-filestore"` |  |
@@ -64,10 +65,11 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 | global.ryax.logLevel | string | `nil` |  |
 | global.ryax.userNamespace | string | `"ryaxns-execs"` |  |
 | image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker-k8s","tag":"26.7.0"}` | container image name and version |
+| labeler | object | `{"image":"bitnamilegacy/kubectl:latest","pauseImage":"k8s.gcr.io/pause:3.1"}` | Container images used by the labeler daemonSet |
 | logLevel | string | `nil` | log level of the service (override global.ryax.logLevel) |
 | metricsPort | int | `8092` |  |
 | monitoring.serviceMonitor | object | `{"enabled":true}` | Enable service monitor for prometheus using ServiceMonitor CRD |
-| postgresql | object | `{"auth":{"database":"worker_k8s","existingSecret":"{{ include \"worker-k8s.postgresql.secret\" . }}","username":"worker_k8s"},"enabled":true,"fullNameOverride":"{{ include \"worker-k8s.postgresql.service\" . }}","image":{"repository":"bitnamilegacy/postgresql"},"metrics":{"image":{"repository":"bitnamilegacy/postgres-exporter"}},"primary":{"persistence":{"size":"1Gi"}}}` | local postgresql database |
+| postgresql | object | `{"auth":{"database":"worker_k8s","existingSecret":"{{ include \"worker-k8s.postgresql.secret\" . }}","username":"worker_k8s"},"enabled":true,"image":{"repository":"bitnamilegacy/postgresql"},"metrics":{"image":{"repository":"bitnamilegacy/postgres-exporter"}},"primary":{"persistence":{"size":"1Gi"}}}` | local postgresql database |
 | postgresql.enabled | bool | `true` | Enables PostgreSQL local database |
 | priorityClass | string | `nil` | Add priority class |
 
