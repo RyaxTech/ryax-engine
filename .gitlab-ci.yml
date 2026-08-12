@@ -46,18 +46,27 @@ pages:
 
 security_checks:
   stage: verify
-  image: python:3.13
+  # No `image:` override on purpose: this job needs the nix, uv and cachix
+  # config of the ryax-ci image that ci_common sets as the default, because
+  # lint.sh builds the runner container images to scan their closures with
+  # vulnix. That image already lists the ryaxtech-ci cachix as a substituter,
+  # so the closures are downloaded rather than rebuilt when the runner
+  # pipeline has already published them.
   tags: [docker]
   variables:
-    # lint.sh runs vulture/bandit/uv-audit across every submodule, so they must
-    # be checked out. FORCE_HTTPS rewrites the git@ SSH submodule URLs to HTTPS
-    # so the CI job token can authenticate (requires the submodule projects to
-    # allow this project in their CI/CD job token allowlist).
+    # lint.sh runs vulture/bandit/uv-audit across every submodule and builds
+    # the runner images for the vulnix scan, so they must be checked out.
+    # FORCE_HTTPS rewrites the git@ SSH submodule URLs to HTTPS so the CI job
+    # token can authenticate (requires the submodule projects to allow this
+    # project in their CI/CD job token allowlist).
     GIT_SUBMODULE_STRATEGY: recursive
     GIT_SUBMODULE_FORCE_HTTPS: "true"
     GIT_SUBMODULE_DEPTH: 1
     UV_LINK_MODE: copy
     UV_CACHE_DIR: .uv-cache
+    # Never let uv fetch its own interpreter: those builds are not linked
+    # against this image's loader. The python from ryax-ci is used instead.
+    UV_PYTHON_DOWNLOADS: never
   cache:
     - key:
         files:
@@ -65,10 +74,8 @@ security_checks:
         prefix: $CI_RUNNER_EXECUTABLE_ARCH
       paths:
         - .uv-cache
-  before_script:
-    - pip install uv
   script:
-    - uv sync --all-groups
+    - uv sync --all-groups --python "$(command -v python3)"
     - export PATH="$PWD/.venv/bin:$PATH"
     - ./lint.sh
   rules:
