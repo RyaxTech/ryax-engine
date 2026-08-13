@@ -5,7 +5,12 @@ variables:
 include:
   - project: ryax-tech/ryax/ci_common
     # Update on the latest release (see https://gitlab.com/ryax-tech/ryax/ci_common/-/tags)
-    ref: 6.0.1
+    # 7.0.1 is needed for the ryax-ci image it sets as the default: security_checks
+    # runs `uv audit`, which only exists from uv 0.11. The 7.0.0 break (the image
+    # build losing its install step) does not apply here, this project builds no
+    # container image and only extends the helm chart templates, which are
+    # identical between 6.0.1 and 7.0.1.
+    ref: 7.0.1
     file: common-steps-gitlab-ci.yml
 
 stages:
