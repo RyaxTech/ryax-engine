@@ -95,14 +95,29 @@ check_deps() {
   export RYAX_BLUE="$BLUE" RYAX_DIM="$DIM" RYAX_RESET="$RESET"
   # Run the audit directly via foreach (no nested `bash -c`) so git's $displaypath
   # variable is visible; the script body is POSIX, so no extra shell is needed.
-  git submodule foreach --quiet '
+  #
+  # --frozen audits the committed uv.lock instead of re-resolving. Without it uv
+  # insists on an interpreter matching each submodule's `requires-python`, which
+  # the CI image does not have (it ships one Python, and UV_PYTHON_DOWNLOADS is
+  # deliberately `never` because a downloaded interpreter is not linked against
+  # that image's loader) -- so four of the eight submodules failed to audit at all
+  # rather than reporting anything. Auditing what is locked is also what we
+  # actually want to know.
+  # The body always succeeds (`|| touch`), so a non-zero status here means git
+  # itself could not iterate the submodules. Without this check that reports
+  # "no vulnerability" while having audited nothing at all.
+  if ! git submodule foreach --quiet '
     if [ -f pyproject.toml ]; then
       printf "\n%s• %s%s\n" "$RYAX_BLUE" "$displaypath" "$RYAX_RESET"
-      uv audit --preview-features audit || touch "$RYAX_VULN_MARKER"
+      uv audit --preview-features audit --frozen || touch "$RYAX_VULN_MARKER"
     else
       printf "%s  - %s (no pyproject.toml, skipped)%s\n" "$RYAX_DIM" "$displaypath" "$RYAX_RESET"
     fi
-  '
+  '; then
+    rm -f "$RYAX_VULN_MARKER"
+    ko "Could not iterate the submodules, nothing was audited"
+    return 1
+  fi
   if [ -f "$RYAX_VULN_MARKER" ]; then
     rm -f "$RYAX_VULN_MARKER"
     ko "Vulnerabilities found in dependencies"
