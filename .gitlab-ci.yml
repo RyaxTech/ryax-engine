@@ -74,7 +74,16 @@ security_checks:
   rules:
     - if: $CI_COMMIT_TAG
       when: never
+    # Blocking on the default branch: nothing this reports may land on master
+    # unnoticed.
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      allow_failure: false
+    # A warning on every other branch. Most of what this job reports comes from
+    # upstream advisories published after the code was written, so a new CVE in
+    # a dependency must not block a merge request that has nothing to do with
+    # it. Same reasoning as check_helm_deps below.
     - when: on_success
+      allow_failure: true
 
 check_helm_deps:
   stage: verify
