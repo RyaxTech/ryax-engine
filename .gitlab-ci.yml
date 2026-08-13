@@ -51,12 +51,9 @@ pages:
 
 security_checks:
   stage: verify
-  # No `image:` override on purpose: this job needs the nix, uv and cachix
-  # config of the ryax-ci image that ci_common sets as the default, because
-  # lint.sh builds the runner container images to scan their closures with
-  # vulnix. That image already lists the ryaxtech-ci cachix as a substituter,
-  # so the closures are downloaded rather than rebuilt when the runner
-  # pipeline has already published them.
+  # No `image:` override on purpose: this job needs the nix, uv and cachix of the
+  # ryax-ci image that ci_common sets as the default, because lint.sh builds the
+  # runner container images to scan their closures with vulnix.
   tags: [docker]
   variables:
     # lint.sh runs vulture/bandit/uv-audit across every submodule and builds
@@ -82,7 +79,13 @@ security_checks:
   script:
     - uv sync --all-groups --python "$(command -v python3)"
     - export PATH="$PWD/.venv/bin:$PATH"
-    - ./lint.sh
+    # The image CVE scan builds the four runner image closures. `cachix use` pulls
+    # the ones the runner pipeline already published instead of rebuilding them,
+    # and `watch-exec` pushes whatever this job does have to build, so the next
+    # run gets it for free. Same pattern as the ci_common .test/.check_code_quality
+    # steps; CACHIX_AUTH_TOKEN comes from the ryax-tech/ryax group variables.
+    - cachix use ryaxtech-ci
+    - cachix watch-exec ryaxtech-ci -- ./lint.sh
   rules:
     - if: $CI_COMMIT_TAG
       when: never
