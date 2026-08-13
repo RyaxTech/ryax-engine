@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+#
+# Ryax security checks.
+#
+#   ./lint.sh                  run every check
+#   ./lint.sh images           run only the container image CVE scan
+#   ./lint.sh dead-code deps   run a subset, in the given order
+#   ./lint.sh --list           list the available checks
+#
+# Every selected check runs even when an earlier one fails, so one broken check
+# never hides the result of another; the exit status is non-zero if any failed.
 set -e
 set -u
 
@@ -23,48 +33,87 @@ ko()      { printf '%s  ✘ %s%s\n'         "$RED"   "$1" "$RESET"; }
 warn()    { printf '%s  ⚠ %s%s\n'         "$YELLOW" "$1" "$RESET"; }
 
 # ---------------------------------------------------------------------------
-# 1. Dead code
+# Available checks, in the order `./lint.sh` runs them. A check named `foo-bar`
+# is implemented by the function `check_foo_bar` and must return non-zero on
+# failure rather than exiting, so the runner can carry on to the next one.
 # ---------------------------------------------------------------------------
-section "Searching for dead code"
-vulture ./**/ryax --exclude "*_pb2.py,*_pb2_grpc.py" --min-confidence=80
-ok "No dead code"
+CHECKS="dead-code flaws deps images"
+
+# The Python tools come from the dev dependency group, so report a missing one
+# as a setup problem instead of blaming the code it was meant to inspect.
+require_tool() {
+  command -v "$1" >/dev/null 2>&1 && return 0
+  ko "$1 is not on PATH: run 'uv sync --all-groups' and add ./.venv/bin to PATH"
+  return 1
+}
+
+describe_check() {
+  case "$1" in
+    dead-code) echo "unreachable Python code (vulture)" ;;
+    flaws)     echo "high-severity Python security flaws (bandit)" ;;
+    deps)      echo "vulnerable Python dependencies of every submodule (uv audit)" ;;
+    images)    echo "known CVEs in the runner container images (vulnix)" ;;
+    *)         echo "?" ;;
+  esac
+}
 
 # ---------------------------------------------------------------------------
-# 2. Security flaws
+# dead-code
 # ---------------------------------------------------------------------------
-section "Searching for security flaws"
-bandit --severity-level=high --confidence-level=high -r ./**/ryax
-ok "No high-severity flaw"
+check_dead_code() {
+  section "Searching for dead code"
+  require_tool vulture || return 1
+  vulture ./**/ryax --exclude "*_pb2.py,*_pb2_grpc.py" --min-confidence=80 || {
+    ko "Dead code found"
+    return 1
+  }
+  ok "No dead code"
+}
 
 # ---------------------------------------------------------------------------
-# 3. Vulnerable dependencies
+# flaws
 # ---------------------------------------------------------------------------
-section "Searching for vulnerable dependencies"
-# Marker file remembers whether any submodule reported a vulnerability, so we
-# can audit every repo first and only fail at the very end.
-export RYAX_VULN_MARKER; RYAX_VULN_MARKER="$(mktemp -u)"
-export RYAX_BLUE="$BLUE" RYAX_DIM="$DIM" RYAX_RESET="$RESET"
-# Run the audit directly via foreach (no nested `bash -c`) so git's $displaypath
-# variable is visible; the script body is POSIX, so no extra shell is needed.
-git submodule foreach --quiet '
-  if [ -f pyproject.toml ]; then
-    printf "\n%s• %s%s\n" "$RYAX_BLUE" "$displaypath" "$RYAX_RESET"
-    uv audit --preview-features audit || touch "$RYAX_VULN_MARKER"
-  else
-    printf "%s  - %s (no pyproject.toml, skipped)%s\n" "$RYAX_DIM" "$displaypath" "$RYAX_RESET"
+check_flaws() {
+  section "Searching for security flaws"
+  require_tool bandit || return 1
+  bandit --severity-level=high --confidence-level=high -r ./**/ryax || {
+    ko "High-severity flaws found"
+    return 1
+  }
+  ok "No high-severity flaw"
+}
+
+# ---------------------------------------------------------------------------
+# deps
+# ---------------------------------------------------------------------------
+check_deps() {
+  section "Searching for vulnerable dependencies"
+  require_tool uv || return 1
+  # Marker file remembers whether any submodule reported a vulnerability, so we
+  # can audit every repo first and only fail at the very end.
+  export RYAX_VULN_MARKER; RYAX_VULN_MARKER="$(mktemp -u)"
+  export RYAX_BLUE="$BLUE" RYAX_DIM="$DIM" RYAX_RESET="$RESET"
+  # Run the audit directly via foreach (no nested `bash -c`) so git's $displaypath
+  # variable is visible; the script body is POSIX, so no extra shell is needed.
+  git submodule foreach --quiet '
+    if [ -f pyproject.toml ]; then
+      printf "\n%s• %s%s\n" "$RYAX_BLUE" "$displaypath" "$RYAX_RESET"
+      uv audit --preview-features audit || touch "$RYAX_VULN_MARKER"
+    else
+      printf "%s  - %s (no pyproject.toml, skipped)%s\n" "$RYAX_DIM" "$displaypath" "$RYAX_RESET"
+    fi
+  '
+  if [ -f "$RYAX_VULN_MARKER" ]; then
+    rm -f "$RYAX_VULN_MARKER"
+    ko "Vulnerabilities found in dependencies"
+    return 1
   fi
-'
-if [ -f "$RYAX_VULN_MARKER" ]; then
-  rm -f "$RYAX_VULN_MARKER"
-  ko "Vulnerabilities found in dependencies"
-  exit 1
-fi
-ok "No high-severity vulnerability"
+  ok "No high-severity vulnerability"
+}
 
 # ---------------------------------------------------------------------------
-# 4. Vulnerable packages in the container images
+# images
 # ---------------------------------------------------------------------------
-section "Scanning container images for CVEs"
 # The images are built with Nix, so their exact runtime closure is known and
 # vulnix can match every store path against the NVD database. Building
 # `.#<tool>.image` realises the nix2container JSON manifest and the closure it
@@ -77,49 +126,58 @@ RUNNER_WHITELIST="runner/nix/vulnix-whitelist.toml"
 # 7.0 is the CVSS "high" boundary, so low and medium findings only warn.
 VULNIX_FAIL_SCORE="${VULNIX_FAIL_SCORE:-7.0}"
 
-# Skipping is a convenience for contributors without a Nix install, never for
-# CI: there the ryax-ci image provides nix, so a missing prerequisite means the
-# scan is broken and must not pass silently.
-scan_skip=""
-if ! command -v nix >/dev/null 2>&1; then
-  scan_skip="nix is not available, cannot build the image closures"
-elif [ ! -f runner/flake.nix ]; then
-  scan_skip="the runner submodule is not checked out"
-fi
+check_images() {
+  section "Scanning container images for CVEs"
 
-if [ -n "$scan_skip" ]; then
-  if [ -n "${CI:-}" ]; then
-    ko "$scan_skip"
-    exit 1
+  # Skipping is a convenience for contributors without a Nix install, never for
+  # CI: there the ryax-ci image provides nix, so a missing prerequisite means the
+  # scan is broken and must not pass silently.
+  local skip=""
+  if ! command -v nix >/dev/null 2>&1; then
+    skip="nix is not available, cannot build the image closures"
+  elif [ ! -f runner/flake.nix ]; then
+    skip="the runner submodule is not checked out"
   fi
-  printf '%s  - skipped: %s%s\n' "$DIM" "$scan_skip" "$RESET"
-else
-  whitelist=""
+  if [ -n "$skip" ]; then
+    if [ -n "${CI:-}" ]; then
+      ko "$skip"
+      return 1
+    fi
+    printf '%s  - skipped: %s%s\n' "$DIM" "$skip" "$RESET"
+    return 0
+  fi
+
+  local whitelist=""
   if [ -f "$RUNNER_WHITELIST" ]; then
     whitelist="$PWD/$RUNNER_WHITELIST"
   else
     printf '%s  no whitelist at %s, every finding will be reported%s\n' \
       "$DIM" "$RUNNER_WHITELIST" "$RESET"
   fi
+
+  local scan_dir image rc verdict split_rc level pkg worst count msg
+  local blocking=0
   scan_dir="$(mktemp -d)"
-  scan_marker="$(mktemp -u)"
   for image in $RUNNER_IMAGES; do
     printf '\n%s• %s%s\n' "$BLUE" "$image" "$RESET"
-    # A build failure is a real error, so leave `set -e` in charge of it.
-    (cd runner && nix build ".#${image}.image" \
-      --option sandbox relaxed --no-warn-dirty \
-      --out-link "$scan_dir/$image")
+    # A build failure is a real error, distinct from a vulnerability finding.
+    if ! (cd runner && nix build ".#${image}.image" \
+            --option sandbox relaxed --no-warn-dirty \
+            --out-link "$scan_dir/$image"); then
+      ko "$image: could not build the image"
+      blocking=1
+      continue
+    fi
     # vulnix exits 0 when it finds nothing, 1 when only whitelisted issues
     # remain and 2 when something is not whitelisted.
-    set +e
+    rc=0
     if [ -n "$whitelist" ]; then
       nix run nixpkgs#vulnix -- --closure "$scan_dir/$image" --whitelist "$whitelist" \
-        --json > "$scan_dir/$image.json"
+        --json > "$scan_dir/$image.json" || rc=$?
     else
-      nix run nixpkgs#vulnix -- --closure "$scan_dir/$image" --json > "$scan_dir/$image.json"
+      nix run nixpkgs#vulnix -- --closure "$scan_dir/$image" \
+        --json > "$scan_dir/$image.json" || rc=$?
     fi
-    rc=$?
-    set -e
     if [ "$rc" -eq 0 ]; then ok "$image: no known vulnerability"; continue; fi
     if [ "$rc" -eq 1 ]; then ok "$image: only whitelisted findings"; continue; fi
 
@@ -127,7 +185,7 @@ else
     # only a CVSSv3 base score of $VULNIX_FAIL_SCORE or above fails the build,
     # anything below is reported but tolerated. A finding whose CVEs carry no
     # score at all counts as 0, so it warns rather than blocks.
-    set +e
+    split_rc=0
     verdict=$(python3 - "$scan_dir/$image.json" "$VULNIX_FAIL_SCORE" <<'PY'
 import json, sys
 
@@ -145,30 +203,63 @@ for level, rows in (("fail", blocking), ("warn", tolerated)):
         print(f"{level}|{pkg}|{worst}|{count}")
 sys.exit(1 if blocking else 0)
 PY
-    )
-    split_rc=$?
-    set -e
+    ) || split_rc=$?
     while IFS='|' read -r level pkg worst count; do
       [ -z "$level" ] && continue
       msg="$image: $pkg — $count CVE(s), worst CVSS $worst"
       if [ "$level" = "fail" ]; then ko "$msg"; else warn "$msg"; fi
     done <<< "$verdict"
     if [ "$split_rc" -ne 0 ]; then
-      touch "$scan_marker"
+      blocking=1
     else
       ok "$image: nothing at or above CVSS $VULNIX_FAIL_SCORE"
     fi
   done
   rm -rf "$scan_dir"
-  if [ -f "$scan_marker" ]; then
-    rm -f "$scan_marker"
+
+  if [ "$blocking" -ne 0 ]; then
     ko "Vulnerabilities of CVSS $VULNIX_FAIL_SCORE or above found in the container images"
-    exit 1
+    return 1
   fi
   ok "No image vulnerability at or above CVSS $VULNIX_FAIL_SCORE"
-fi
+}
 
 # ---------------------------------------------------------------------------
-# Done
+# Runner
 # ---------------------------------------------------------------------------
+usage() {
+  printf 'Usage: %s [CHECK...]\n\nWith no argument every check runs.\n\nChecks:\n' "$0"
+  local name
+  for name in $CHECKS; do
+    printf '  %-10s %s\n' "$name" "$(describe_check "$name")"
+  done
+}
+
+selected="$CHECKS"
+if [ "$#" -gt 0 ]; then
+  case "$1" in
+    -h|--help|--list) usage; exit 0 ;;
+  esac
+  for name in "$@"; do
+    case " $CHECKS " in
+      *" $name "*) ;;
+      *) ko "Unknown check: $name"; usage >&2; exit 2 ;;
+    esac
+  done
+  selected="$*"
+fi
+
+failed=""
+for name in $selected; do
+  # `set -e` is suspended inside a function called in a condition, which is why
+  # every check handles its own command failures explicitly.
+  if ! "check_${name//-/_}"; then
+    failed="$failed $name"
+  fi
+done
+
+if [ -n "$failed" ]; then
+  printf '\n%s ✘ Failed:%s %s\n' "$BOLD$RED" "$RESET" "${failed# }"
+  exit 1
+fi
 printf '\n%s ✔ All security checks passed %s\n' "$BOLD$GREEN" "$RESET"
