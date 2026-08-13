@@ -538,12 +538,19 @@ def _major_of(value: str) -> Optional[int]:
 
 def _previous_release_ref() -> Optional[str]:
     """
-    Highest final (non pre-release) semver tag strictly older than the version
+    Highest final (non pre-release) semver tag no newer than the version
     declared in charts/ryax/Chart.yaml.
 
     Used as the upgrade baseline so that at most one major upgrade is proposed
     per release, no matter how often the check (or --update) is run within a
     release cycle.
+
+    The comparison has to include the declared version itself. Chart.yaml keeps
+    holding a version after it has been tagged and released, so excluding it
+    would step back to the release *before* the latest one and report the
+    versions that release actually shipped as being a major too far ahead.
+    While a release is being prepared Chart.yaml is ahead of every tag, so the
+    result is still the previous release.
     """
     try:
         repo = Repo(".")
@@ -565,7 +572,7 @@ def _previous_release_ref() -> Optional[str]:
             continue
         if v.prerelease is not None:
             continue
-        if current is not None and v >= current:
+        if current is not None and v > current:
             continue
         finals.append((v, tag.name))
     if not finals:
