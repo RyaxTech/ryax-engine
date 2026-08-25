@@ -40,6 +40,12 @@ spec:
           # nodeSelector: {}
           # affinity: {}
 
+          # The Ingresses below name the bundled Traefik's IngressClass by
+          # default. Point this at your own controller, or leave the Ingresses
+          # off as here.
+          # ingress:
+          #   className: nginx
+
           tls:
             enabled: false
 

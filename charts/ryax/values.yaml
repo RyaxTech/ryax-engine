@@ -19,6 +19,14 @@ global:
     # -- WARN: Be sure to use tpl in sub chart to inject release name
     otlpEndpoint: "{{ .Release.Name }}-tempo:4317"
 
+  ingress:
+    # -- IngressClass for the Ryax Ingresses, overridable per service with
+    # `<subchart>.ingress.className`. Defaults to the bundled Traefik's own
+    # class; point it at another controller, or turn the Ingresses off with
+    # `<subchart>.ingress.enabled=false`, when Ryax is not fronted by it.
+    # WARN: Be sure to use tpl in sub chart to inject release name
+    className: "{{ .Release.Name }}-traefik"
+
   tls:
     enabled: false
     # -- development or production
@@ -536,9 +544,23 @@ alloy:
 traefik:
   deployment:
     enabled: true
+  ingressClass:
+    # -- Do NOT set this to true. `ingressclass.kubernetes.io/is-default-class`
+    # is cluster-scoped, so the bundled Traefik would claim every Ingress in
+    # every namespace that does not name a class -- including ones belonging to
+    # unrelated applications, which it then serves on whatever address its
+    # Service holds. Ryax's own Ingresses name this class explicitly through
+    # `global.ingress.className`, so they do not need it.
+    isDefaultClass: false
   # -- set this to force Traefik on a node pool
   nodeSelector: 
   priorityClassName: backbone
+  # -- The Service is a LoadBalancer by default, which on a cluster running
+  # MetalLB or kube-vip takes the shared ingress address on 80/443. Set
+  # `service.spec.type: ClusterIP` when something else fronts the cluster.
+  # WARN: the key is `service.spec.type`. Traefik 41.x moved it into a free-form
+  # `spec` block and the old `service.type` is silently ignored, which leaves the
+  # Service a LoadBalancer while the values file says otherwise.
   metrics:
     prometheus:
       # Avoid errors when runnning helm template

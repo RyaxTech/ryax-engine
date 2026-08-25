@@ -49,6 +49,14 @@ global:
   # own `affinity`.
   # @section -- Global
   affinity: {}
+  ingress:
+    # -- IngressClass the Ingress of this service targets, overridden by the
+    # local `ingress.className`. The umbrella chart points it at the bundled
+    # Traefik; empty means no class, i.e. whichever controller claims the
+    # cluster's default.
+    # WARN: templated with the release name, render it through tpl
+    # @section -- Global
+    className: ""
 
 # -- container image name and version
 image:

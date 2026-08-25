@@ -24,7 +24,7 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | file://subcharts/repository | repository | 26.7.0 |
 | file://subcharts/runner | runner | 26.7.0 |
 | file://subcharts/studio | studio | 26.7.0 |
-| https://grafana.github.io/helm-charts | alloy | ~1.11.1 |
+| https://grafana.github.io/helm-charts | alloy | ~1.12.0 |
 | https://grafana.github.io/helm-charts | loki | ~7.3.0 |
 | https://grafana.github.io/helm-charts | tempo | 1.x.x |
 | https://helm.traefik.io/traefik | traefik | 41.x.x |
@@ -62,6 +62,7 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | global.defaultStorageClass | string | `""` | Leave empty to use the default storage class |
 | global.imagePullSecrets | list | `[]` |  |
 | global.imageRegistry | string | `nil` | Override the container registry globaly. Useful to use development using registry.ryax.org/dev or for airgapped env |
+| global.ingress.className | string | `"{{ .Release.Name }}-traefik"` | IngressClass for the Ryax Ingresses, overridable per service with `<subchart>.ingress.className`. Defaults to the bundled Traefik's own class; point it at another controller, or turn the Ingresses off with `<subchart>.ingress.enabled=false`, when Ryax is not fronted by it. WARN: Be sure to use tpl in sub chart to inject release name |
 | global.monitoring.enabled | bool | `true` |  |
 | global.monitoring.otlpEndpoint | string | `"{{ .Release.Name }}-tempo:4317"` | WARN: Be sure to use tpl in sub chart to inject release name |
 | global.nodeSelector | object | `{}` |  |
@@ -141,8 +142,8 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | tempo.persistence.size | string | `"10Gi"` |  |
 | tempo.priorityClassName | string | `"monitoring"` |  |
 | traefik.deployment.enabled | bool | `true` |  |
-| traefik.metrics.prometheus.disableAPICheck | bool | `true` |  |
-| traefik.metrics.prometheus.serviceMonitor.enabled | bool | `true` |  |
+| traefik.ingressClass.isDefaultClass | bool | `false` | Do NOT set this to true. `ingressclass.kubernetes.io/is-default-class` is cluster-scoped, so the bundled Traefik would claim every Ingress in every namespace that does not name a class -- including ones belonging to unrelated applications, which it then serves on whatever address its Service holds. Ryax's own Ingresses name this class explicitly through `global.ingress.className`, so they do not need it. |
+| traefik.metrics | object | `{"prometheus":{"disableAPICheck":true,"serviceMonitor":{"enabled":true}}}` | The Service is a LoadBalancer by default, which on a cluster running MetalLB or kube-vip takes the shared ingress address on 80/443. Set `service.spec.type: ClusterIP` when something else fronts the cluster. WARN: the key is `service.spec.type`. Traefik 41.x moved it into a free-form `spec` block and the old `service.type` is silently ignored, which leaves the Service a LoadBalancer while the values file says otherwise. |
 | traefik.nodeSelector | string | `nil` | set this to force Traefik on a node pool |
 | traefik.priorityClassName | string | `"backbone"` |  |
 

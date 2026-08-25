@@ -20,6 +20,7 @@ Ryax internal container registry.
 | global.defaultStorageClass | string | `""` | Global default StorageClass for Persistent Volume(s) |
 | global.imagePullSecrets | list | `[]` | Global container registry secret names as an array Example:   - name: myPullSercret |
 | global.imageRegistry | string | `nil` | Global container image registry |
+| global.ingress.className | string | `""` | IngressClass the Ingress of this service targets, overridden by the local `ingress.className`. The umbrella chart points it at the bundled Traefik; empty means no class, i.e. whichever controller claims the cluster's default. WARN: templated with the release name, render it through tpl |
 | global.monitoring.enabled | bool | `false` | Enables service monitoring |
 | global.nodeSelector | object | `{}` | Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) |
 | global.secrets | object | `{"create":true}` | Credential secrets the chart generates itself (database, broker, JWT, encryption keys, registry htpasswd and TLS). Set to false to supply every one of them yourself -- sealed-secrets, external-secrets, or a plain kubectl create -- under the names listed in the values below. This is what a GitOps deployment wants: the generated values come from `lookup()`, which returns nothing when the chart is rendered without a cluster connection (`helm template`, ArgoCD's and Flux's repo servers), so every render would otherwise mint fresh passwords and roll them out to running pods. |
