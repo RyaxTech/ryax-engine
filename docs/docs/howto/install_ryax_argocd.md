@@ -102,13 +102,35 @@ the namespace: nothing fills in `.status.loadBalancer`, ArgoCD's built-in Ingres
 health check reports **Progressing** forever, and because an app can only run one
 operation at a time, every later sync — `selfHeal` included — queues behind it.
 
+To point the Ingresses at a controller of your own instead, set the class
+rather than turning them off:
+
+```yaml
+global:
+  ingress:
+    className: nginx      # or per service: front.ingress.className
+```
+
+It defaults to the bundled Traefik's own IngressClass (`<release>-traefik`).
+Setting it to `""` renders no class at all, which hands the Ingresses to whatever
+IngressClass the cluster marks default.
+
 Two things to know if you *do* keep the bundled Traefik:
 
 - Set `global.tls.hostname`. Without it the Ingress rules match **every** host,
   so once Traefik's Service gets an external address it answers for everything in
   the cluster, not just Ryax.
-- `traefik.ingressClass.isDefaultClass` is cluster-scoped. Prefer naming the class
-  per service with `<subchart>.ingress.className`.
+- Do not set `traefik.ingressClass.isDefaultClass: true`. The
+  `ingressclass.kubernetes.io/is-default-class` annotation is cluster-scoped, so
+  the bundled Traefik would claim every classless Ingress in every namespace —
+  including other applications' — and serve them on whatever address its Service
+  holds. Ryax's own Ingresses name the class explicitly, so they do not need it.
+- Its Service is a `LoadBalancer` by default, which on a cluster running MetalLB
+  or kube-vip takes the shared ingress address on 80/443. Set
+  `traefik.service.spec.type: ClusterIP` when something else fronts the cluster —
+  and note the key is `service.spec.type`: Traefik 41.x moved it into a free-form
+  `spec` block, and the old `service.type` is silently ignored, leaving a
+  LoadBalancer behind while the values file says otherwise.
 
 ## Placement on tainted or heterogeneous nodes
 

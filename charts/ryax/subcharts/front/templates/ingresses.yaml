@@ -14,8 +14,8 @@ metadata:
     cert-manager.io/cluster-issuer: "letsencrypt-{{ .Values.global.tls.environment }}"
     {{- end }}
 spec:
-  {{- with .Values.ingress.className }}
-  ingressClassName: {{ . }}
+  {{- with .Values.ingress.className | default .Values.global.ingress.className }}
+  ingressClassName: {{ tpl . $ }}
   {{- end }}
   rules:
     {{- if $hostname }}
