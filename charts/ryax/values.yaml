@@ -208,14 +208,21 @@ kube-prometheus-stack:
       # -- Remote write is disabled by default
       # remoteWrite:
       #   url: https://metrics.ryax.org/insert/0/prometheus
-    storage:
-      volumeClaimTemplate:
-        spec:
-          # -- Select a storage class for prometheus metrics storage
-          # storageClassName: "{{ .Values.global.defaultStorageClass }}"
-          resources:
-            requests:
-              storage: 10Gi
+
+      # -- Persistent volume for the metrics. The key is `storageSpec` under
+      # `prometheusSpec`: kube-prometheus-stack reads nothing else, and Helm does
+      # not complain about a value it does not recognise, so a misplaced block
+      # leaves Prometheus on an emptyDir and every restart drops the metrics.
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            # -- Select a storage class for prometheus metrics storage.
+            # The block is passed through `tpl`, so it can reference values.
+            # storageClassName: "{{ .Values.global.defaultStorageClass }}"
+            resources:
+              requests:
+                storage: 10Gi
               
   additionalPrometheusRulesMap:
     resource-usage:
