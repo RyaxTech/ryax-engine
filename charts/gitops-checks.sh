@@ -60,18 +60,27 @@ render() { helm template ryax "$CHART" "$@"; }
 # ---------------------------------------------------------------------------
 check_determinism() {
   section "Rendering twice with global.secrets.create=false"
-  local a b
-  a="$(mktemp)"; b="$(mktemp)"
+  local a="$WORKDIR/det-a.yaml" b="$WORKDIR/det-b.yaml"
   render --set global.secrets.create=false > "$a" || { ko "render failed"; return 1; }
   render --set global.secrets.create=false > "$b" || { ko "render failed"; return 1; }
-  if ! diff -u "$a" "$b" > /dev/null; then
-    ko "the chart does not render deterministically:"
-    diff -u "$a" "$b" | head -40
-    rm -f "$a" "$b"
+  # compared in python rather than with diff(1): python3 is already required by
+  # the other checks, and diffutils is not in every image this runs in
+  if ! python3 - "$a" "$b" <<'PY'
+import difflib, sys
+
+a, b = (open(p).read() for p in sys.argv[1:3])
+if a == b:
+    print(f"  {a.count(chr(10))} lines, byte-identical")
+    sys.exit(0)
+sys.stdout.writelines(
+    list(difflib.unified_diff(a.splitlines(True), b.splitlines(True),
+                              "render 1", "render 2"))[:40])
+sys.exit(1)
+PY
+  then
+    ko "the chart does not render deterministically"
     return 1
   fi
-  info "$(wc -l < "$a" | tr -d ' ') lines, byte-identical"
-  rm -f "$a" "$b"
   ok "Deterministic with operator-supplied secrets"
 }
 
@@ -297,13 +306,22 @@ check_ingress_switch() {
   for sub in front authorization runner studio repository registry; do
     args+=(--set "${sub}.ingress.enabled=false")
   done
-  local out
-  out="$(render "${args[@]}" 2>/dev/null)" || { ko "render failed"; return 1; }
-  local left
-  left="$(printf '%s\n' "$out" | grep -cE '^kind: "?(Ingress|Middleware)"?$')"
-  if [ "$left" -ne 0 ]; then
-    ko "$left Ingress/Middleware object(s) still rendered with every ingress.enabled=false:"
-    printf '%s\n' "$out" | grep -B4 -E '^kind: "?(Ingress|Middleware)"?$' | grep "name:" | head
+  render "${args[@]}" > "$WORKDIR/gitops-ingress.yaml" 2>/dev/null \
+    || { ko "render failed"; return 1; }
+  if ! python3 - "$WORKDIR/gitops-ingress.yaml" <<'PY'
+import sys, yaml
+
+# parsed, not grepped: the count has to be authoritative, and a kind line can be
+# quoted or not
+left = [f"{d['kind']}/{d['metadata']['name']}"
+        for d in yaml.safe_load_all(open(sys.argv[1]))
+        if d and d.get("kind") in ("Ingress", "Middleware")]
+for name in left:
+    print(f"  still rendered: {name}")
+sys.exit(1 if left else 0)
+PY
+  then
+    ko "Ingress/Middleware objects survive ingress.enabled=false"
     return 1
   fi
   ok "No Ingress and no Traefik Middleware left"
@@ -323,6 +341,12 @@ usage() {
 for tool in helm python3; do
   command -v "$tool" >/dev/null 2>&1 || { ko "$tool is not on PATH"; exit 1; }
 done
+# checked up front: without it every check dies on a traceback part-way through,
+# and the repository lookup below fails with a misleading helm error instead
+python3 -c "import yaml" 2>/dev/null || {
+  ko "the python3 on PATH cannot import yaml: run 'uv sync' and add ./.venv/bin to PATH"
+  exit 1
+}
 [ -d "$CHART" ] || { ko "no chart at $CHART (run from the repository root, or set CHART)"; exit 1; }
 
 selected="$CHECKS"
