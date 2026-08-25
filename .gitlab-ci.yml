@@ -49,18 +49,21 @@ pages:
     url: $CI_PAGES_URL
   
 
-security_checks:
+# The submodule checkout and uv setup both security jobs need. lint.sh runs
+# vulture/bandit/uv-audit across every submodule and builds the runner images for
+# the vulnix scan, so the submodules must be checked out.
+# FORCE_HTTPS rewrites the git@ SSH submodule URLs to HTTPS so the CI job token
+# can authenticate (requires the submodule projects to allow this project in
+# their CI/CD job token allowlist).
+.security_base:
   stage: verify
-  # No `image:` override on purpose: this job needs the nix, uv and cachix of the
-  # ryax-ci image that ci_common sets as the default, because lint.sh builds the
-  # runner container images to scan their closures with vulnix.
+  # No `image:` override on purpose: these jobs need the nix, uv and cachix of the
+  # ryax-ci image that ci_common sets as the default.
   tags: [docker]
+  # A superseded pipeline should stop rather than finish: the image scan below is
+  # the longest job in the pipeline by an order of magnitude.
+  interruptible: true
   variables:
-    # lint.sh runs vulture/bandit/uv-audit across every submodule and builds
-    # the runner images for the vulnix scan, so they must be checked out.
-    # FORCE_HTTPS rewrites the git@ SSH submodule URLs to HTTPS so the CI job
-    # token can authenticate (requires the submodule projects to allow this
-    # project in their CI/CD job token allowlist).
     GIT_SUBMODULE_STRATEGY: recursive
     GIT_SUBMODULE_FORCE_HTTPS: "true"
     GIT_SUBMODULE_DEPTH: 1
@@ -76,16 +79,15 @@ security_checks:
         prefix: $CI_RUNNER_EXECUTABLE_ARCH
       paths:
         - .uv-cache
-  script:
+  before_script:
     - uv sync --all-groups --python "$(command -v python3)"
     - export PATH="$PWD/.venv/bin:$PATH"
-    # The image CVE scan builds the four runner image closures. `cachix use` pulls
-    # the ones the runner pipeline already published instead of rebuilding them,
-    # and `watch-exec` pushes whatever this job does have to build, so the next
-    # run gets it for free. Same pattern as the ci_common .test/.check_code_quality
-    # steps; CACHIX_AUTH_TOKEN comes from the ryax-tech/ryax group variables.
-    - cachix use ryaxtech-ci
-    - cachix watch-exec ryaxtech-ci -- ./lint.sh
+
+# The Python checks: seconds each, so they run everywhere.
+security_checks:
+  extends: .security_base
+  script:
+    - ./lint.sh dead-code flaws deps
   rules:
     - if: $CI_COMMIT_TAG
       when: never
@@ -98,6 +100,40 @@ security_checks:
     # a dependency must not block a merge request that has nothing to do with
     # it. Same reasoning as check_helm_deps below.
     - when: on_success
+      allow_failure: true
+
+# The image CVE scan, split out because it costs around fifteen minutes: it
+# realises four nix image closures, which means several hundred MiB of
+# substitution and a few dozen derivations built whenever the runner pipeline has
+# not already published them to cachix.
+#
+# It used to run on every push of every branch, where it was `allow_failure`
+# anyway -- so it delayed every pipeline without being able to block anything.
+# What it reports also barely depends on the commit under test: the findings come
+# from upstream advisories and from the runner submodule's own pins, not from a
+# change to this repository's charts or CI. So it runs where it can act:
+# blocking on the default branch, blocking on a schedule (add one to keep new
+# advisories surfacing between merges), and on demand elsewhere.
+security_checks_images:
+  extends: .security_base
+  script:
+    # `cachix use` pulls the closures the runner pipeline already published
+    # instead of rebuilding them, and `watch-exec` pushes whatever this job does
+    # have to build, so the next run gets it for free. Same pattern as the
+    # ci_common .test/.check_code_quality steps; CACHIX_AUTH_TOKEN comes from the
+    # ryax-tech/ryax group variables.
+    - cachix use ryaxtech-ci
+    - cachix watch-exec ryaxtech-ci -- ./lint.sh images
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      allow_failure: false
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      allow_failure: false
+    # Elsewhere: available, not automatic. Trigger it from the pipeline view on a
+    # branch that touches the runner submodule or the image definitions.
+    - when: manual
       allow_failure: true
 
 check_helm_deps:

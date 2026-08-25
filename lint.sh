@@ -173,6 +173,21 @@ check_images() {
   local scan_dir image rc verdict split_rc level pkg worst count msg
   local blocking=0
   scan_dir="$(mktemp -d)"
+
+  # Realise every closure in one invocation first. The four images share most of
+  # their dependency graph, so building them one at a time serialises four
+  # batches of substitution -- several hundred MiB in total -- that nix would
+  # otherwise overlap with each other and with the derivations it has to build.
+  # The per-image builds below then hit the local store. Failures are ignored
+  # here on purpose: the loop reports which image failed and why.
+  local -a all_attrs=()
+  for image in $RUNNER_IMAGES; do
+    all_attrs+=(".#${image}.image")
+  done
+  printf '%s  realising %d image closures%s\n' "$DIM" "${#all_attrs[@]}" "$RESET"
+  (cd runner && nix build "${all_attrs[@]}" \
+      --option sandbox relaxed --no-warn-dirty --no-link) || true
+
   for image in $RUNNER_IMAGES; do
     printf '\n%s• %s%s\n' "$BLUE" "$image" "$RESET"
     # A build failure is a real error, distinct from a vulnerability finding.
