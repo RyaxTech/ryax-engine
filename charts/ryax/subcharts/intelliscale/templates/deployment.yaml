@@ -11,8 +11,11 @@ spec:
   template:
     metadata:
       annotations:
-        # Force restart on config changes
-        checksum/config: {{ tpl (toYaml .Values) . | sha256sum }}
+        # Force restart on config changes.
+        # Scoped to `config`, which is exactly what the ConfigMap holds: hashing
+        # the whole of .Values instead makes any unrelated value anywhere in the
+        # chart -- a global, another subchart's default -- restart this pod.
+        checksum/config: {{ .Values.config | toYaml | sha256sum }}
       {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
