@@ -29,6 +29,31 @@ global:
     # -- for self hosted instance with intenal TLS certificate
     # @section -- Global
     existingCertificatSecret:
+  # -- Credential secrets the chart generates itself (database, broker, JWT,
+  # encryption keys, registry htpasswd and TLS). Set to false to supply every one
+  # of them yourself -- sealed-secrets, external-secrets, or a plain kubectl
+  # create -- under the names listed in the values below. This is what a GitOps
+  # deployment wants: the generated values come from `lookup()`, which returns
+  # nothing when the chart is rendered without a cluster connection (`helm
+  # template`, ArgoCD's and Flux's repo servers), so every render would otherwise
+  # mint fresh passwords and roll them out to running pods.
+  # @section -- Global
+  secrets:
+    create: true
+  # -- Tolerations injected as-is into every Ryax pod
+  # (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+  # Required to run Ryax on tainted nodes; override per subchart with its own
+  # `tolerations`.
+  # Example:
+  #   - key: mycompany/mesh
+  #     operator: Exists
+  #     effect: NoSchedule
+  # @section -- Global
+  tolerations: []
+  # -- Affinity injected as-is into every Ryax pod. Override per subchart with its
+  # own `affinity`.
+  # @section -- Global
+  affinity: {}
 
 # -- container image name and version
 image:
@@ -53,6 +78,9 @@ datastoreSecret: ryax-datastore-secret
 jwtSecret: api-jwt-secret-key
 brokerSecret: ryax-broker-secret
 passwordEncryptionKeySecret: repository-password-encryption-key
+# -- Create the secret above. Set to false to provide it yourself; it must then
+# carry the key(s): encryption-key.
+passwordEncryptionKeySecretCreate: true
 authorizationUrl: "ryax-authorization:8080"
 
 # -- Set this by generating a Key with this script:
@@ -93,3 +121,24 @@ extraVolumes: []
 # -- `extraVolumes` and `extraVolumeMounts` are useful to inject local Git repository if needed. See extraVolumes example.
 # @section -- Ryax
 extraVolumeMounts: []
+
+# -- Tolerations injected as-is, overriding `global.tolerations` when set
+# (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+tolerations: []
+# -- nodeSelector injected as-is, overriding `global.nodeSelector` when set
+# (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+nodeSelector: {}
+
+# -- Affinity injected as-is, overriding `global.affinity` when set.
+affinity: {}
+
+ingress:
+  # -- Render an Ingress for this service. Turn it off when routing is handled
+  # outside the chart -- Gateway API, a service mesh, an external load balancer.
+  # With no controller to fill in `.status.loadBalancer`, a GitOps engine that
+  # health-checks Ingresses reports them Progressing forever and parks the sync.
+  enabled: true
+  # -- Value for `spec.ingressClassName`. Left empty, the Ingress is claimed by
+  # whichever IngressClass is marked default in the cluster -- which is a
+  # cluster-wide setting, not this chart's to rely on.
+  className: ""

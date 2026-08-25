@@ -27,15 +27,18 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.global.nodeSelector }}
+      {{- with .Values.tolerations | default .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with .Values.affinity | default .Values.global.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      priorityClassName: {{ .Values.priorityClass }}
       volumes:
         - emptyDir:
           name: "tmp-dir"
@@ -53,6 +56,18 @@ spec:
               # for debug
               # sleep 10000
               set -e
+
+              # No marker ConfigMap means no previous release in this namespace,
+              # so there is no database to migrate yet: the normal Sync-phase
+              # resources are about to create and initialise it. Exiting 0 here
+              # is what lets a GitOps engine -- which cannot tell an install from
+              # an upgrade and so runs this hook on the very first sync -- get
+              # past this phase instead of deadlocking on it.
+              if [ -z "${RYAX_RELEASE_INSTALLED:-}" ]; then
+                echo "No previous Ryax release in this namespace: nothing to migrate, skipping."
+                exit 0
+              fi
+
               set -x
               set -u
 
@@ -66,21 +81,30 @@ spec:
               {{- end }}
               EOSQL
           env:
+            - name: RYAX_RELEASE_INSTALLED
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.releaseMarker }}
+                  key: "installed"
+                  optional: true
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.datastoreSecret }}
                   key: "datastore-db"
+                  optional: true
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.datastoreSecret }}
                   key: "datastore-user"
+                  optional: true
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.datastoreSecret }}
                   key: "datastore-pass"
+                  optional: true
             {{- range .Values.databases }}
             {{- $dbName := . }}
             {{- range tuple "db" "user" "pass" }}
@@ -89,6 +113,7 @@ spec:
                 secretKeyRef:
                   name: {{ $.Values.datastoreSecret }}
                   key: {{ printf "datastore-%s-%s" $dbName . }}
+                  optional: true
             {{- end }}
             {{- end }}
             {{- if .Values.extraEnv }}

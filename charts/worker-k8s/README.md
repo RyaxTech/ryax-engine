@@ -35,12 +35,15 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| global.affinity | object | `{}` | Affinity injected as-is into every Ryax pod. Override per subchart with its own `affinity`. |
 | global.defaultStorageClass | string | `nil` | Global default StorageClass for Persistent Volume(s) |
 | global.imagePullSecrets | list | `[]` | Global container registry secret names as an array Example:   - name: myPullSercret |
 | global.imageRegistry | string | `nil` | Global container image registry |
 | global.monitoring.enabled | bool | `false` | Enables service monitoring |
 | global.monitoring.otlpEndpoint | string | `"ryax-tempo:4317"` | Traces collector (Tempo) endpoint Trace collection (disabled if empty) |
 | global.nodeSelector | object | `{}` | Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) |
+| global.secrets | object | `{"create":true}` | Credential secrets the chart generates itself (database, broker, JWT, encryption keys, registry htpasswd and TLS). Set to false to supply every one of them yourself -- sealed-secrets, external-secrets, or a plain kubectl create -- under the names listed in the values below. This is what a GitOps deployment wants: the generated values come from `lookup()`, which returns nothing when the chart is rendered without a cluster connection (`helm template`, ArgoCD's and Flux's repo servers), so every render would otherwise mint fresh passwords and roll them out to running pods. |
+| global.tolerations | list | `[]` | Tolerations injected as-is into every Ryax pod (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Required to run Ryax on tainted nodes; override per subchart with its own `tolerations`. Example:   - key: mycompany/mesh     operator: Exists     effect: NoSchedule |
 
 ### Resource Settings
 
@@ -54,7 +57,7 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | actionRegistrySecret | string | `"ryax-registry-creds-secret"` | Name of the secret that contains credentials to access the registry hosting Ryax actions. Leave empty to use public access registry Secret must be of type: kubernetes.io/dockerconfigjson |
-| affinity | object | `{}` | Add affinity injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) Example:   nodeAffinity:     requiredDuringSchedulingIgnoredDuringExecution:       nodeSelectorTerms:       - matchExpressions:         - key: topology.kubernetes.io/zone           operator: In           values:           - antarctica-east1           - antarctica-west1 |
+| affinity | object | `{}` |  |
 | apiPort | int | `8083` |  |
 | brokerSecret | string | `"ryax-broker-secret"` |  |
 | config.MIG | object | `{"enabled":true}` | Enable NVIDIA MIG auto-labeler that partition the supported NVIDIA cards  |
@@ -69,9 +72,13 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 | logLevel | string | `nil` | log level of the service (override global.ryax.logLevel) |
 | metricsPort | int | `8092` |  |
 | monitoring.serviceMonitor | object | `{"enabled":true}` | Enable service monitor for prometheus using ServiceMonitor CRD |
-| postgresql | object | `{"auth":{"database":"worker_k8s","existingSecret":"{{ include \"worker-k8s.postgresql.secret\" . }}","username":"worker_k8s"},"enabled":true,"image":{"repository":"bitnamilegacy/postgresql"},"metrics":{"image":{"repository":"bitnamilegacy/postgres-exporter"}},"primary":{"persistence":{"size":"1Gi"}}}` | local postgresql database |
+| nodeSelector | object | `{}` | nodeSelector injected as-is, overriding `global.nodeSelector` when set (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) |
+| postgresql | object | `{"auth":{"createSecret":true,"database":"worker_k8s","existingSecret":"{{ include \"worker-k8s.postgresql.secret\" . }}","username":"worker_k8s"},"enabled":true,"image":{"repository":"bitnamilegacy/postgresql"},"metrics":{"image":{"repository":"bitnamilegacy/postgres-exporter"}},"primary":{"persistence":{"size":"1Gi"}}}` | local postgresql database |
+| postgresql.auth | object | `{"createSecret":true,"database":"worker_k8s","existingSecret":"{{ include \"worker-k8s.postgresql.secret\" . }}","username":"worker_k8s"}` | The bundled PostgreSQL is an upstream Bitnami subchart: it does not read `global.tolerations`, so a tainted node needs its placement set here, e.g.   primary:     tolerations: [...]     nodeSelector: {...} |
+| postgresql.auth.createSecret | bool | `true` | Create the database credentials secret named by `existingSecret` below. Set to false to provide it yourself; it must then carry the keys `password`, `postgres-password` and `datastore-worker-k8s`. |
 | postgresql.enabled | bool | `true` | Enables PostgreSQL local database |
 | priorityClass | string | `nil` | Add priority class |
+| tolerations | list | `[]` | Tolerations injected as-is, overriding `global.tolerations` when set (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). |
 
 ----------------------------------------------
 Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)

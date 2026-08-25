@@ -42,6 +42,32 @@ global:
   # filestoreSecret: ryax-minio-secret
   # internalRegistry: 127.0.0.1:30012
   # jwtSecret: api-jwt-secret-key
+  # releaseMarker: ryax-release-marker
+  # -- Credential secrets the chart generates itself (database, broker, JWT,
+  # encryption keys, registry htpasswd and TLS). Set to false to supply every one
+  # of them yourself -- sealed-secrets, external-secrets, or a plain kubectl
+  # create -- under the names listed in the values below. This is what a GitOps
+  # deployment wants: the generated values come from `lookup()`, which returns
+  # nothing when the chart is rendered without a cluster connection (`helm
+  # template`, ArgoCD's and Flux's repo servers), so every render would otherwise
+  # mint fresh passwords and roll them out to running pods.
+  # @section -- Global
+  secrets:
+    create: true
+  # -- Tolerations injected as-is into every Ryax pod
+  # (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+  # Required to run Ryax on tainted nodes; override per subchart with its own
+  # `tolerations`.
+  # Example:
+  #   - key: mycompany/mesh
+  #     operator: Exists
+  #     effect: NoSchedule
+  # @section -- Global
+  tolerations: []
+  # -- Affinity injected as-is into every Ryax pod. Override per subchart with its
+  # own `affinity`.
+  # @section -- Global
+  affinity: {}
 
 registry:
   credentials:

@@ -34,13 +34,13 @@ dependencies:
   version: 17.0.21
 - name: traefik
   repository: https://helm.traefik.io/traefik
-  version: 41.2.0
+  version: 41.3.0
 - name: rabbitmq
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 16.0.14
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
-  version: 88.3.0
+  version: 88.5.4
 - name: tempo
   repository: https://grafana.github.io/helm-charts
   version: 1.24.4
@@ -49,6 +49,6 @@ dependencies:
   version: 7.3.0
 - name: alloy
   repository: https://grafana.github.io/helm-charts
-  version: 1.11.1
-digest: sha256:a8873f67c542f87d6df8e64b34e260909a5e43cb197fffc32f5563d905004e13
-generated: "2026-08-13T09:48:18.045014548+02:00"
+  version: 1.12.0
+digest: sha256:f5b28169975d9bf9e0f5ed06a2b0a98b3a892a89d3ce3359fa4edafc3bf6e1b3
+generated: "2026-08-25T14:49:45.663902927+02:00"

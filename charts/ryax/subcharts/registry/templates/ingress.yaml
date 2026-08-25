@@ -13,6 +13,9 @@ metadata:
   name: {{ include "registry.fullname" . }}
   labels: {{- include "registry.labels" . | nindent 4 }}
 spec:
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
   rules:
   - host: {{ $hostname }}
     http:

@@ -16,11 +16,14 @@ Ryax internal container registry.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| global.affinity | object | `{}` | Affinity injected as-is into every Ryax pod. Override per subchart with its own `affinity`. |
 | global.defaultStorageClass | string | `""` | Global default StorageClass for Persistent Volume(s) |
 | global.imagePullSecrets | list | `[]` | Global container registry secret names as an array Example:   - name: myPullSercret |
 | global.imageRegistry | string | `nil` | Global container image registry |
 | global.monitoring.enabled | bool | `false` | Enables service monitoring |
 | global.nodeSelector | object | `{}` | Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) |
+| global.secrets | object | `{"create":true}` | Credential secrets the chart generates itself (database, broker, JWT, encryption keys, registry htpasswd and TLS). Set to false to supply every one of them yourself -- sealed-secrets, external-secrets, or a plain kubectl create -- under the names listed in the values below. This is what a GitOps deployment wants: the generated values come from `lookup()`, which returns nothing when the chart is rendered without a cluster connection (`helm template`, ArgoCD's and Flux's repo servers), so every render would otherwise mint fresh passwords and roll them out to running pods. |
+| global.tolerations | list | `[]` | Tolerations injected as-is into every Ryax pod (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Required to run Ryax on tainted nodes; override per subchart with its own `tolerations`. Example:   - key: mycompany/mesh     operator: Exists     effect: NoSchedule |
 
 ### Resource Settings
 
@@ -32,6 +35,9 @@ Ryax internal container registry.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| affinity | object | `{}` | Affinity injected as-is, overriding `global.affinity` when set. |
+| certSecretCreate | bool | `true` | Create the self-signed registry certificate secret `<fullname>-cert`, used when no ingress serves the registry. Set to false to provide it yourself with the `tls.crt` and `tls.key` keys; the generated one is not reproducible across renders. |
+| credentials.createSecret | bool | `true` | Create the credentials and pull secrets. Set to false to provide them yourself: `<fullname>-credentials` must carry `htpasswd` and `credentials.pullSecretName` must carry `.dockerconfigjson`. The htpasswd hash uses a random bcrypt salt, so it is not reproducible across renders. |
 | credentials.enabled | bool | `true` | Enable credentials, disable this to make your registry public |
 | credentials.injectInNamespaces | list | `[]` | Namepace where the registry pull secret should be injected The installation current namespace and the global.ryax.userNamespace is added by default |
 | credentials.password | string | `"ryaxPassw0rd?"` | registry access default password WARNING: Change this in production, this is unsecure ! |
@@ -46,18 +52,22 @@ Ryax internal container registry.
 | image.pullPolicy | string | `"IfNotPresent"` | Specify a imagePullPolicy ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images |
 | ingress.annotations | object | `{}` | Custom annotation for the Ingress. Additional annotation. WARNING: when global.tls.enabled, certManager annotation is already added for you |
 | ingress.certSecret | string | `"ryax-registry-ingress-cert"` | Name of the secret that contains the TLS certificate (not provisionned by this chart) |
+| ingress.className | string | `""` | Value for `spec.ingressClassName`. Left empty, the Ingress is claimed by whichever IngressClass is marked default in the cluster. |
 | ingress.enabled | bool | `false` | Create a public Ingress to access the repository. *WARNING*: If disabled it is replaced by a self-sign certificate that is injected with DaemonSet on all nodes (Only works with containerd and k3s with mutable config) *WARNING*: kubelet will be able to pull the images only if a valid certificate is associated to the Ingress |
 | ingress.hostname | string | `nil` | hostname of the registry required if ingress is enabled Must be the cluster FQDN like "registry.cluster.example.io" use Use to create a valid certificate and to create docker pull credentials |
 | nodePort | int | `30012` | This is required for the kubelet to pull the image from localhost. This is only used if the ingress is disabled. This is useful in private clusters because image pull is done by the kubelet that do not have access to internal services. Using a node port allows to give acess to any host as localhost. Value in range 30000-32767 |
+| nodeSelector | object | `{}` | nodeSelector injected as-is, overriding `global.nodeSelector` when set (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) |
 | persistence.enabled | bool | `true` |  |
 | persistence.pvcSize | string | `"10Gi"` | storage size |
 | persistence.storageClass | string | `nil` | leave empty for the default value |
 | priorityClass | string | `nil` | priority class for the pods |
+| registryCertSetup.enabled | string | `nil` | Rewrite containerd's registry config on every node (a DaemonSet) so the kubelet trusts the registry's self-signed certificate, and mount that certificate into the registry. Unset means `not ingress.enabled`: only needed when no Ingress serves the registry with a trusted certificate. Set it explicitly to keep the two concerns apart -- turning the Ingress off for a Gateway API or service-mesh setup should not silently start rewriting node configuration. Only works with containerd, and on k3s only with a mutable config. |
 | registryCertSetup.image.pullPolicy | string | `"IfNotPresent"` | Specify a imagePullPolicy ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images |
 | registryCertSetup.image.registry | string | `"registry.ryax.org/release"` |  |
 | registryCertSetup.image.repository | string | `"registry-cert-setup"` |  |
 | registryCertSetup.image.tag | string | `"1.1"` |  |
 | servicePort | int | `5000` |  |
+| tolerations | list | `[]` | Tolerations injected as-is, overriding `global.tolerations` when set (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). |
 
 ----------------------------------------------
 Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)

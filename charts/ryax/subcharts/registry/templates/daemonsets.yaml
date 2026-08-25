@@ -1,4 +1,4 @@
-{{- if not .Values.ingress.enabled  }}
+{{- if eq (include "registry.certSetup.enabled" .) "true" }}
 {{ $registryPath := printf "127.0.0.1:%d" (.Values.nodePort | int) }}
 apiVersion: apps/v1
 kind: DaemonSet
