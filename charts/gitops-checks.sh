@@ -24,17 +24,19 @@ CHART="${CHART:-charts/ryax}"
 # ---------------------------------------------------------------------------
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   BOLD=$'\e[1m'; DIM=$'\e[2m'
-  RED=$'\e[31m'; GREEN=$'\e[32m'; CYAN=$'\e[36m'; YELLOW=$'\e[33m'
+  RED=$'\e[31m'; GREEN=$'\e[32m'; CYAN=$'\e[36m'
   RESET=$'\e[0m'
 else
-  BOLD=''; DIM=''; RED=''; GREEN=''; CYAN=''; YELLOW=''; RESET=''
+  BOLD=''; DIM=''; RED=''; GREEN=''; CYAN=''; RESET=''
 fi
+
+WORKDIR="$(mktemp -d)"
+trap 'rm -rf "$WORKDIR"' EXIT
 
 section() { printf '\n%s%s━━━ %s ━━━%s\n' "$BOLD" "$CYAN" "$1" "$RESET"; }
 ok()      { printf '%s  ✔ %s%s\n'          "$GREEN" "$1" "$RESET"; }
 ko()      { printf '%s  ✘ %s%s\n'          "$RED"   "$1" "$RESET"; }
 info()    { printf '%s  · %s%s\n'          "$DIM"   "$1" "$RESET"; }
-warn()    { printf '%s  ⚠ %s%s\n'          "$YELLOW" "$1" "$RESET"; }
 
 CHECKS="determinism secret-scope hook-guards hook-priority placement ingress-switch"
 
@@ -79,9 +81,9 @@ check_determinism() {
 # ---------------------------------------------------------------------------
 check_secret_scope() {
   section "Checking that render churn stays inside Secrets"
-  render > /tmp/gitops-a.yaml 2>/dev/null || { ko "render failed"; return 1; }
-  render > /tmp/gitops-b.yaml 2>/dev/null || { ko "render failed"; return 1; }
-  python3 - /tmp/gitops-a.yaml /tmp/gitops-b.yaml <<'PY'
+  render > "$WORKDIR/gitops-a.yaml" 2>/dev/null || { ko "render failed"; return 1; }
+  render > "$WORKDIR/gitops-b.yaml" 2>/dev/null || { ko "render failed"; return 1; }
+  python3 - "$WORKDIR/gitops-a.yaml" "$WORKDIR/gitops-b.yaml" <<'PY'
 import difflib, sys
 
 a = open(sys.argv[1]).read().split("\n")
@@ -110,7 +112,6 @@ if offenders:
     sys.exit(1)
 PY
   local rc=$?
-  rm -f /tmp/gitops-a.yaml /tmp/gitops-b.yaml
   if [ "$rc" -ne 0 ]; then
     ko "Something outside a Secret changes between two identical renders"
     return 1
@@ -126,8 +127,8 @@ PY
 # ---------------------------------------------------------------------------
 check_hook_guards() {
   section "Checking the pre-sync hook pods"
-  render > /tmp/gitops-hooks.yaml 2>/dev/null || { ko "render failed"; return 1; }
-  python3 - /tmp/gitops-hooks.yaml <<'PY'
+  render > "$WORKDIR/gitops-hooks.yaml" 2>/dev/null || { ko "render failed"; return 1; }
+  python3 - "$WORKDIR/gitops-hooks.yaml" <<'PY'
 import sys, yaml
 
 MARKER_ENV = "RYAX_RELEASE_INSTALLED"
@@ -178,7 +179,6 @@ for p in problems:
 sys.exit(1 if problems else 0)
 PY
   local rc=$?
-  rm -f /tmp/gitops-hooks.yaml
   if [ "$rc" -ne 0 ]; then
     ko "A pre-sync hook would block the first sync"
     return 1
@@ -193,8 +193,8 @@ PY
 # ---------------------------------------------------------------------------
 check_hook_priority() {
   section "Checking that no hook pod requires a PriorityClass"
-  render > /tmp/gitops-prio.yaml 2>/dev/null || { ko "render failed"; return 1; }
-  python3 - /tmp/gitops-prio.yaml <<'PY'
+  render > "$WORKDIR/gitops-prio.yaml" 2>/dev/null || { ko "render failed"; return 1; }
+  python3 - "$WORKDIR/gitops-prio.yaml" <<'PY'
 import sys, yaml
 
 problems = []
@@ -216,7 +216,6 @@ for p in problems:
 sys.exit(1 if problems else 0)
 PY
   local rc=$?
-  rm -f /tmp/gitops-prio.yaml
   if [ "$rc" -ne 0 ]; then
     ko "A hook pod would be rejected at admission on a first sync"
     return 1
@@ -234,8 +233,8 @@ check_placement() {
   render --set 'global.tolerations[0].key=gitops.ryax.tech/probe' \
          --set 'global.tolerations[0].operator=Exists' \
          --set 'global.tolerations[0].effect=NoSchedule' \
-         > /tmp/gitops-place.yaml 2>/dev/null || { ko "render failed"; return 1; }
-  python3 - /tmp/gitops-place.yaml <<'PY'
+         > "$WORKDIR/gitops-place.yaml" 2>/dev/null || { ko "render failed"; return 1; }
+  python3 - "$WORKDIR/gitops-place.yaml" <<'PY'
 import sys, yaml
 
 PROBE = "gitops.ryax.tech/probe"
@@ -279,7 +278,6 @@ for m in missing:
 sys.exit(1 if missing else 0)
 PY
   local rc=$?
-  rm -f /tmp/gitops-place.yaml
   if [ "$rc" -ne 0 ]; then
     ko "A Ryax pod would stay Pending on a tainted node"
     return 1
@@ -341,11 +339,59 @@ if [ "$#" -gt 0 ]; then
   selected="$*"
 fi
 
-# the local subcharts are vendored as archives, so a stale .tgz would hide the
-# very change being checked
-if ! helm dependency build "$CHART" >/dev/null 2>&1; then
-  warn "helm dependency build failed, checking whatever is already vendored"
-fi
+# The local subcharts are vendored as archives, so a stale .tgz would hide the
+# very change being checked. This has to succeed: a render that cannot run is a
+# check that did not run, and that must not read as a pass.
+#
+# `helm dependency build` is deliberate over `helm dependency update`: it honours
+# Chart.lock instead of re-resolving, so these checks run against the pinned
+# upstream versions and a run never leaves a modified Chart.lock behind. The
+# price is that it refuses to resolve an https:// dependency whose repository is
+# not registered -- the normal state of a CI runner -- so register them first,
+# from the chart's own dependency list, in a throwaway config that leaves the
+# caller's `helm repo list` alone.
+ensure_dependencies() {
+  local log="$WORKDIR/dep.log"
+  if helm dependency build "$CHART" >"$log" 2>&1; then
+    return 0
+  fi
+  info "registering the chart's Helm repositories"
+  export HELM_REPOSITORY_CONFIG="$WORKDIR/repositories.yaml"
+  export HELM_REPOSITORY_CACHE="$WORKDIR/repository-cache"
+  local url i=0
+  while read -r url; do
+    [ -n "$url" ] || continue
+    i=$((i + 1))
+    if ! helm repo add "dep$i" "$url" >>"$log" 2>&1; then
+      ko "could not add the Helm repository $url"
+      cat "$log"
+      return 1
+    fi
+  done < <(chart_http_repositories)
+  if ! helm dependency build "$CHART" >>"$log" 2>&1; then
+    ko "helm dependency build failed:"
+    cat "$log"
+    return 1
+  fi
+}
+
+# The http(s) dependency repositories of the chart. oci:// and file:// ones need
+# no registering.
+chart_http_repositories() {
+  python3 -c '
+import sys, yaml
+
+chart = yaml.safe_load(open(sys.argv[1]))
+seen = []
+for dep in chart.get("dependencies") or []:
+    url = dep.get("repository", "")
+    if url.startswith(("http://", "https://")) and url not in seen:
+        seen.append(url)
+print("\n".join(seen))
+' "$CHART/Chart.yaml"
+}
+
+ensure_dependencies || exit 1
 
 failed=""
 for name in $selected; do
