@@ -35,6 +35,10 @@ pages:
     paths:
       - public
   rules:
+    # A scheduled pipeline exists to re-run the audits, not to redeploy an
+    # unchanged site.
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       variables:
         PAGES_PREFIX: "" # no prefix by default (run on the default branch)
@@ -228,6 +232,12 @@ package_helm_charts:
   extends: .package_helm_charts
   needs:
     - verify_helm_charts
+  # Nothing has changed since the last master pipeline, so a scheduled run would
+  # only re-push an identical 0.0.0-v$CI_COMMIT_SHORT_SHA chart.
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
 
 staging_charts:
   extends: .staging_charts
