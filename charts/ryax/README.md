@@ -24,7 +24,7 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | file://subcharts/repository | repository | 26.7.0 |
 | file://subcharts/runner | runner | 26.7.0 |
 | file://subcharts/studio | studio | 26.7.0 |
-| https://grafana.github.io/helm-charts | alloy | ~1.11.1 |
+| https://grafana.github.io/helm-charts | alloy | ~1.12.0 |
 | https://grafana.github.io/helm-charts | loki | ~7.3.0 |
 | https://grafana.github.io/helm-charts | tempo | 1.x.x |
 | https://helm.traefik.io/traefik | traefik | 41.x.x |
