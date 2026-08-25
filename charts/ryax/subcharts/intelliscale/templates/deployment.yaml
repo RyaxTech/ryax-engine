@@ -30,11 +30,15 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.global.nodeSelector }}
+      {{- with .Values.tolerations | default .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with .Values.affinity | default .Values.global.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -59,14 +63,33 @@ spec:
               containerPort: {{ .Values.config.server_ports.api_grpc_server_port }}
             - name: metrics-port
               containerPort: {{ .Values.config.server_ports.metrics_server_port }}
+          # A startupProbe, not a long initialDelaySeconds on the liveness one:
+          # the process needs tens of seconds to connect to the broker and bind
+          # its metrics port, and until it does, the API defaults
+          # (initialDelaySeconds 0, failureThreshold 3, periodSeconds 10) have
+          # liveness kill it at ~30s -- a permanent CrashLoopBackOff on a healthy
+          # binary. The startupProbe holds liveness off until the port answers.
+          startupProbe:
+            httpGet:
+              path: /metrics
+              port: metrics-port
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+            timeoutSeconds: {{ .Values.probes.startup.timeoutSeconds }}
           livenessProbe:
             httpGet:
               path: /metrics
               port: metrics-port
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
           readinessProbe:
             httpGet:
               path: /metrics
               port: metrics-port
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
           env:
             - name: RYAX_CONFIG_APP
               value: /intelliscale-config/config.yaml

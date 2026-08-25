@@ -1,0 +1,21 @@
+# Marks the release as installed, for the database-migration hooks to key on.
+#
+# This is an ordinary Sync-phase resource, so it cannot exist while the very
+# first hook phase runs: `helm install` creates it after its pre-install hooks,
+# and ArgoCD -- which maps every `pre-*` hook to PreSync and runs them on every
+# sync, first one included -- creates it after that first PreSync. The migration
+# hooks read it with `optional: true` and exit 0 when it is absent, so a fresh
+# install cannot deadlock on a migration against a database that does not exist
+# yet. From the second sync on it is there and the hooks run normally.
+#
+# A dedicated marker rather than one of the credential secrets: those can now be
+# supplied out-of-band (global.secrets.create=false), so their presence no longer
+# means "a previous release ran here".
+apiVersion: "v1"
+kind: "ConfigMap"
+metadata:
+  name: {{ .Values.releaseMarker }}
+  labels: {{- include "common-resources.labels" . | nindent 4 }}
+data:
+  installed: "true"
+  chartVersion: {{ .Chart.Version | quote }}

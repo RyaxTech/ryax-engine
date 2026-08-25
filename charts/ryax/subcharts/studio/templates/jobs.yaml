@@ -66,17 +66,48 @@ spec:
     spec:
       serviceAccountName: "{{ .Release.Name }}-scale-down"
       restartPolicy: Never
+      {{- with .Values.tolerations | default .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity | default .Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: scale-down-before-migration-job
           image: {{ .Values.updaterImage }}
+          env:
+            - name: RYAX_RELEASE_INSTALLED
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.releaseMarker }}
+                  key: "installed"
+                  optional: true
           command:
             - /bin/bash
             - -c
             - |
               set -e
+
+              # No marker ConfigMap means no previous release in this namespace,
+              # so there is nothing to migrate yet: the normal Sync-phase resources
+              # are about to create and initialise the database. Exiting 0 here is
+              # what lets a GitOps engine -- which cannot tell an install from an
+              # upgrade and so runs this hook on the very first sync -- get past this
+              # phase instead of deadlocking on it.
+              if [ -z "${RYAX_RELEASE_INSTALLED:-}" ]; then
+                echo "No previous Ryax release in this namespace: no deployment to scale down, skipping."
+                exit 0
+              fi
+
               set -x
               set -u
-              
+
               kubectl version
               
               echo Scale down {{ include "studio.fullname" . }} deployment to allow database migration
@@ -101,18 +132,19 @@ spec:
       restartPolicy: Never
       securityContext:
         fsGroup: 1200
-      {{ with .Values.priorityClass }}
-      priorityClassName: {{ . }}
-      {{- end }}
       {{- with .Values.global.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.global.nodeSelector }}
+      {{- with .Values.tolerations | default .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with .Values.affinity | default .Values.global.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -127,17 +159,41 @@ spec:
             - name: "tmp-dir"
               mountPath: "/tmp"
           command:
-            - "ryax-studio-update-db"
+            - /bin/bash
+            - -c
+            - |
+              set -e
+
+              # No marker ConfigMap means no previous release in this namespace,
+              # so there is nothing to migrate yet: the normal Sync-phase resources
+              # are about to create and initialise the database. Exiting 0 here is
+              # what lets a GitOps engine -- which cannot tell an install from an
+              # upgrade and so runs this hook on the very first sync -- get past this
+              # phase instead of deadlocking on it.
+              if [ -z "${RYAX_RELEASE_INSTALLED:-}" ]; then
+                echo "No previous Ryax release in this namespace: nothing to migrate, skipping."
+                exit 0
+              fi
+
+              exec ryax-studio-update-db
           env:
+            - name: RYAX_RELEASE_INSTALLED
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.releaseMarker }}
+                  key: "installed"
+                  optional: true
             - name: RYAX_DATASTORE
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.datastoreSecret }}
                   key: "datastore-studio"
+                  optional: true
             - name: "RYAX_PASSWORD_ENCRYPTION_KEY"
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.passwordEncryptionKeySecret }}
                   key: encryption-key
+                  optional: true
             - name: RYAX_LOG_LEVEL
               value: {{ .Values.logLevel | default .Values.global.ryax.logLevel | default "warning" }}

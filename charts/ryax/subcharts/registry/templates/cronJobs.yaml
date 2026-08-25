@@ -18,6 +18,14 @@ spec:
           labels: {{- include "registry.labels" . | nindent 12 }}
         spec:
           restartPolicy: "OnFailure"
+          {{- with .Values.tolerations | default .Values.global.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.nodeSelector | default .Values.global.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumes:
             {{- if .Values.persistence.enable }}
             - name: registry-data-dir

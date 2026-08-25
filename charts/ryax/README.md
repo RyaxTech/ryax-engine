@@ -24,15 +24,25 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | file://subcharts/repository | repository | 26.7.0 |
 | file://subcharts/runner | runner | 26.7.0 |
 | file://subcharts/studio | studio | 26.7.0 |
-| https://grafana.github.io/helm-charts | alloy | ~1.10.1 |
-| https://grafana.github.io/helm-charts | loki | ~7.1.0 |
+| https://grafana.github.io/helm-charts | alloy | ~1.11.1 |
+| https://grafana.github.io/helm-charts | loki | ~7.3.0 |
 | https://grafana.github.io/helm-charts | tempo | 1.x.x |
 | https://helm.traefik.io/traefik | traefik | 41.x.x |
-| https://prometheus-community.github.io/helm-charts | kube-prometheus-stack | 87.x.x |
+| https://prometheus-community.github.io/helm-charts | kube-prometheus-stack | 88.x.x |
 | oci://registry-1.docker.io/bitnamicharts | minio | 17.x.x |
 | oci://registry-1.docker.io/bitnamicharts | rabbitmq | 16.x.x |
 
 ## Values
+
+### Global
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| global.affinity | object | `{}` | Affinity injected as-is into every Ryax pod. Override per subchart with its own `affinity`. |
+| global.secrets | object | `{"create":true}` | Credential secrets the chart generates itself (database, broker, JWT, encryption keys, registry htpasswd and TLS). Set to false to supply every one of them yourself -- sealed-secrets, external-secrets, or a plain kubectl create -- under the names listed in the values below. This is what a GitOps deployment wants: the generated values come from `lookup()`, which returns nothing when the chart is rendered without a cluster connection (`helm template`, ArgoCD's and Flux's repo servers), so every render would otherwise mint fresh passwords and roll them out to running pods. |
+| global.tolerations | list | `[]` | Tolerations injected as-is into every Ryax pod (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Required to run Ryax on tainted nodes; override per subchart with its own `tolerations`. Example:   - key: mycompany/mesh     operator: Exists     effect: NoSchedule |
+
+### Other Values
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
