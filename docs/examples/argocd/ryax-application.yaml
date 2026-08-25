@@ -1,0 +1,93 @@
+# Reference ArgoCD Application for Ryax.
+#
+# Nothing outside this file is needed: no bootstrap Job, no admission policies,
+# no pre-created PriorityClasses and no `ignoreDifferences`. See
+# docs/howto/install_ryax_argocd.md for what each value is for.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ryax
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ryaxns
+
+  source:
+    repoURL: registry.ryax.org/release-charts
+    chart: ryax-engine
+    targetRevision: 26.7.0
+    helm:
+      releaseName: ryax
+      values: |
+        global:
+          # Supply every credential yourself. With this on, the chart generates
+          # them from `lookup()`, which returns nothing when ArgoCD's repo server
+          # renders the chart (it has no cluster connection), so every reconcile
+          # would mint new passwords and push them to running pods.
+          #
+          # The secrets to create, and the keys each one needs, are listed in the
+          # how-to. Leave this at its default `true` only if you also add the
+          # `ignoreDifferences` block commented out at the bottom of this file.
+          secrets:
+            create: false
+
+          # Injected into every Ryax pod. Upstream subcharts (kube-prometheus-stack,
+          # minio, rabbitmq, loki, tempo, alloy, traefik) do not read this: set
+          # their own placement values, see the how-to.
+          tolerations: []
+          # nodeSelector: {}
+          # affinity: {}
+
+          tls:
+            enabled: false
+
+        # No Ingress controller? Turn them off. Nothing fills in
+        # `.status.loadBalancer`, so ArgoCD's Ingress health check reports
+        # Progressing forever and every later sync -- selfHeal included -- queues
+        # behind the parked operation.
+        front:
+          ingress:
+            enabled: false
+        authorization:
+          ingress:
+            enabled: false
+        runner:
+          ingress:
+            enabled: false
+        studio:
+          ingress:
+            enabled: false
+        repository:
+          ingress:
+            enabled: false
+
+        registry:
+          ingress:
+            enabled: false
+          # Turning the Ingress off no longer implies node certificate rewriting:
+          # set this explicitly for the setup you want.
+          registryCertSetup:
+            enabled: true
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # The chart's PriorityClasses are cluster-scoped and shared with anything
+      # else in the cluster that references them.
+      - ServerSideApply=true
+
+  # Only needed when `global.secrets.create` is left at `true`: the chart then
+  # regenerates every credential on each render and ArgoCD would push the new
+  # values. Supplying the secrets yourself is the supported path -- this is the
+  # fallback.
+  #
+  # ignoreDifferences:
+  #   - group: ""
+  #     kind: Secret
+  #     jsonPointers:
+  #       - /data

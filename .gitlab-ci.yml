@@ -137,6 +137,38 @@ check_helm_deps:
       when: never
     - when: on_success
 
+check_chart_gitops:
+  stage: verify
+  # No `image:` override on purpose: the ryax-ci image that ci_common sets as the
+  # default ships nix and uv. helm comes from nixpkgs, and the checks parse
+  # rendered manifests with PyYAML, which is already a dependency of this project
+  # (jef.py reads the Chart.yaml files with it).
+  tags: [docker]
+  # Blocking. What this guards -- deterministic rendering, hooks that survive a
+  # first sync, placement on every workload -- is invisible to `helm lint` and
+  # only shows up as a deadlocked install on a user's cluster.
+  variables:
+    UV_LINK_MODE: copy
+    UV_CACHE_DIR: .uv-cache
+    # Never let uv fetch its own interpreter: those builds are not linked against
+    # this image's loader. The python from ryax-ci is used instead.
+    UV_PYTHON_DOWNLOADS: never
+  cache:
+    - key:
+        files:
+          - uv.lock
+        prefix: $CI_RUNNER_EXECUTABLE_ARCH
+      paths:
+        - .uv-cache
+  script:
+    - uv sync --python "$(command -v python3)"
+    - export PATH="$PWD/.venv/bin:$PATH"
+    - nix shell nixpkgs#kubernetes-helm --command ./charts/gitops-checks.sh
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - when: on_success
+
 verify_helm_charts:
   extends: .verify_helm_charts
   # Exhaustive list of charts here for linter

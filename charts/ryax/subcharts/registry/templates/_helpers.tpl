@@ -72,3 +72,21 @@ Return the proper image name.
     {{- printf "%s%s%s"  $repositoryName $separator $termination -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Whether to run the node certificate setup: rewrite containerd's registry config
+on every node so the kubelet trusts the registry's self-signed certificate.
+
+Only needed when no Ingress serves the registry with a publicly trusted
+certificate, which is why it defaults to `not ingress.enabled` -- but it is a
+separate concern, so `registryCertSetup.enabled` can decide on its own. An
+explicit `false` must win, so the default is applied on "unset" rather than with
+`default`, which would swallow it.
+*/}}
+{{- define "registry.certSetup.enabled" -}}
+{{- if kindIs "invalid" .Values.registryCertSetup.enabled -}}
+{{- not .Values.ingress.enabled -}}
+{{- else -}}
+{{- .Values.registryCertSetup.enabled -}}
+{{- end -}}
+{{- end }}
