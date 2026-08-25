@@ -137,6 +137,26 @@ check_helm_deps:
       when: never
     - when: on_success
 
+check_chart_gitops:
+  stage: verify
+  # python:3.13 + the official helm installer, like check_helm_deps: the checks
+  # parse rendered manifests with PyYAML, which the alpine/helm image has no
+  # python for.
+  image: python:3.13
+  tags: [docker]
+  # Blocking. What this guards -- deterministic rendering, hooks that survive a
+  # first sync, placement on every workload -- is invisible to `helm lint` and
+  # only shows up as a deadlocked install on a user's cluster.
+  before_script:
+    - curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    - pip install --quiet pyyaml
+  script:
+    - ./charts/gitops-checks.sh
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - when: on_success
+
 verify_helm_charts:
   extends: .verify_helm_charts
   # Exhaustive list of charts here for linter
