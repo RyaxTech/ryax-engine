@@ -1,6 +1,3 @@
-[submodule "authorization"]
-	path = authorization
-	url = git@gitlab.com:ryax-tech/ryax/ryax-authorization.git
 [submodule "repository"]
 	path = repository
 	url = git@gitlab.com:ryax-tech/ryax/ryax-repository.git

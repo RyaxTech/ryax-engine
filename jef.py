@@ -35,9 +35,6 @@ class TCOLOR:
 
 REPOS_TO_BE_RELEASED = {
     "intelliscale": {"gitlab_project": "ryax-tech/ryax/ryax-intelliscale"},
-    "authorization": {
-        "gitlab_project": "ryax-tech/ryax/ryax-authorization",
-    },
     "default-actions": {
         "gitlab_project": "ryax-tech/workflows/default-actions",
         "path": "./actions/",
