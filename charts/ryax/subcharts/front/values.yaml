@@ -118,3 +118,15 @@ ingress:
   # whichever IngressClass is marked default in the cluster -- which is a
   # cluster-wide setting, not this chart's to rely on.
   className: ""
+  # -- max-age of the Strict-Transport-Security header, in seconds. Only takes
+  # effect when `global.tls.enabled` is set: the header must never be sent by a
+  # deployment that serves plain HTTP, or browsers would pin users to an https://
+  # origin that does not answer. Set to 0 to drop the header on a TLS deployment
+  # too. The nginx in the front image sets every other security header itself
+  # (see nix/nginx.conf in the front repository); this one lives here because it
+  # is the only one whose correctness depends on how the release is deployed.
+  hstsSeconds: 31536000
+  # -- Whether the Strict-Transport-Security header covers subdomains. Off by
+  # default: it would apply to every sibling host of the Ryax hostname, which is
+  # not this chart's to decide.
+  hstsIncludeSubdomains: false
