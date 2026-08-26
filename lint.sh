@@ -37,7 +37,7 @@ warn()    { printf '%s  ⚠ %s%s\n'         "$YELLOW" "$1" "$RESET"; }
 # is implemented by the function `check_foo_bar` and must return non-zero on
 # failure rather than exiting, so the runner can carry on to the next one.
 # ---------------------------------------------------------------------------
-CHECKS="dead-code flaws deps images"
+CHECKS="dead-code flaws deps node-deps images"
 
 # The Python tools come from the dev dependency group, so report a missing one
 # as a setup problem instead of blaming the code it was meant to inspect.
@@ -52,6 +52,7 @@ describe_check() {
     dead-code) echo "unreachable Python code (vulture)" ;;
     flaws)     echo "high-severity Python security flaws (bandit)" ;;
     deps)      echo "vulnerable Python dependencies of every submodule (uv audit)" ;;
+    node-deps) echo "vulnerable Node dependencies of the front (osv-scanner)" ;;
     images)    echo "known CVEs in the runner container images (vulnix)" ;;
     *)         echo "?" ;;
   esac
@@ -124,6 +125,129 @@ check_deps() {
     return 1
   fi
   ok "No high-severity vulnerability"
+}
+
+# ---------------------------------------------------------------------------
+# node-deps
+# ---------------------------------------------------------------------------
+# The front is the one submodule with no Python in it, and the ryax-ci image ships
+# no node at all -- so this reads front/yarn.lock directly with osv-scanner rather
+# than installing a JavaScript toolchain to ask the question.
+#
+# That also makes it wider than the audit the front's own pipeline runs: the npm
+# registry's /security/audits/quick endpoint answers 400 Bad Request for a tree
+# this size unless the request is narrowed to the production environment, so
+# `yarn npm audit` over there cannot see the devDependencies at all. osv-scanner
+# resolves every entry in the lockfile.
+#
+# Findings triaged as not applicable go in front/osv-scanner.toml, which the
+# scanner picks up by itself because it sits next to the lockfile:
+#
+#   [[IgnoredVulns]]
+#   id = "GHSA-xxxx-xxxx-xxxx"
+#   reason = "why this one does not apply to us"
+#
+# Same rule as runner/nix/vulnix-whitelist.toml: no entry without a reason.
+FRONT_LOCKFILE="front/yarn.lock"
+
+check_node_deps() {
+  section "Scanning the front dependencies for CVEs"
+
+  # Skipping is a convenience for contributors without nix or without the
+  # submodule checked out, never for CI: there a missing prerequisite means the
+  # scan is broken and must not pass silently.
+  local skip=""
+  if ! command -v nix >/dev/null 2>&1; then
+    skip="nix is not available, cannot run osv-scanner"
+  elif [ ! -f "$FRONT_LOCKFILE" ]; then
+    skip="$FRONT_LOCKFILE is missing, the front submodule is not checked out"
+  fi
+  if [ -n "$skip" ]; then
+    if [ -n "${CI:-}" ]; then
+      ko "$skip"
+      return 1
+    fi
+    printf '%s  - skipped: %s%s\n' "$DIM" "$skip" "$RESET"
+    return 0
+  fi
+
+  local scan_dir report errlog rc verdict split_rc level pkg worst count msg
+  scan_dir="$(mktemp -d)"
+  report="$scan_dir/osv.json"
+  errlog="$scan_dir/osv.err"
+
+  rc=0
+  nix run nixpkgs#osv-scanner -- scan source --lockfile "$FRONT_LOCKFILE" \
+    --format json > "$report" 2> "$errlog" || rc=$?
+  if [ "$rc" -eq 0 ]; then
+    rm -rf "$scan_dir"
+    ok "No known vulnerability in $FRONT_LOCKFILE"
+    return 0
+  fi
+
+  # osv-scanner exits non-zero both when it finds something and when it fails
+  # outright, so the report itself decides which happened: anything the splitter
+  # below cannot parse is a broken scan, not a clean one.
+  #
+  # It has no severity threshold of its own either, so split the findings here on
+  # the advisory severity, the way check_images splits vulnix findings on CVSS:
+  # HIGH and CRITICAL fail the run, everything else is reported and tolerated. An
+  # advisory carrying no severity at all counts as tolerated, so it warns rather
+  # than blocks.
+  split_rc=0
+  verdict=$(python3 - "$report" <<'OSVPY'
+import json, sys
+
+try:
+    data = json.load(open(sys.argv[1]))
+except Exception as exc:  # empty or unparseable: the scan itself failed
+    print(f"error|{exc}|-|0")
+    sys.exit(2)
+
+blocking, tolerated = [], []
+for result in data.get("results", []):
+    for pkg in result.get("packages", []):
+        name = pkg.get("package", {}).get("name", "?")
+        version = pkg.get("package", {}).get("version", "?")
+        vulns = pkg.get("vulnerabilities", [])
+        high = [
+            severity
+            for vuln in vulns
+            for severity in [((vuln.get("database_specific") or {}).get("severity") or "").upper()]
+            if severity in ("HIGH", "CRITICAL")
+        ]
+        if high:
+            worst = "CRITICAL" if "CRITICAL" in high else "HIGH"
+            blocking.append((f"{name}@{version}", worst, len(high)))
+        elif vulns:
+            tolerated.append((f"{name}@{version}", "moderate or lower", len(vulns)))
+
+for level, rows in (("fail", blocking), ("warn", tolerated)):
+    for pkg, worst, count in sorted(rows):
+        print(f"{level}|{pkg}|{worst}|{count}")
+sys.exit(1 if blocking else 0)
+OSVPY
+  ) || split_rc=$?
+  if [ "$split_rc" -eq 2 ]; then
+    printf '%s\n' "$verdict" | sed 's/^/    /'
+    sed 's/^/    /' "$errlog"
+    rm -rf "$scan_dir"
+    ko "osv-scanner did not produce a usable report"
+    return 1
+  fi
+
+  while IFS='|' read -r level pkg worst count; do
+    [ -z "$level" ] && continue
+    msg="$pkg — $count advisory(ies), worst $worst"
+    if [ "$level" = "fail" ]; then ko "$msg"; else warn "$msg"; fi
+  done <<< "$verdict"
+  rm -rf "$scan_dir"
+
+  if [ "$split_rc" -ne 0 ]; then
+    ko "High or critical advisories found in $FRONT_LOCKFILE"
+    return 1
+  fi
+  ok "Nothing high or critical in $FRONT_LOCKFILE"
 }
 
 # ---------------------------------------------------------------------------

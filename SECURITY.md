@@ -133,6 +133,37 @@ validated providers.
 - User actions are built reproducibly through the Nix-based `ryax_lock`
   mechanism documented at
   <https://docs.ryax.tech/reference/ryax_lock>.
+- Every dependency ecosystem is scanned for known vulnerabilities before a
+  release, blocking on the default branch and re-run on a schedule so that
+  advisories published after a merge still surface:
+
+  | Ecosystem | Tool | Where it runs |
+  |-----------|------|---------------|
+  | Python packages | `uv audit` | `./lint.sh deps`, over every submodule |
+  | Container images | `vulnix` against the Nix closure | `./lint.sh images` |
+  | Node.js packages | `osv-scanner` over `front/yarn.lock` | `./lint.sh node-deps` |
+  | Node.js packages | `yarn npm audit` | `./lint.sh deps` in the front repository |
+  | Helm charts | version-drift check | `python jef.py check_helm_deps` |
+
+  Findings triaged as not applicable are recorded with a written justification
+  rather than silenced: `runner/nix/vulnix-whitelist.toml` for the images,
+  `front/osv-scanner.toml` and the front's `.yarnrc.yml` for the Node packages.
+- Static analysis runs alongside: `bandit` and `vulture` over the Python
+  services, `eslint` (including rules banning `DomSanitizer.bypassSecurityTrust*`,
+  `innerHTML` writes, `eval` and `document.write`) and `knip` over the front.
+
+## Known Residual Risks
+
+These are accepted, tracked exposures rather than reports we are unaware of.
+
+- **Session token storage.** The web UI keeps its bearer token in
+  `localStorage`, so any script that achieves cross-site scripting in the UI can
+  read it. The XSS lint rules above exist to make that hard to introduce; moving
+  the token to an `httpOnly; Secure; SameSite=Strict` cookie is the structural
+  fix and is tracked separately.
+- **Inline styles in the UI.** The `Content-Security-Policy` served with the web
+  UI allows `style-src 'unsafe-inline'` because the component library writes
+  inline styles at runtime. `script-src` does not allow inline code.
 
 ## Contact
 
