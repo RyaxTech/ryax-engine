@@ -135,7 +135,7 @@ check_deps() {
 # references, which is all vulnix needs -- no container runtime involved.
 # See runner/docs/development.md for the image list, why the build needs a
 # relaxed sandbox, and how to triage and whitelist findings.
-RUNNER_IMAGES="runner worker-k8s worker-ssh-slurm action-builder"
+RUNNER_IMAGES="runner worker-k8s worker-ssh-slurm action-builder authorization"
 RUNNER_WHITELIST="runner/nix/vulnix-whitelist.toml"
 # CVSSv3 base score at which a finding stops being a warning and fails the run.
 # 7.0 is the CVSS "high" boundary, so low and medium findings only warn.
