@@ -11,6 +11,9 @@ metadata:
       {{ .Release.Namespace }}-{{ include "front.fullname" . }}-strip-prefix@kubernetescrd
     {{- if $tlsEnabled }}
       ,{{ .Release.Namespace }}-{{ include "front.fullname" . }}-https-redirect@kubernetescrd
+      {{- if gt (int .Values.ingress.hstsSeconds) 0 }}
+      ,{{ .Release.Namespace }}-{{ include "front.fullname" . }}-hsts@kubernetescrd
+      {{- end }}
     cert-manager.io/cluster-issuer: "letsencrypt-{{ .Values.global.tls.environment }}"
     {{- end }}
 spec:
@@ -64,5 +67,23 @@ spec:
   redirectScheme:
     scheme: https
     permanent: true
+{{- if gt (int .Values.ingress.hstsSeconds) 0 }}
+---
+# HSTS is the one security header the front image does not set itself. nginx in
+# that image serves plain HTTP behind this ingress and `global.tls.enabled`
+# defaults to false, so a header baked into the image would pin browsers to an
+# https:// origin that a non-TLS deployment never answers. Here it is emitted only
+# where TLS actually terminates.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "front.fullname" . }}-hsts
+spec:
+  headers:
+    stsSeconds: {{ int .Values.ingress.hstsSeconds }}
+    stsIncludeSubdomains: {{ .Values.ingress.hstsIncludeSubdomains }}
+    stsPreload: false
+    forceSTSHeader: true
+{{- end }}
 {{- end }}
 {{- end }}
