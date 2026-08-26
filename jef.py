@@ -60,6 +60,12 @@ MAIN_RELEASE_REPO = {
     "gitlab_project": "ryax-tech/ryax/ryax-engine",
 }
 
+# Submodules the release must not tag. ci_common is versioned on its own line --
+# the `ref:` every project pins in its .gitlab-ci.yml -- so a 2x.x.x release tag
+# landing on it carries no meaning and buries the versions that do: the tags a
+# maintainer reads to pick a ref.
+SUBMODULES_NOT_RELEASED = ("ci_common",)
+
 MAX_REPO_NAME_LEN = max([len(r) for r in REPOS_TO_BE_RELEASED.keys()])
 
 # Upstream changelog / upgrade-instructions for each external Helm dependency.
@@ -249,14 +255,13 @@ def command_pull_all(args) -> None:
 
 def _force_tag(tag: str) -> None:
     assert tag
-    print(f"{TCOLOR.OKBLUE}$ git submodule foreach git tag -f {tag}{TCOLOR.ENDC}")
-    subprocess.run(f"git submodule foreach git tag -f {tag}", shell=True, check=True)
-    print(
-        f"{TCOLOR.OKBLUE}$ git submodule foreach git push -f origin {tag}{TCOLOR.ENDC}"
-    )
-    subprocess.run(
-        f"git submodule foreach git push -f origin {tag}", shell=True, check=True
-    )
+    # `git submodule foreach` runs over every submodule, SUBMODULES_NOT_RELEASED
+    # included, so each command starts by stepping over those: it is handed
+    # $sm_path, and exiting 0 leaves that submodule alone and moves to the next.
+    skip = "|".join(SUBMODULES_NOT_RELEASED)
+    guard = f'case "$sm_path" in {skip}) echo "Not part of the release: $sm_path"; exit 0;; esac; '
+    _run_cmd(f"git submodule foreach '{guard}git tag -f {tag}'")
+    _run_cmd(f"git submodule foreach '{guard}git push -f origin {tag}'")
 
 
 def command_force_staging(args) -> None:
