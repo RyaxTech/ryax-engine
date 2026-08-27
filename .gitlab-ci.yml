@@ -137,6 +137,22 @@ check_helm_deps:
       when: never
     - when: on_success
 
+check_chart_docs:
+  stage: verify
+  # No `image:` override: the ryax-ci default ships nix, and helm-docs comes from
+  # nixpkgs (the alpine/helm image the lint job uses does not have it).
+  tags: [docker]
+  # Blocking, but only for the case that is actually this MR's fault: the script
+  # exits 0 with a warning when the difference comes from helm-docs itself having
+  # been released, and fails only when the same version produces different output
+  # -- i.e. a values change landed without regenerating.
+  script:
+    - nix shell nixpkgs#helm-docs --command ./charts/docs-checks.sh
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - when: on_success
+
 check_chart_gitops:
   stage: verify
   # No `image:` override on purpose: the ryax-ci image that ci_common sets as the
