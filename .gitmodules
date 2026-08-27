@@ -1,7 +1,7 @@
 [submodule "repository"]
 	path = repository
 	url = git@gitlab.com:ryax-tech/ryax/ryax-repository.git
-[submodule "runner"]
+[submodule "core"]
 	path = core
 	url = git@gitlab.com:ryax-tech/ryax/ryax-core.git
 [submodule "front"]
