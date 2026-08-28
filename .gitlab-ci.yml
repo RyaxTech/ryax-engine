@@ -10,7 +10,10 @@ include:
     # since then reaches this project: 7.0.0 took the install step out of the
     # image build and nothing here builds an image, and 8.0.0 removed the staging
     # deploy templates, which this project never extended.
-    ref: 8.0.0
+    # 8.1.0 lets merge train pipelines run: the workflow rule used to exclude
+    # every merge_request_event pipeline, which is the source a merge train
+    # pipeline reports, so adding a merge request to a train dropped it again.
+    ref: 8.1.0
     file: common-steps-gitlab-ci.yml
 
 stages:
