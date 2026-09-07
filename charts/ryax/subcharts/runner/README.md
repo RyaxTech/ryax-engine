@@ -71,7 +71,7 @@ The Ryax Runner service orchestrates the deployment and the execution of Actions
 | image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"runner","tag":"26.7.0"}` | container image name and version |
 | ingress.className | string | `""` | Value for `spec.ingressClassName`. Left empty, the Ingress is claimed by whichever IngressClass is marked default in the cluster -- which is a cluster-wide setting, not this chart's to rely on. |
 | ingress.enabled | bool | `true` | Render an Ingress for this service. Turn it off when routing is handled outside the chart -- Gateway API, a service mesh, an external load balancer. With no controller to fill in `.status.loadBalancer`, a GitOps engine that health-checks Ingresses reports them Progressing forever and parks the sync. |
-| internalRegistry | string | `"127.0.0.1:30012"` |  |
+| internalRegistry | string | `"127.0.0.1:30012"` | Registry address recorded in an action's image reference, and therefore the one the *kubelet* resolves when it pulls. The kubelet does not use cluster DNS, hence the registry NodePort rather than the Service name. Ignored when global.tls.enabled: the Runner then uses registry.<global.tls.hostname>, which needs registry.ingress.enabled. The address is recorded at the first deploy of each action, so changing it only takes effect for an existing action once its workflow is deployed again. A site whose nodes cannot reach it overrides it with the worker chart's internalRegistryOverride, which needs no redeploy. |
 | jwtSecret | string | `"api-jwt-secret-key"` |  |
 | logLevel | string | `nil` | log level of the service (overide global.ryax.logLevel) |
 | metricsPort | int | `8090` |  |

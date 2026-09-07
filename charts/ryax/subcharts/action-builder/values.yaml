@@ -76,6 +76,10 @@ ryaxWrappersGitReference:
 # -- log level of the service
 logLevel:
 
+# -- Registry the builder PUSHES action images to. Resolved by cluster DNS from
+# inside the cluster, so it is not the address the images are pulled from --
+# that one is runner.internalRegistry. Assumes the release is named `ryax`: the
+# Service is `<Release.Name>-registry`.
 internalRegistry: "ryax-registry:5000"
 # -- Name of the secret that contains credentials to access the registry hosting Ryax actions.
 # Leave empty to use public access registry

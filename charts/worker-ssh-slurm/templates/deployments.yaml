@@ -158,8 +158,10 @@ spec:
             - name: RYAX_ACTIONS_PULL_SECRET
               value: {{ .Values.actionRegistrySecret }}
             {{- end }}
+            {{- if .Values.internalRegistryOverride }}
             - name: RYAX_INTERNAL_REGISTRY_OVERRIDE
-              value: {{ .Values.internalRegistryOverride }}
+              value: {{ .Values.internalRegistryOverride | quote }}
+            {{- end }}
             - name: RYAX_BROKER
               valueFrom:
                 secretKeyRef:

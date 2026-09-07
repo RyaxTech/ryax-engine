@@ -100,9 +100,12 @@ brokerSecret: ryax-broker-secret
 filestoreSecret: ryax-minio-secret
 filestoreName: ryax-filestore
 
-# -- this is used for SLURM_SSH deployment mode on a private network mode.
-# Don't change it unless you know what you are doing
-internalRegistryOverride: 'ryax-registry:5000'
+# -- Registry host to pull action images from on this site, replacing the host
+# the Runner recorded in the image reference. Only needed when that host is not
+# reachable from the worker, e.g. a SLURM_SSH site on a private network: set it
+# to the in-cluster registry Service, `ryax-registry:5000`.
+# Leave empty to pull from the address the Runner provides.
+internalRegistryOverride: ""
 
 # -- Set as true to enable ssh slurm hpc offloading,
 # will run worker-ssh-slurm container as root so singularity build works without --fakeroot
