@@ -198,6 +198,56 @@ check_chart_docs:
       when: never
     - when: on_success
 
+# The published API reference is generated from the four FastAPI applications, so
+# nothing stops an endpoint change from landing without it -- the same problem
+# check_chart_docs guards for the chart READMEs. The release regenerates it
+# (./jef.py update_api), this reports the drift in between.
+check_api_spec:
+  stage: verify
+  image: python:3.13
+  tags: [docker]
+  # A warning, not a gate: an API change and the regenerated spec do not have to
+  # land in the same merge request, and the release step is what guarantees what
+  # gets published. Drop allow_failure once regenerating is a habit.
+  allow_failure: true
+  variables:
+    # Only the three submodules that hold a public API: authorization and the
+    # runner live in core, and front/intelliscale/action-wrappers have none.
+    GIT_SUBMODULE_STRATEGY: recursive
+    GIT_SUBMODULE_PATHS: core studio repository
+    GIT_SUBMODULE_FORCE_HTTPS: "true"
+    GIT_SUBMODULE_DEPTH: 1
+    UV_LINK_MODE: copy
+    UV_CACHE_DIR: .uv-cache
+    # UV_PYTHON_DOWNLOADS is deliberately left alone here, unlike in
+    # .security_base: this runs on the python:3.13 image, whose interpreter may
+    # not satisfy every submodule's requires-python, so uv must be free to fetch
+    # one.
+  cache:
+    - key:
+        files:
+          - core/uv.lock
+          - studio/uv.lock
+          - repository/uv.lock
+        prefix: $CI_RUNNER_EXECUTABLE_ARCH
+      paths:
+        - .uv-cache
+  before_script:
+    - pip install uv
+  script:
+    # Stdlib only, so this project itself does not need to be synced.
+    - python docs/api-spec.py --check
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    # Only when the API can have moved: bumping a submodule changes its gitlink.
+    - changes:
+        - core
+        - studio
+        - repository
+        - docs/api-spec.py
+        - docs/docs/reference/ryax-spec.json
+
 check_chart_gitops:
   stage: verify
   # No `image:` override on purpose: the ryax-ci image that ci_common sets as the

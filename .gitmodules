@@ -16,9 +16,6 @@
 [submodule "default-modules"]
 	path = actions/default-actions
 	url = git@gitlab.com:ryax-tech/workflows/default-actions.git
-[submodule "ryax-public-doc"]
-	path = ryax-public-doc
-	url = git@gitlab.com:ryax-tech/ryax/ryax-public-doc.git
 [submodule "ci_common"]
 	path = ci_common
 	url = git@gitlab.com:ryax-tech/dev/backend/ci_common.git
