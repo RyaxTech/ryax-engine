@@ -1058,45 +1058,13 @@ def command_wait_all_pipes(args) -> None:
             repo_not_finished.append(reponame)
 
 
-def command_update_API(args) -> None:
-    server = args.server
-    version = args.version
-
-    print("+=+  Get swagger and generate SDK  +=+")
-    print(f"{TCOLOR.OKBLUE}$ ./genrate.sh{TCOLOR.ENDC}")
-    os.environ["API_SERVER"] = server
-    os.environ["API_VERSION"] = version
-    subprocess.run("./generate.sh", cwd="sdk/ryax-python-sdk/", shell=True, check=True)
-
-    print("+=+  Copy SDK to CLI  +=+")
-    print(f"{TCOLOR.OKBLUE}$ rm -rf ../../cli/ryax_sdk/*{TCOLOR.ENDC}")
-    subprocess.run(
-        "rm -rf ../../cli/ryax_sdk/*",
-        cwd="sdk/ryax-python-sdk/",
-        shell=True,
-        check=True,
+def command_update_api(args) -> None:
+    version = f" --version {args.version}" if args.version else ""
+    _run_cmd(f"python docs/api-spec.py{version}")
+    print(
+        "+=+  Review the diff and commit it with the chart version bump  +=+\n"
+        "     git diff --stat docs/docs/reference/ryax-spec.json"
     )
-    print(f"{TCOLOR.OKBLUE}$ cp -r ryax_sdk/* ../../cli/ryax_sdk{TCOLOR.ENDC}")
-    subprocess.run(
-        "cp -r ryax_sdk/* ../../cli/ryax_sdk",
-        cwd="sdk/ryax-python-sdk/",
-        shell=True,
-        check=True,
-    )
-
-    if not args.sdk_only:
-        print("+=+  Update the public doc  +=+")
-        subprocess.run(
-            f""" sed  "s/__RYAX_API_VERSION__/{version}/g" ryax-public-doc/api_template/spec.rst > ryax-public-doc/api/{version}.rst""",
-            shell=True,
-            check=True,
-        )
-        shutil.copy(
-            "sdk/ryax-python-sdk/ryax-spec.json",
-            f"ryax-public-doc/_static/api/{version}-spec.json",
-        )
-
-    print("+=+  You need to manually run the tests and commit everything!  +=+")
 
 
 if __name__ == "__main__":
@@ -1192,17 +1160,17 @@ if __name__ == "__main__":
     sp.add_argument("-v", "--version")
     sp.set_defaults(func=command_remove_local_tags)
 
-    description = "Update API: generate from the running server <SERVER> a swagger doc, put it on the public doc and generate the SDK for the CLI. Do not commit anything."
-    sp = subparsers.add_parser("update_API", description=description, help=description)
-    sp.add_argument("server", type=str, default="https://staging.ryax.io")
-    sp.add_argument("version", type=str)
-    sp.add_argument(
-        "-s",
-        "--sdk-only",
-        action="store_true",
-        help="Only generate the SDK, do not update the documentation.",
+    description = (
+        "Regenerate the public API spec published in the documentation, from the "
+        "submodule sources. Does not commit anything."
     )
-    sp.set_defaults(func=command_update_API)
+    sp = subparsers.add_parser("update_api", description=description, help=description)
+    sp.add_argument(
+        "-v",
+        "--version",
+        help="version to stamp into the spec (default: charts/ryax/Chart.yaml)",
+    )
+    sp.set_defaults(func=command_update_api)
 
     args = parser.parse_args()
     if hasattr(args, "func"):
