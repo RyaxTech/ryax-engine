@@ -79,6 +79,14 @@ pages:
     # Never let uv fetch its own interpreter: those builds are not linked
     # against this image's loader. The python from ryax-ci is used instead.
     UV_PYTHON_DOWNLOADS: never
+    # Neither of these jobs extends a ci_common template, so without this they
+    # get the runner's fixed 1 CPU / 1Gi -- the same default that had the image
+    # builds OOMKilled before ci_common 8.2.0 started declaring resources.
+    # `uv sync --all-groups` across every submodule does not fit in it.
+    KUBERNETES_CPU_REQUEST: "1"
+    KUBERNETES_CPU_LIMIT: "4"
+    KUBERNETES_MEMORY_REQUEST: "2Gi"
+    KUBERNETES_MEMORY_LIMIT: "4Gi"
   cache:
     - key:
         files:
@@ -125,6 +133,13 @@ security_checks:
 # advisories surfacing between merges), and on demand elsewhere.
 security_checks_images:
   extends: .security_base
+  variables:
+    # Well above the .security_base baseline: this realises five image closures
+    # and then hands each one to vulnix, which holds the whole NVD database in
+    # memory while it matches. At the baseline it is OOMKilled (exit 137) right
+    # after printing the "Scanning container images for CVEs" header.
+    KUBERNETES_MEMORY_REQUEST: "2Gi"
+    KUBERNETES_MEMORY_LIMIT: "8Gi"
   script:
     # `cachix use` pulls the closures the runner pipeline already published
     # instead of rebuilding them, and `watch-exec` pushes whatever this job does
