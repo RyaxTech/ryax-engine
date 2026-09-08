@@ -60,6 +60,12 @@ Format is  Args name (default value) : Description
 
 Then we need to select what resources we want to autoscale among CPU, Memory and GPU MIG instance. If some resource is enabled (e.g. GPU) but there's actually no this resource in the cluster, or the workload doesn't use this resource, it will simply be ignored.
 
+!!! note
+    To recommend GPU MIG instances, the GPU nodes must be pre-partitioned into
+    MIG instances by the cluster administrator. See
+    [GPU node pools with MIG](../howto/worker-install.md#gpu-node-pools-with-mig)
+    for how to label your GPU nodes with `nvidia.com/mig.config`.
+
 ```plaintext
 --scaled-resource-types string (default "cpu,memory") : Comma separated list of scaled resource types, choose from cpu, memory and gpu_mig_instance.
 ```

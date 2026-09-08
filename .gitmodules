@@ -1,12 +1,9 @@
-[submodule "authorization"]
-	path = authorization
-	url = git@gitlab.com:ryax-tech/ryax/ryax-authorization.git
 [submodule "repository"]
 	path = repository
 	url = git@gitlab.com:ryax-tech/ryax/ryax-repository.git
-[submodule "runner"]
-	path = runner
-	url = git@gitlab.com:ryax-tech/ryax/ryax-runner.git
+[submodule "core"]
+	path = core
+	url = git@gitlab.com:ryax-tech/ryax/ryax-core.git
 [submodule "front"]
 	path = front
 	url = git@gitlab.com:ryax-tech/ryax/ryax-front.git
@@ -19,9 +16,6 @@
 [submodule "default-modules"]
 	path = actions/default-actions
 	url = git@gitlab.com:ryax-tech/workflows/default-actions.git
-[submodule "ryax-public-doc"]
-	path = ryax-public-doc
-	url = git@gitlab.com:ryax-tech/ryax/ryax-public-doc.git
 [submodule "ci_common"]
 	path = ci_common
 	url = git@gitlab.com:ryax-tech/dev/backend/ci_common.git

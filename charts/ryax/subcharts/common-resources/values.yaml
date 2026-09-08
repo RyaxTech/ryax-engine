@@ -10,6 +10,31 @@ global:
 
   monitoring:
     enabled: true
+  # -- Credential secrets the chart generates itself (database, broker, JWT,
+  # encryption keys, registry htpasswd and TLS). Set to false to supply every one
+  # of them yourself -- sealed-secrets, external-secrets, or a plain kubectl
+  # create -- under the names listed in the values below. This is what a GitOps
+  # deployment wants: the generated values come from `lookup()`, which returns
+  # nothing when the chart is rendered without a cluster connection (`helm
+  # template`, ArgoCD's and Flux's repo servers), so every render would otherwise
+  # mint fresh passwords and roll them out to running pods.
+  # @section -- Global
+  secrets:
+    create: true
+  # -- Tolerations injected as-is into every Ryax pod
+  # (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+  # Required to run Ryax on tainted nodes; override per subchart with its own
+  # `tolerations`.
+  # Example:
+  #   - key: mycompany/mesh
+  #     operator: Exists
+  #     effect: NoSchedule
+  # @section -- Global
+  tolerations: []
+  # -- Affinity injected as-is into every Ryax pod. Override per subchart with its
+  # own `affinity`.
+  # @section -- Global
+  affinity: {}
 
 # -- override of global.tls.environment with development, staging or production 
 environment:
@@ -24,10 +49,22 @@ brokerUser: "ryaxmq"
 brokerName: "broker"
 brokerPort: "5672"
 brokerCookieName: "ryax-broker-cookie"
+# -- Create the secret above. Set to false to provide it yourself; it must then
+# carry the key(s): broker, broker-user and rabbitmq-password in `brokerSecret` (in both namespaces), rabbitmq-erlang-cookie in `brokerCookieName`.
+brokerSecretCreate: true
 
+
+# -- Name of the ConfigMap that marks the release as installed. The
+# database-migration hooks read it and skip themselves when it is absent, so a
+# first sync cannot deadlock on a database that does not exist yet. Created by
+# the common-resources subchart.
+releaseMarker: "ryax-release-marker"
 
 # -- Name of the API JWT secret to use
 jwtSecret: "api-jwt-secret-key"
+# -- Create the secret above. Set to false to provide it yourself; it must then
+# carry the key(s): jwt-secret-key.
+jwtSecretCreate: true
 
 # -- If set, override the global.tls.enabled value to create a cert manager issuers
 certManager:
@@ -35,9 +72,15 @@ certManager:
 
 # -- Create the secret for Grafana access with this name
 grafanaSecret: "grafana-credentials"
+# -- Create the secret above. Set to false to provide it yourself; it must then
+# carry the key(s): admin-user and admin-password.
+grafanaSecretCreate: true
 
 # -- Create a filestore access secret
 filestoreSecret: ryax-minio-secret
+# -- Create the secret above. Set to false to provide it yourself; it must then
+# carry the key(s): filestore, filestore-access, filestore-secret, root-user and root-password.
+filestoreSecretCreate: true
 filestoreService: ryax-minio
 filestorePort: 9000
 filestoreUser: ryax

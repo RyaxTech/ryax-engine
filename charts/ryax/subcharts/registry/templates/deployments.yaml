@@ -45,7 +45,7 @@ spec:
             {{- if .Values.extraEnv }}
               {{- toYaml .Values.extraEnv | nindent 12 }}
             {{- end }}
-            {{- if not .Values.ingress.enabled }}
+            {{- if eq (include "registry.certSetup.enabled" .) "true" }}
             - name: REGISTRY_HTTP_TLS_CERTIFICATE
               value: /certs/tls.crt
             - name: REGISTRY_HTTP_TLS_KEY
@@ -61,7 +61,7 @@ spec:
               mountPath: /auth
               readOnly: true
             {{- end }}
-            {{- if not .Values.ingress.enabled }}
+            {{- if eq (include "registry.certSetup.enabled" .) "true" }}
             - mountPath: /certs
               name: certificates
             {{- end }}
@@ -69,11 +69,15 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.global.nodeSelector }}
+      {{- with .Values.tolerations | default .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with .Values.affinity | default .Values.global.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -92,7 +96,7 @@ spec:
             - key: htpasswd
               path: htpasswd
         {{- end }}
-        {{- if not .Values.ingress.enabled }}
+        {{- if eq (include "registry.certSetup.enabled" .) "true" }}
         - name: certificates
           secret:
             defaultMode: 420

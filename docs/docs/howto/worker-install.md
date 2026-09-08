@@ -6,9 +6,12 @@
 
 Ryax is able to use multiple computing infrastructure at once, even during the single run of a workflow.
 To enable the multi-site mode you will need to install a Ryax Worker for each site.
-Ryax Worker currently supports two type of sites `SLURM_SSH` and `KUBERNETES`.
+Ryax provides a dedicated Worker chart per site type:
 
-This document explains how to install and configure Workers.
+- `SLURM_SSH` sites: the `ryax-worker-slurm-ssh` chart (see [SLURM_SSH Worker](#slurm_ssh-worker)).
+- `KUBERNETES` sites: the `ryax-worker-k8s` chart (see [Kubernetes Worker](#kubernetes-worker)).
+
+This document explains how to install and configure both Workers.
 
 ## SLURM_SSH Worker
 
@@ -44,7 +47,6 @@ like in the following example:
 config:
   site:
     id: Site-1777021590-tq6kqbbe
-    type: SLURM_SSH
     spec:
       partitions:
         - name: default # name of the partition as define in Slurm
@@ -52,21 +54,18 @@ config:
       credentials:
         server: my.hpc-site.com
         username: ryax
-loki:
-  enabled: false
-intelliscale:
-  enabled: false
 ```
 Each field explained in details:
 
 - **site.id**: the name of the site that identifies the site in Ryax
-- **site.type**: the type of the site (can SLURM_SSH or KUBERNETES)
 - **site.spec.partitions**: the partition definitions. **Ryax only supports partition with homogeneous node for now.** Each resource value is given by node.
   - **name**: name of the partition in Slurm (Will be use to target the partition).
   - **id**: id of the partition provided by the Ryax UI.
 - **site.spec.credentials**: Contains credential to SSH to HPC cluster login server. The private key will be injected during the installation phase.
 
-For more details about the Ryax Worker configuration please see the [Worker reference documentation](../reference/configuration.md#worker-configuration)
+The site type is determined by the Worker chart you install, so you don't need to set it in your values file.
+
+For more details about the Ryax Worker configuration please see the [Worker reference documentation](../reference/configuration.md#worker-ssh-slurm-configuration)
 
 ### Installation
 
@@ -75,8 +74,7 @@ Now you can install the Worker on the Ryax main site. To do so, we will use the 
 Also, we will inject the SSH private key required to access the SSH cluster.
 ```sh
 helm upgrade --install ryax-worker-hpc \
-  oci://registry.ryax.org/release-charts/ryax-worker  \
-  --version 26.7.0 \
+  oci://registry.ryax.org/release-charts/ryax-worker-slurm-ssh \
   --namespace ryaxns \
   --values worker-values.yaml \
   --set-file hpcPrivateKeyFile=./my-ssh-private-key
@@ -188,6 +186,40 @@ taints:
    key: ryax.tech/ryaxns-execs
    value: only
 ```
+
+### GPU node pools with MIG
+
+For GPU node pools, Ryax IntelliScale recommends a [Multi-Instance GPU (MIG)](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/)
+profile per action so that several actions can share one physical GPU. Ryax does
+**not** partition the GPUs itself: the cluster administrator must pre-partition
+the GPU nodes into MIG instances. This is a one-time setup per GPU node pool.
+
+The standard way to do this on Kubernetes is the
+[NVIDIA GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/index.html)
+with its [MIG Manager](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/gpu-operator-mig.html),
+which reads the `nvidia.com/mig.config` node label and applies the matching MIG
+geometry to the GPUs on that node.
+
+Keep each GPU node pool **homogeneous** (one MIG profile per pool) and label its
+nodes with the MIG profile you want, prefixing it with `all-` to apply it to
+every GPU on the node:
+
+```sh
+# Example: split every GPU on the node into 1g.10gb MIG instances
+kubectl label node <node-name> nvidia.com/mig.config=all-1g.10gb --overwrite
+```
+
+Apply the same label to every node in the pool (for example through your cloud
+provider's node-pool labels so new nodes are labeled automatically on scale-up).
+
+The MIG profile you choose must be one of the profiles Ryax is configured to
+support (`.Values.config.MIG.supportedInstances`, e.g. `1g.10gb,3g.40gb,7g.80gb`)
+so that IntelliScale only recommends instances your nodes can actually provide.
+
+!!! note
+    Earlier Ryax versions shipped a node-labeler DaemonSet that derived the MIG
+    config from a `gpu-pool-mig-*` node label. That component has been removed;
+    label your GPU nodes with `nvidia.com/mig.config` directly as shown above.
 
 ### Preparing
 
@@ -402,7 +434,7 @@ For this you need a DNS entry, for example `skupper.ryax.example.com`, pointing 
 
 * Now that we have the configuration and a secure connection with the credentials we will use Helm to install the latest Ryax Worker:
   ```sh
-  helm upgrade --install ryax oci://registry.ryax.org/release-charts/ryax-worker --version 26.4.0 --values worker-values.yaml -n ryaxns
+  helm upgrade --install ryax-worker oci://registry.ryax.org/release-charts/ryax-worker-k8s --values worker.yaml -n ryaxns
   ```
 * For help `worker-values.yaml` see the guide [here](#configuration-1).
 

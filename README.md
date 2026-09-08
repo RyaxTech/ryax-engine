@@ -133,7 +133,9 @@ Go to the **Infrastructure** > **New Site** and create a Kubernetes site called 
 Now click on **Add node pool** and add a "k3s" node pool with the quantity of resources you want to give to Ryax actions, for example: 1000 mCPU and 2GB of memory.
 Copy the Site ID and the Node pool ID into variables or directly in the command and run:
 ```sh
-helm install ryax-worker oci://registry.ryax.org/release-charts/ryax-worker -n ryaxns \
+SITE_ID="GET ME FROM UI"
+NODE_POOL_ID="GET ME FROM UI"
+helm install ryax-worker-k8s oci://registry.ryax.org/release-charts/ryax-worker-k8s -n ryaxns \
   --set config.site.id=$SITE_ID \
   --set 'config.site.spec.nodePools[0].id'=$NODE_POOL_ID \
   --set 'config.site.spec.nodePools[0].selector.node\.kubernetes\.io/instance-type'=k3s
@@ -166,10 +168,14 @@ A more complete roadmap will be published soon.
 - [X] Workflows can run across multiple sites
 - [X] Spark application support
 - [X] Jupyter Notebook support with GPU enabled
-- [ ] Support all kinds of parallel applications
-- [ ] Backend as a Service on-demand with dedicated database, object store, message broker...
+- [X] Smart dynamic resource request with Ryax Intelliscale
+- [ ] Bring your own external scheduling policy
+- [ ] Fine grained AI Integration with self-hosted or Cloud LLM
 - [ ] Support any container-based services
-- [ ] Ryax in Ryax!
+- [ ] OIDC Auth for HPC clusters
+- [ ] Support data locality to minimize data movement
+- [ ] Support all kinds of parallel applications
+- ...
 
 ## 🤗 Contributing
 

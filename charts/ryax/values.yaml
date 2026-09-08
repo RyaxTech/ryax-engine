@@ -19,6 +19,14 @@ global:
     # -- WARN: Be sure to use tpl in sub chart to inject release name
     otlpEndpoint: "{{ .Release.Name }}-tempo:4317"
 
+  ingress:
+    # -- IngressClass for the Ryax Ingresses, overridable per service with
+    # `<subchart>.ingress.className`. Defaults to the bundled Traefik's own
+    # class; point it at another controller, or turn the Ingresses off with
+    # `<subchart>.ingress.enabled=false`, when Ryax is not fronted by it.
+    # WARN: Be sure to use tpl in sub chart to inject release name
+    className: "{{ .Release.Name }}-traefik"
+
   tls:
     enabled: false
     # -- development or production
@@ -42,6 +50,32 @@ global:
   # filestoreSecret: ryax-minio-secret
   # internalRegistry: 127.0.0.1:30012
   # jwtSecret: api-jwt-secret-key
+  # releaseMarker: ryax-release-marker
+  # -- Credential secrets the chart generates itself (database, broker, JWT,
+  # encryption keys, registry htpasswd and TLS). Set to false to supply every one
+  # of them yourself -- sealed-secrets, external-secrets, or a plain kubectl
+  # create -- under the names listed in the values below. This is what a GitOps
+  # deployment wants: the generated values come from `lookup()`, which returns
+  # nothing when the chart is rendered without a cluster connection (`helm
+  # template`, ArgoCD's and Flux's repo servers), so every render would otherwise
+  # mint fresh passwords and roll them out to running pods.
+  # @section -- Global
+  secrets:
+    create: true
+  # -- Tolerations injected as-is into every Ryax pod
+  # (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+  # Required to run Ryax on tainted nodes; override per subchart with its own
+  # `tolerations`.
+  # Example:
+  #   - key: mycompany/mesh
+  #     operator: Exists
+  #     effect: NoSchedule
+  # @section -- Global
+  tolerations: []
+  # -- Affinity injected as-is into every Ryax pod. Override per subchart with its
+  # own `affinity`.
+  # @section -- Global
+  affinity: {}
 
 registry:
   credentials:
@@ -73,6 +107,14 @@ action-builder:
 runner:
   priorityClass: microservices
 
+# IntelliScale runs centrally at the master site (multi-site). It consumes
+# execution metrics and publishes recommendations over the broker. Set
+# intelliscale.enabled=false to opt out.
+intelliscale:
+  enabled: true
+  priorityClass: microservices
+  # brokerSecret defaults to "ryax-broker-secret" in the subchart.
+
 studio:
   priorityClass: microservices
 
@@ -85,6 +127,11 @@ repository:
 minio:
   image:
     repository: bitnamilegacy/minio
+  console:
+    # -- enable this to add internal Web console to browse Minio content
+    enabled: false
+    image:
+      repository: bitnamilegacy/minio-object-browser
   auth:
     existingSecret: ryax-minio-secret
   commonLabels:
@@ -108,8 +155,10 @@ minio:
       memory: 1000Mi
   serviceAccount:
     create: false
-  volumePermissions:
-    enabled: false
+  defaultInitContainers:
+    # -- If you move data to NFS, enable this to force the permission of minio to match the one from ryax user (UID: 1200)
+    volumePermissions:
+      enabled: false
 
 rabbitmq:
   image:
@@ -193,14 +242,21 @@ kube-prometheus-stack:
       # -- Remote write is disabled by default
       # remoteWrite:
       #   url: https://metrics.ryax.org/insert/0/prometheus
-    storage:
-      volumeClaimTemplate:
-        spec:
-          # -- Select a storage class for prometheus metrics storage
-          # storageClassName: "{{ .Values.global.defaultStorageClass }}"
-          resources:
-            requests:
-              storage: 10Gi
+
+      # -- Persistent volume for the metrics. The key is `storageSpec` under
+      # `prometheusSpec`: kube-prometheus-stack reads nothing else, and Helm does
+      # not complain about a value it does not recognise, so a misplaced block
+      # leaves Prometheus on an emptyDir and every restart drops the metrics.
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            # -- Select a storage class for prometheus metrics storage.
+            # The block is passed through `tpl`, so it can reference values.
+            # storageClassName: "{{ .Values.global.defaultStorageClass }}"
+            resources:
+              requests:
+                storage: 10Gi
               
   additionalPrometheusRulesMap:
     resource-usage:
@@ -495,9 +551,23 @@ alloy:
 traefik:
   deployment:
     enabled: true
+  ingressClass:
+    # -- Do NOT set this to true. `ingressclass.kubernetes.io/is-default-class`
+    # is cluster-scoped, so the bundled Traefik would claim every Ingress in
+    # every namespace that does not name a class -- including ones belonging to
+    # unrelated applications, which it then serves on whatever address its
+    # Service holds. Ryax's own Ingresses name this class explicitly through
+    # `global.ingress.className`, so they do not need it.
+    isDefaultClass: false
   # -- set this to force Traefik on a node pool
   nodeSelector: 
   priorityClassName: backbone
+  # -- The Service is a LoadBalancer by default, which on a cluster running
+  # MetalLB or kube-vip takes the shared ingress address on 80/443. Set
+  # `service.spec.type: ClusterIP` when something else fronts the cluster.
+  # WARN: the key is `service.spec.type`. Traefik 41.x moved it into a free-form
+  # `spec` block and the old `service.type` is silently ignored, which leaves the
+  # Service a LoadBalancer while the values file says otherwise.
   metrics:
     prometheus:
       # Avoid errors when runnning helm template

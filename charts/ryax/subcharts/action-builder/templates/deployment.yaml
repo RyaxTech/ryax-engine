@@ -20,10 +20,6 @@ spec:
         ryax.tech/resource-type: "internal"
     spec:
       priorityClassName: {{ .Values.priorityClass }}
-      imagePullSecrets:
-      {{- with .Values.global.imagePullSecrets }}
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       initContainers:
         - name: {{ include "action-builder.fullname" . }}-pull-wrappers
           image: {{ include "action-builder.image" . }}
@@ -128,15 +124,19 @@ spec:
             periodSeconds: 30
             failureThreshold: 1
           resources: {{- toYaml .Values.resources | nindent 12 }}
-      imagePullSecrets:
       {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.tolerations | default .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
-      {{- with .Values.global.nodeSelector }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with .Values.affinity | default .Values.global.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}

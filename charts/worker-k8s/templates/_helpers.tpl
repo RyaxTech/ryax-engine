@@ -33,11 +33,27 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- end }}
 
 {{/*
-Create a postgresql service name to be called from worker.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+The postgresql service name to be called from worker, i.e. the name the bitnami
+subchart gives its own service.
+
+Delegate to the subchart's own naming helper instead of computing a name and
+asking the subchart to adopt it: values files are not templated, so a name that
+depends on .Release cannot be handed to the subchart through values (this used to
+be attempted with a "fullNameOverride" key, which bitnami does not read -- its
+key is "fullnameOverride" -- so the subchart kept its default name while the
+database URL below pointed somewhere else, and the migration init container
+failed to resolve the host).
+
+Deriving it this way also means a user who sets postgresql.nameOverride or
+postgresql.fullnameOverride keeps a working URL, and only ever needs to set them
+on one side.
+
+Only call this where the subchart is present (it is guarded by
+postgresql.enabled, matching the dependency condition in Chart.yaml), since
+common.* comes from the subchart.
 */}}
 {{- define "worker-k8s.postgresql.service" -}}
-{{- printf "%s-postgresql" (include "worker-k8s.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- include "common.names.fullname" (dict "Values" .Values.postgresql "Chart" (dict "Name" "postgresql") "Release" .Release) -}}
 {{- end }}
 
 {{/*

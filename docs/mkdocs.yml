@@ -16,7 +16,10 @@ markdown_extensions:
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      # relative to the working directory mkdocs runs in (docs/), so the
+      # examples tree sits next to docs_dir and stays out of the built site
+      base_path: ['.']
 theme:
   name: material
   logo: assets/logo-ryax-white-110.png
@@ -67,6 +70,7 @@ nav:
   - ./howto/video_detection.md
 - Administration:
   - ./howto/install_ryax_kubernetes.md
+  - ./howto/install_ryax_argocd.md
   - ./howto/install_ryax_kubernetes_airgap.md
   - ./howto/worker-install.md
   - ./howto/create-backups.md

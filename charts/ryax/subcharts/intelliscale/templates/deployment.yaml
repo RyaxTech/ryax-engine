@@ -1,0 +1,107 @@
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: {{ include "intelliscale.fullname" . }}
+  labels: {{- include "intelliscale.labels" . | nindent 4}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "intelliscale.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        # Force restart on config changes.
+        # Scoped to `config`, which is exactly what the ConfigMap holds: hashing
+        # the whole of .Values instead makes any unrelated value anywhere in the
+        # chart -- a global, another subchart's default -- restart this pod.
+        checksum/config: {{ .Values.config | toYaml | sha256sum }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "intelliscale.labels" . | nindent 8 }}
+        app.kubernetes.io/component: "internal"
+        ryax.tech/resource-type: "internal"
+        ryax.tech/endpoint: "intelliscale-main" # Selected by the intelliscale Service.
+    spec:
+      priorityClassName: {{ .Values.priorityClass }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534 # nobody
+      {{- with .Values.imagePullSecrets | default .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations | default .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity | default .Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: tmptraces-volume
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: {{ include "intelliscale.fullname" . }}-config
+          configMap:
+            name: {{ include "intelliscale.fullname" . }}-config
+      containers:
+        - name: {{ include "intelliscale.fullname" . }}
+          image: {{ include "intelliscale.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            - mountPath: /tmptraces
+              name: tmptraces-volume
+            - name: {{ include "intelliscale.fullname" . }}-config
+              mountPath: /intelliscale-config
+          ports:
+            - name: api-port
+              containerPort: {{ .Values.config.server_ports.api_grpc_server_port }}
+            - name: metrics-port
+              containerPort: {{ .Values.config.server_ports.metrics_server_port }}
+          # A startupProbe, not a long initialDelaySeconds on the liveness one:
+          # the process needs tens of seconds to connect to the broker and bind
+          # its metrics port, and until it does, the API defaults
+          # (initialDelaySeconds 0, failureThreshold 3, periodSeconds 10) have
+          # liveness kill it at ~30s -- a permanent CrashLoopBackOff on a healthy
+          # binary. The startupProbe holds liveness off until the port answers.
+          startupProbe:
+            httpGet:
+              path: /metrics
+              port: metrics-port
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+            timeoutSeconds: {{ .Values.probes.startup.timeoutSeconds }}
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics-port
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics-port
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+          env:
+            - name: RYAX_CONFIG_APP
+              value: /intelliscale-config/config.yaml
+            {{- if .Values.brokerSecret | required "The brokerSecret name is required" }}
+            - name: RYAX_BROKER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.brokerSecret }}
+                  key: "broker"
+            {{- end }}
+            - name: RYAX_OTLP_ENDPOINT
+              value: {{ tpl .Values.global.monitoring.otlpEndpoint . | default "" | quote }}

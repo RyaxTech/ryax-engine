@@ -23,11 +23,15 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.global.nodeSelector }}
+      {{- with .Values.tolerations | default .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector | default .Values.global.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with .Values.affinity | default .Values.global.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -119,8 +123,6 @@ spec:
               value: {{ .Values.global.ryax.userNamespace }}
             - name: RYAX_DEFAULT_ACTION_LOG_LEVEL
               value: {{ .Values.defaultActionLogLevel }}
-            - name: RYAX_UNDEPLOY_IDLE_ACTIONS_AFTER_SECONDS
-              value: "{{ .Values.userActionsRetentionTime }}"
             - name: RYAX_OTLP_ENDPOINT
               value: {{ tpl .Values.global.monitoring.otlpEndpoint . | default "" | quote }}
             - name: RYAX_BILLING_ENABLED

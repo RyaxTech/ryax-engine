@@ -2,17 +2,17 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+  name: {{ include "worker-k8s.fullname" . }}-gpu-node-labeler
   labels:
-    {{- include "intelliscale.labels" . | nindent 4 }}
+    {{- include "worker-k8s.labels" . | nindent 4 }}
 ---
 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+  name: {{ include "worker-k8s.fullname" . }}-gpu-node-labeler
   labels:
-    {{- include "intelliscale.labels" . | nindent 4 }}
+    {{- include "worker-k8s.labels" . | nindent 4 }}
 rules:
   - apiGroups: [""]
     resources: ["nodes"]
@@ -23,16 +23,16 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+  name: {{ include "worker-k8s.fullname" . }}-gpu-node-labeler
   labels:
-    {{- include "intelliscale.labels" . | nindent 4 }}
+    {{- include "worker-k8s.labels" . | nindent 4 }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+    name: {{ include "worker-k8s.fullname" . }}-gpu-node-labeler
     namespace: {{  .Release.Namespace  }}
 roleRef:
   kind: ClusterRole
-  name: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+  name: {{ include "worker-k8s.fullname" . }}-gpu-node-labeler
   apiGroup: rbac.authorization.k8s.io
 
 ---
@@ -40,13 +40,13 @@ roleRef:
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+  name: {{ include "worker-k8s.fullname" . }}-gpu-node-labeler
   labels:
-    {{- include "intelliscale.labels" . | nindent 4 }}
+    {{- include "worker-k8s.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      {{- include "intelliscale.selectorLabels" . | nindent 6 }}
+      {{- include "worker-k8s.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -54,14 +54,14 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "intelliscale.labels" . | nindent 8 }}
+        {{- include "worker-k8s.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
         app.kubernetes.io/component: "internal"
         ryax.tech/resource-type: "internal"
     spec:
-      serviceAccountName: {{ include "intelliscale.fullname" . }}-gpu-node-labeler
+      serviceAccountName: {{ include "worker-k8s.fullname" . }}-gpu-node-labeler
       tolerations:
       - effect: NoSchedule
         operator: Exists
@@ -88,7 +88,7 @@ spec:
             POOL_NAME_LABEL=""
             for value in $LABEL_VALUES; do
                 case "$value" in
-                    gpu-pool-mig-*) 
+                    all-*) 
                         POOL_NAME_LABEL=$value
                         break
                         ;;
@@ -96,7 +96,7 @@ spec:
             done
 
             if [ -n "$POOL_NAME_LABEL" ]; then
-                MIG_CONFIG=$(echo "$POOL_NAME_LABEL" | sed 's/^gpu-pool-mig-//')
+                MIG_CONFIG=$(echo "$POOL_NAME_LABEL" | sed 's/^all-//')
 
                 MIG_FORMATTED=$(echo "$MIG_CONFIG" | sed 's/-/./g')
 

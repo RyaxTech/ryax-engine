@@ -1,11 +1,19 @@
 variables:
-  CHARTS: "charts/ryax charts/worker charts/worker-k8s charts/worker-ssh-slurm"
-  FILES_TO_PREPROCESS: "charts/ryax/Chart.yaml charts/worker/Chart.yaml charts/worker-k8s/Chart.yaml charts/worker-ssh-slurm/Chart.yaml"
+  CHARTS: "charts/ryax charts/worker-k8s charts/worker-ssh-slurm"
+  FILES_TO_PREPROCESS: "charts/ryax/Chart.yaml charts/worker-k8s/Chart.yaml charts/worker-ssh-slurm/Chart.yaml"
 
 include:
   - project: ryax-tech/ryax/ci_common
     # Update on the latest release (see https://gitlab.com/ryax-tech/ryax/ci_common/-/tags)
-    ref: 6.0.1
+    # 7.0.1 is needed for the ryax-ci image it sets as the default: security_checks
+    # runs `uv audit`, which only exists from uv 0.11. Neither breaking change
+    # since then reaches this project: 7.0.0 took the install step out of the
+    # image build and nothing here builds an image, and 8.0.0 removed the staging
+    # deploy templates, which this project never extended.
+    # 8.1.0 lets merge train pipelines run: the workflow rule used to exclude
+    # every merge_request_event pipeline, which is the source a merge train
+    # pipeline reports, so adding a merge request to a train dropped it again.
+    ref: 8.1.0
     file: common-steps-gitlab-ci.yml
 
 stages:
@@ -30,6 +38,10 @@ pages:
     paths:
       - public
   rules:
+    # A scheduled pipeline exists to re-run the audits, not to redeploy an
+    # unchanged site.
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       variables:
         PAGES_PREFIX: "" # no prefix by default (run on the default branch)
@@ -44,18 +56,107 @@ pages:
     url: $CI_PAGES_URL
   
 
-security_checks:
+# The submodule checkout and uv setup both security jobs need. lint.sh runs
+# vulture/bandit/uv-audit across every submodule and builds the runner images for
+# the vulnix scan, so the submodules must be checked out.
+# FORCE_HTTPS rewrites the git@ SSH submodule URLs to HTTPS so the CI job token
+# can authenticate (requires the submodule projects to allow this project in
+# their CI/CD job token allowlist).
+.security_base:
   stage: verify
-  image: python:3.13
+  # No `image:` override on purpose: these jobs need the nix, uv and cachix of the
+  # ryax-ci image that ci_common sets as the default.
   tags: [docker]
+  # A superseded pipeline should stop rather than finish: the image scan below is
+  # the longest job in the pipeline by an order of magnitude.
+  interruptible: true
   variables:
-    # lint.sh runs vulture/bandit/uv-audit across every submodule, so they must
-    # be checked out. FORCE_HTTPS rewrites the git@ SSH submodule URLs to HTTPS
-    # so the CI job token can authenticate (requires the submodule projects to
-    # allow this project in their CI/CD job token allowlist).
     GIT_SUBMODULE_STRATEGY: recursive
     GIT_SUBMODULE_FORCE_HTTPS: "true"
     GIT_SUBMODULE_DEPTH: 1
+    UV_LINK_MODE: copy
+    UV_CACHE_DIR: .uv-cache
+    # Never let uv fetch its own interpreter: those builds are not linked
+    # against this image's loader. The python from ryax-ci is used instead.
+    UV_PYTHON_DOWNLOADS: never
+  cache:
+    - key:
+        files:
+          - uv.lock
+        prefix: $CI_RUNNER_EXECUTABLE_ARCH
+      paths:
+        - .uv-cache
+  before_script:
+    - uv sync --all-groups --python "$(command -v python3)"
+    - export PATH="$PWD/.venv/bin:$PATH"
+
+# The fast checks: seconds each, so they run everywhere. node-deps belongs here
+# rather than with the image scan because osv-scanner only reads front/yarn.lock
+# -- no toolchain to install, no closure to realise.
+security_checks:
+  extends: .security_base
+  script:
+    - ./lint.sh dead-code flaws deps node-deps
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    # Blocking on the default branch: nothing this reports may land on master
+    # unnoticed.
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      allow_failure: false
+    # A warning on every other branch. Most of what this job reports comes from
+    # upstream advisories published after the code was written, so a new CVE in
+    # a dependency must not block a merge request that has nothing to do with
+    # it. Same reasoning as check_helm_deps below.
+    - when: on_success
+      allow_failure: true
+
+# The image CVE scan, split out because it costs around fifteen minutes: it
+# realises four nix image closures, which means several hundred MiB of
+# substitution and a few dozen derivations built whenever the runner pipeline has
+# not already published them to cachix.
+#
+# It used to run on every push of every branch, where it was `allow_failure`
+# anyway -- so it delayed every pipeline without being able to block anything.
+# What it reports also barely depends on the commit under test: the findings come
+# from upstream advisories and from the runner submodule's own pins, not from a
+# change to this repository's charts or CI. So it runs where it can act:
+# blocking on the default branch, blocking on a schedule (add one to keep new
+# advisories surfacing between merges), and on demand elsewhere.
+security_checks_images:
+  extends: .security_base
+  script:
+    # `cachix use` pulls the closures the runner pipeline already published
+    # instead of rebuilding them, and `watch-exec` pushes whatever this job does
+    # have to build, so the next run gets it for free. Same pattern as the
+    # ci_common .test/.check_code_quality steps; CACHIX_AUTH_TOKEN comes from the
+    # ryax-tech/ryax group variables.
+    - cachix use ryaxtech-ci
+    - cachix watch-exec ryaxtech-ci -- ./lint.sh images
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      allow_failure: false
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      allow_failure: false
+    # Elsewhere: available, not automatic. Trigger it from the pipeline view on a
+    # branch that touches the runner submodule or the image definitions.
+    - when: manual
+      allow_failure: true
+
+check_helm_deps:
+  stage: verify
+  image: python:3.13
+  tags: [docker]
+  # Upstream Helm charts release very often, so a drift here should warn without
+  # blocking unrelated merge requests. Drop `allow_failure` to make it blocking.
+  allow_failure: true
+  variables:
+    # Full history + tags are required: the check reads the previous release's
+    # Chart.lock/Chart.yaml (via `git show <tag>:...`) to cap upgrades at one
+    # major per release. A shallow clone would hide older release tags.
+    GIT_DEPTH: 0
     UV_LINK_MODE: copy
     UV_CACHE_DIR: .uv-cache
   cache:
@@ -66,11 +167,117 @@ security_checks:
       paths:
         - .uv-cache
   before_script:
+    # skopeo lists tags for OCI (oci://) charts; the check degrades gracefully
+    # to "skipped" if it is missing, so do not fail the job when it cannot install.
+    - apt-get update -qq && apt-get install -y -qq --no-install-recommends skopeo || echo "skopeo unavailable, OCI charts will be skipped"
+    - curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    - pip install uv
+    - uv sync
+  script:
+    - export PATH="$PWD/.venv/bin:$PATH"
+    # Exits 1 when a locked dependency is behind its recommended version.
+    - python jef.py check_helm_deps
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - when: on_success
+
+check_chart_docs:
+  stage: verify
+  # No `image:` override: the ryax-ci default ships nix, and helm-docs comes from
+  # nixpkgs (the alpine/helm image the lint job uses does not have it).
+  tags: [docker]
+  # Blocking, but only for the case that is actually this MR's fault: the script
+  # exits 0 with a warning when the difference comes from helm-docs itself having
+  # been released, and fails only when the same version produces different output
+  # -- i.e. a values change landed without regenerating.
+  script:
+    - nix shell nixpkgs#helm-docs --command ./charts/docs-checks.sh
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - when: on_success
+
+# The published API reference is generated from the four FastAPI applications, so
+# nothing stops an endpoint change from landing without it -- the same problem
+# check_chart_docs guards for the chart READMEs. The release regenerates it
+# (./jef.py update_api), this reports the drift in between.
+check_api_spec:
+  stage: verify
+  image: python:3.13
+  tags: [docker]
+  # A warning, not a gate: an API change and the regenerated spec do not have to
+  # land in the same merge request, and the release step is what guarantees what
+  # gets published. Drop allow_failure once regenerating is a habit.
+  allow_failure: true
+  variables:
+    # Only the three submodules that hold a public API: authorization and the
+    # runner live in core, and front/intelliscale/action-wrappers have none.
+    GIT_SUBMODULE_STRATEGY: recursive
+    GIT_SUBMODULE_PATHS: core studio repository
+    GIT_SUBMODULE_FORCE_HTTPS: "true"
+    GIT_SUBMODULE_DEPTH: 1
+    UV_LINK_MODE: copy
+    UV_CACHE_DIR: .uv-cache
+    # UV_PYTHON_DOWNLOADS is deliberately left alone here, unlike in
+    # .security_base: this runs on the python:3.13 image, whose interpreter may
+    # not satisfy every submodule's requires-python, so uv must be free to fetch
+    # one.
+  cache:
+    # A static key rather than the cache:key:files of the jobs above: that takes
+    # at most two files and there are three lockfiles here. uv's cache is
+    # content-addressed, so carrying it across lockfile changes is safe.
+    - key: $CI_RUNNER_EXECUTABLE_ARCH-api-spec-uv
+      paths:
+        - .uv-cache
+  before_script:
     - pip install uv
   script:
-    - uv sync --all-groups
+    # Stdlib only, so this project itself does not need to be synced.
+    - python docs/api-spec.py --check
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    # Only when the API can have moved: bumping a submodule changes its gitlink.
+    # compare_to is what makes that mean "moved with respect to master": without
+    # it a branch pipeline diffs against the previous commit, so a follow-up push
+    # touching nothing in this list skips the check the branch still needs.
+    - changes:
+        compare_to: refs/heads/master
+        paths:
+          - core
+          - studio
+          - repository
+          - docs/api-spec.py
+          - docs/docs/reference/ryax-spec.json
+
+check_chart_gitops:
+  stage: verify
+  # No `image:` override on purpose: the ryax-ci image that ci_common sets as the
+  # default ships nix and uv. helm comes from nixpkgs, and the checks parse
+  # rendered manifests with PyYAML, which is already a dependency of this project
+  # (jef.py reads the Chart.yaml files with it).
+  tags: [docker]
+  # Blocking. What this guards -- deterministic rendering, hooks that survive a
+  # first sync, placement on every workload -- is invisible to `helm lint` and
+  # only shows up as a deadlocked install on a user's cluster.
+  variables:
+    UV_LINK_MODE: copy
+    UV_CACHE_DIR: .uv-cache
+    # Never let uv fetch its own interpreter: those builds are not linked against
+    # this image's loader. The python from ryax-ci is used instead.
+    UV_PYTHON_DOWNLOADS: never
+  cache:
+    - key:
+        files:
+          - uv.lock
+        prefix: $CI_RUNNER_EXECUTABLE_ARCH
+      paths:
+        - .uv-cache
+  script:
+    - uv sync --python "$(command -v python3)"
     - export PATH="$PWD/.venv/bin:$PATH"
-    - ./lint.sh
+    - nix shell nixpkgs#kubernetes-helm --command ./charts/gitops-checks.sh
   rules:
     - if: $CI_COMMIT_TAG
       when: never
@@ -87,17 +294,24 @@ verify_helm_charts:
       charts/ryax/subcharts/common-resources
       charts/ryax/subcharts/datastore
       charts/ryax/subcharts/front
+      charts/ryax/subcharts/intelliscale
       charts/ryax/subcharts/registry
       charts/ryax/subcharts/repository
       charts/ryax/subcharts/runner
       charts/ryax/subcharts/studio
-      charts/worker
-      charts/worker/subcharts/intelliscale
+      charts/worker-k8s
+      charts/worker-ssh-slurm
 
 package_helm_charts:
   extends: .package_helm_charts
   needs:
     - verify_helm_charts
+  # Nothing has changed since the last master pipeline, so a scheduled run would
+  # only re-push an identical 0.0.0-v$CI_COMMIT_SHORT_SHA chart.
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
 
 staging_charts:
   extends: .staging_charts
@@ -106,11 +320,3 @@ release_charts:
   extends: .release_charts
   needs:
     - package_helm_charts
-
-release_charts_latest:
-  extends: .release_charts
-  needs:
-    - release_charts
-  variables:
-    CHART_VERSION: 0.0.0-latest
-

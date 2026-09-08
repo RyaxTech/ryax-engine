@@ -4,6 +4,7 @@ services:
     command:
       - server
       - --disable=metrics-server
+      - --disable=traefik
     tmpfs:
       - /run
       - /var/run

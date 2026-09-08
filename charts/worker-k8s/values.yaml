@@ -20,11 +20,36 @@ global:
     enabled: false
     # -- Traces collector (Tempo) endpoint Trace collection (disabled if empty)
     # @section -- Global
-    otlpEndpoint: ""
+    otlpEndpoint: ryax-tempo:4317
 
   ryax:
     logLevel:
     userNamespace: ryaxns-execs
+  # -- Credential secrets the chart generates itself (database, broker, JWT,
+  # encryption keys, registry htpasswd and TLS). Set to false to supply every one
+  # of them yourself -- sealed-secrets, external-secrets, or a plain kubectl
+  # create -- under the names listed in the values below. This is what a GitOps
+  # deployment wants: the generated values come from `lookup()`, which returns
+  # nothing when the chart is rendered without a cluster connection (`helm
+  # template`, ArgoCD's and Flux's repo servers), so every render would otherwise
+  # mint fresh passwords and roll them out to running pods.
+  # @section -- Global
+  secrets:
+    create: true
+  # -- Tolerations injected as-is into every Ryax pod
+  # (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+  # Required to run Ryax on tainted nodes; override per subchart with its own
+  # `tolerations`.
+  # Example:
+  #   - key: mycompany/mesh
+  #     operator: Exists
+  #     effect: NoSchedule
+  # @section -- Global
+  tolerations: []
+  # -- Affinity injected as-is into every Ryax pod. Override per subchart with its
+  # own `affinity`.
+  # @section -- Global
+  affinity: {}
 
 # -- Name of the secret that contains credentials to access the registry hosting Ryax actions.
 # Leave empty to use public access registry
@@ -35,11 +60,18 @@ actionRegistrySecret: ryax-registry-creds-secret
 # https://docs.ryax.tech/reference/configuration.html#worker-configuration
 # @section -- Ryax
 config:
+  # -- Enable NVIDIA MIG auto-labeler that partition the supported NVIDIA cards 
+  MIG:
+    enabled: true
   site:
-    type: KUBERNETES
     spec:
       namespace: "{{ .Values.global.ryax.userNamespace }}"
 
+# -- Container images used by the labeler daemonSet
+labeler:
+  image: bitnamilegacy/kubectl:latest
+  pauseImage: k8s.gcr.io/pause:3.1
+# 
 # -- Resource limit and request for individual user actions if not set in the action `resources` section.
 # Requires a LimitRange Kubernetes object. See for more details: https://kubernetes.io/docs/concepts/policy/limit-range/
 # @section -- Ryax User Actions Settings
@@ -67,7 +99,7 @@ userNamespaceResources: {}
 
 # -- container image name and version
 image:
-  tag: "SERVICE-VERSION"
+  tag: "26.7.0"
   registry: docker.io/ryaxtech
   repository: worker-k8s
   digest: ""
@@ -114,6 +146,12 @@ extraEnv: []
 #           values:
 #           - antarctica-east1
 #           - antarctica-west1
+# -- Tolerations injected as-is, overriding `global.tolerations` when set
+# (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+tolerations: []
+# -- nodeSelector injected as-is, overriding `global.nodeSelector` when set
+# (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+nodeSelector: {}
 affinity: {}
 
 # -- Use this to override the default postgresql database included in the Helm
@@ -123,7 +161,16 @@ databaseURL:
 postgresql:
   # -- Enables PostgreSQL local database
   enabled: true
+  # -- The bundled PostgreSQL is an upstream Bitnami subchart: it does not read
+  # `global.tolerations`, so a tainted node needs its placement set here, e.g.
+  #   primary:
+  #     tolerations: [...]
+  #     nodeSelector: {...}
   auth:
+    # -- Create the database credentials secret named by `existingSecret` below.
+    # Set to false to provide it yourself; it must then carry the keys `password`,
+    # `postgres-password` and `datastore-worker-k8s`.
+    createSecret: true
     existingSecret: '{{ include "worker-k8s.postgresql.secret" . }}'
     database: worker_k8s
     username: worker_k8s
@@ -135,8 +182,10 @@ postgresql:
   primary:
     persistence:
       size: 1Gi
-  fullNameOverride: '{{ include "worker-k8s.postgresql.service" . }}'
- 
+  # -- No name override on purpose: the database URL follows whatever name the
+  # subchart picks (see "worker-k8s.postgresql.service"). Setting nameOverride or
+  # fullnameOverride here is supported and the URL follows it.
+
 monitoring:
   # -- Enable service monitor for prometheus using ServiceMonitor CRD
   serviceMonitor:
