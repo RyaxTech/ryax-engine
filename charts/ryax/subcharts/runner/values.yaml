@@ -124,15 +124,11 @@ brokerSecret: "ryax-broker-secret"
 filestoreSecret: "ryax-minio-secret"
 filestoreName: "ryax-filestore"
 authorizationUrl: "ryax-authorization:8080"
-# -- Registry address recorded in an action's image reference, and therefore the
-# one the *kubelet* resolves when it pulls. The kubelet does not use cluster
-# DNS, hence the registry NodePort rather than the Service name. Ignored when
-# global.tls.enabled: the Runner then uses registry.<global.tls.hostname>, which
-# needs registry.ingress.enabled.
-# The address is recorded at the first deploy of each action, so changing it
-# only takes effect for an existing action once its workflow is deployed again.
-# A site whose nodes cannot reach it overrides it with the worker chart's
-# internalRegistryOverride, which needs no redeploy.
+# -- Registry address the workers pull the action images from global.tls.enabled=false.
+# This is the typical setup when Ryax is on a private network without public IP.
+# Ignored when global.tls.enabled: the Runner then uses registry.<global.tls.hostname>, which needs registry.ingress.enabled.
+# Default value only works when the workers are nodes of Kubernetes cluster.
+# If not, use an external registry with a valid certificate.
 internalRegistry: "127.0.0.1:30012"
 encryptionKeySecret: runner-encryption-key
 # -- Create the secret above. Set to false to provide it yourself; it must then
