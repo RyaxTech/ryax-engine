@@ -146,7 +146,7 @@ validated providers.
   | Helm charts | version-drift check | `python jef.py check_helm_deps` |
 
   Findings triaged as not applicable are recorded with a written justification
-  rather than silenced: `runner/nix/vulnix-whitelist.toml` for the images,
+  rather than silenced: `core/nix/vulnix-whitelist.toml` for the images,
   `front/osv-scanner.toml` and the front's `.yarnrc.yml` for the Node packages.
 - Static analysis runs alongside: `bandit` and `vulture` over the Python
   services, `eslint` (including rules banning `DomSanitizer.bypassSecurityTrust*`,
