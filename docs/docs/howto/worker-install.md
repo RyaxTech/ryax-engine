@@ -76,7 +76,7 @@ Also, we will inject the SSH private key required to access the SSH cluster.
 ```sh
 helm upgrade --install ryax-worker-hpc \
   oci://registry.ryax.org/release-charts/ryax-worker  \
-  --version 26.4.0 \
+  --version 26.7.0 \
   --namespace ryaxns \
   --values worker-values.yaml \
   --set-file hpcPrivateKeyFile=./my-ssh-private-key
