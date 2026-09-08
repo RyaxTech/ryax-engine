@@ -54,7 +54,7 @@ The Ryax action builder creates container images with Ryax wrapper injected
 | extraEnv | list | `[]` |  |
 | grpcAPI.enabled | bool | `false` |  |
 | image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"action-builder","tag":"26.7.0"}` | container image name and version |
-| internalRegistry | string | `"ryax-registry:5000"` |  |
+| internalRegistry | string | `"ryax-registry:5000"` | Registry the builder PUSHES action images to. Resolved by cluster DNS from inside the cluster, so it is not the address the images are pulled from -- that one is runner.internalRegistry. Assumes the release is named `ryax`: the Service is `<Release.Name>-registry`. |
 | logLevel | string | `nil` | log level of the service |
 | nix | object | `{"storeSize":"50Gi"}` | Nix store can be put in a persistent storage or a ephemeral one |
 | nix.storeSize | string | `"50Gi"` | The size of the store |

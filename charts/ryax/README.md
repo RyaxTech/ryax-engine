@@ -135,7 +135,6 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | registry.persistence.pvcSize | string | `"20Gi"` |  |
 | registry.priorityClass | string | `"backbone"` |  |
 | repository.priorityClass | string | `"microservices"` |  |
-| repository.priorityClass | string | `"microservices"` |  |
 | runner.priorityClass | string | `"microservices"` |  |
 | studio.priorityClass | string | `"microservices"` |  |
 | tempo.enabled | bool | `true` |  |

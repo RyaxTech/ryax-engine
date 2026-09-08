@@ -56,6 +56,14 @@ global:
 # Secret must be of type: kubernetes.io/dockerconfigjson
 actionRegistrySecret: ryax-registry-creds-secret
 
+# -- Registry host to pull action images from on this site, replacing the host
+# the Runner recorded in the image reference. Only needed when the kubelet
+# cannot resolve that host, e.g. when the Runner points at the in-cluster
+# registry Service. With the bundled registry and no Ingress, the kubelet
+# reaches it through the NodePort: set this to `127.0.0.1:30012`.
+# Leave empty to pull from the address the Runner provides.
+internalRegistryOverride: ""
+
 # -- Ryax Worker configuration use for the registration. See documentation for more details:
 # https://docs.ryax.tech/reference/configuration.html#worker-configuration
 # @section -- Ryax

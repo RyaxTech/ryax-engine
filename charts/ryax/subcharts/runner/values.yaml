@@ -124,6 +124,11 @@ brokerSecret: "ryax-broker-secret"
 filestoreSecret: "ryax-minio-secret"
 filestoreName: "ryax-filestore"
 authorizationUrl: "ryax-authorization:8080"
+# -- Registry address the workers pull the action images from global.tls.enabled=false.
+# This is the typical setup when Ryax is on a private network without public IP.
+# Ignored when global.tls.enabled: the Runner then uses registry.<global.tls.hostname>, which needs registry.ingress.enabled.
+# Default value only works when the workers are nodes of Kubernetes cluster.
+# If not, use an external registry with a valid certificate.
 internalRegistry: "127.0.0.1:30012"
 encryptionKeySecret: runner-encryption-key
 # -- Create the secret above. Set to false to provide it yourself; it must then

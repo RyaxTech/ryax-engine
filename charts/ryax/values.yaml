@@ -40,17 +40,32 @@ global:
 
   # Be aware that the folowing values are shared amoung the services,
   # but they are defined as static values to avoid unnecessary configuration overhead:
-  # 
+  #
   # datastoreSecret: ryax-datastore-secret
-  # internalRegistry: ryax-registry:5000
   # actionRegistrySecret: ryax-registry-creds-secret
   # brokerSecret: ryax-broker-secret
   # authorizationUrl: ryax-authorization:8080
   # filestoreName: ryax-filestore
   # filestoreSecret: ryax-minio-secret
-  # internalRegistry: 127.0.0.1:30012
   # jwtSecret: api-jwt-secret-key
   # releaseMarker: ryax-release-marker
+  #
+  # The registry address is NOT one of them: push and pull go through different
+  # addresses, and each one is a value of its own subchart.
+  #
+  #   action-builder.internalRegistry: ryax-registry:5000
+  #     Where the builder pushes. Resolved by cluster DNS from inside the
+  #     cluster. Assumes the release is named `ryax`: the Service is
+  #     `<Release.Name>-registry`.
+  #   runner.internalRegistry: 127.0.0.1:30012
+  #     The address recorded in the action image reference, so it must be
+  #     resolvable by the *kubelet*, which does not use cluster DNS. Hence the
+  #     NodePort. Ignored when global.tls.enabled: the Runner then uses
+  #     registry.<global.tls.hostname>, which requires registry.ingress.enabled.
+  #
+  # A worker whose nodes cannot reach the recorded address overrides it at
+  # deploy time with internalRegistryOverride, in the worker chart's own values.
+
   # -- Credential secrets the chart generates itself (database, broker, JWT,
   # encryption keys, registry htpasswd and TLS). Set to false to supply every one
   # of them yourself -- sealed-secrets, external-secrets, or a plain kubectl
@@ -116,9 +131,6 @@ intelliscale:
   # brokerSecret defaults to "ryax-broker-secret" in the subchart.
 
 studio:
-  priorityClass: microservices
-
-repository:
   priorityClass: microservices
 
 repository:
