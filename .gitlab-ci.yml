@@ -4,21 +4,7 @@ variables:
 
 include:
   - project: ryax-tech/ryax/ci_common
-    # Update on the latest release (see https://gitlab.com/ryax-tech/ryax/ci_common/-/tags)
-    # 7.0.1 is needed for the ryax-ci image it sets as the default: security_checks
-    # runs `uv audit`, which only exists from uv 0.11. Neither breaking change
-    # since then reaches this project: 7.0.0 took the install step out of the
-    # image build and nothing here builds an image, and 8.0.0 removed the staging
-    # deploy templates, which this project never extended.
-    # 8.1.0 lets merge train pipelines run: the workflow rule used to exclude
-    # every merge_request_event pipeline, which is the source a merge train
-    # pipeline reports, so adding a merge request to a train dropped it again.
-    # 8.2.0 declares the CPU and memory each job needs, and 8.2.1 realises an
-    # image locally before pushing it -- neither touches this project, which
-    # builds no images and whose jobs declare their own resources.
-    # 8.3.0 makes jobs interruptible by default, so the "auto-cancel redundant
-    # pipelines" setting this project already has switched on finally does
-    # something: until now every superseded pipeline ran to completion.
+    # Releases: https://gitlab.com/ryax-tech/ryax/ci_common/-/tags
     ref: 8.3.0
     file: common-steps-gitlab-ci.yml
 
@@ -85,10 +71,9 @@ pages:
     # Never let uv fetch its own interpreter: those builds are not linked
     # against this image's loader. The python from ryax-ci is used instead.
     UV_PYTHON_DOWNLOADS: never
-    # Neither of these jobs extends a ci_common template, so without this they
-    # get the runner's fixed 1 CPU / 1Gi -- the same default that had the image
-    # builds OOMKilled before ci_common 8.2.0 started declaring resources.
-    # `uv sync --all-groups` across every submodule does not fit in it.
+    # Neither job extends a ci_common template, so without this they get the
+    # runner's fixed 1 CPU / 1Gi, which `uv sync --all-groups` across every
+    # submodule does not fit in.
     KUBERNETES_CPU_REQUEST: "1"
     KUBERNETES_CPU_LIMIT: "4"
     KUBERNETES_MEMORY_REQUEST: "2Gi"
@@ -126,24 +111,14 @@ security_checks:
       allow_failure: true
 
 # The image CVE scan, split out because it costs around fifteen minutes: it
-# realises four nix image closures, which means several hundred MiB of
-# substitution and a few dozen derivations built whenever the runner pipeline has
-# not already published them to cachix.
-#
-# It used to run on every push of every branch, where it was `allow_failure`
-# anyway -- so it delayed every pipeline without being able to block anything.
-# What it reports also barely depends on the commit under test: the findings come
-# from upstream advisories and from the runner submodule's own pins, not from a
-# change to this repository's charts or CI. So it runs where it can act:
-# blocking on the default branch, blocking on a schedule (add one to keep new
-# advisories surfacing between merges), and on demand elsewhere.
+# realises the core image closures and hands each to vulnix. What it reports
+# comes from upstream advisories rather than the commit under test, so it runs
+# only where it can act -- blocking on the default branch and on a schedule,
+# manual elsewhere.
 security_checks_images:
   extends: .security_base
   variables:
-    # Well above the .security_base baseline: this realises five image closures
-    # and then hands each one to vulnix, which holds the whole NVD database in
-    # memory while it matches. At the baseline it is OOMKilled (exit 137) right
-    # after printing the "Scanning container images for CVEs" header.
+    # vulnix holds the whole NVD database in memory; OOMKilled below this.
     KUBERNETES_MEMORY_REQUEST: "2Gi"
     KUBERNETES_MEMORY_LIMIT: "8Gi"
   script:
