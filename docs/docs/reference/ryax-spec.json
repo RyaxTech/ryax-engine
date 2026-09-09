@@ -8721,7 +8721,7 @@
           "state": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/RunnerExecutionTaskState"
+                "$ref": "#/components/schemas/RunnerExecutionResultState"
               },
               {
                 "type": "null"
@@ -8753,7 +8753,7 @@
         "title": "ExecutionResultModel",
         "description": "Former ``ExecutionResultSchema``."
       },
-      "RunnerExecutionTaskState": {
+      "RunnerExecutionResultState": {
         "type": "string",
         "enum": [
           "None",
@@ -8764,7 +8764,8 @@
           "RAM Insufficient, Killed",
           "GPU Memory Insufficient, Killed"
         ],
-        "title": "ExecutionTaskState"
+        "title": "ExecutionResultState",
+        "description": "An execution's state at the granularity the API reports it.\n\nCoarser than ``ExecutionState``: the REST layer and ``ActionRun`` speak this\nwhile the lifecycle speaks ``(ExecutionState, ExecutionErrorType)``. It is\nderived, never stored -- see ``Execution.result_state()``. The member\n*values* are the API contract the frontend matches on, so they do not move."
       },
       "RunnerHTTPValidationError": {
         "properties": {
