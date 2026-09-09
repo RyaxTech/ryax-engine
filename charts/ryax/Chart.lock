@@ -1,34 +1,34 @@
 dependencies:
 - name: common-resources
   repository: file://subcharts/common-resources
-  version: 26.9.0-rc1
+  version: 26.9.0-rc2
 - name: action-builder
   repository: file://subcharts/action-builder
-  version: 26.9.0-rc1
+  version: 26.9.0-rc2
 - name: authorization
   repository: file://subcharts/authorization
-  version: 26.9.0-rc1
+  version: 26.9.0-rc2
 - name: front
   repository: file://subcharts/front
-  version: 26.9.0-rc1
+  version: 26.9.0-rc2
 - name: intelliscale
   repository: file://subcharts/intelliscale
-  version: 26.9.0-rc1
+  version: 26.9.0-rc2
 - name: repository
   repository: file://subcharts/repository
-  version: 26.9.0-rc1
+  version: 26.9.0-rc2
 - name: runner
   repository: file://subcharts/runner
-  version: 26.9.0-rc1
+  version: 26.9.0-rc2
 - name: studio
   repository: file://subcharts/studio
-  version: 26.9.0-rc1
+  version: 26.9.0-rc2
 - name: registry
   repository: file://subcharts/registry
-  version: 26.9.0-rc1
+  version: 26.9.0-rc2
 - name: datastore
   repository: file://subcharts/datastore
-  version: 26.9.0-rc1
+  version: 26.9.0-rc2
 - name: minio
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 17.0.21
@@ -50,5 +50,5 @@ dependencies:
 - name: alloy
   repository: https://grafana.github.io/helm-charts
   version: 1.12.1
-digest: sha256:1e3f1654db579502e96d7ea37d981d12e9d93f4de3691e42a5885ac3256b6173
-generated: "2026-09-09T14:08:03.901636639+02:00"
+digest: sha256:6e52e5dd77ba6417d62d33ae2de1d624e478b17ce09b2f9c811e47f9f3160789
+generated: "2026-09-09T15:27:54.566999875+02:00"
