@@ -1,6 +1,6 @@
 # front
 
-![Version: 26.7.0](https://img.shields.io/badge/Version-26.7.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.7.0](https://img.shields.io/badge/AppVersion-26.7.0-informational?style=flat-square)
+![Version: 26.9.0-rc0](https://img.shields.io/badge/Version-26.9.0--rc0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.9.0-rc0](https://img.shields.io/badge/AppVersion-26.9.0--rc0-informational?style=flat-square)
 
 Ryax platform web interface
 
@@ -35,7 +35,7 @@ Ryax platform web interface
 | affinity | object | `{}` |  |
 | apiPort | int | `80` |  |
 | extraEnv | object | `{}` | Add extra environment variables |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"front","tag":"26.7.0"}` | container image name and version |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"front","tag":"26.9.0-rc0"}` | container image name and version |
 | ingress.className | string | `""` | Value for `spec.ingressClassName`. Left empty, the Ingress is claimed by whichever IngressClass is marked default in the cluster -- which is a cluster-wide setting, not this chart's to rely on. |
 | ingress.enabled | bool | `true` | Render an Ingress for this service. Turn it off when routing is handled outside the chart -- Gateway API, a service mesh, an external load balancer. With no controller to fill in `.status.loadBalancer`, a GitOps engine that health-checks Ingresses reports them Progressing forever and parks the sync. |
 | ingress.hstsIncludeSubdomains | bool | `false` | Whether the Strict-Transport-Security header covers subdomains. Off by default: it would apply to every sibling host of the Ryax hostname, which is not this chart's to decide. |

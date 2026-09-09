@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ryax API",
-    "version": "26.7.0",
+    "version": "26.9.0-rc0",
     "description": "The HTTP API of a Ryax installation: the API the Ryax web interface and the\n`ryaxctl` command line use. It merges the four services that make up the public\nsurface, each under its own path prefix:\n\n- `/api/authorization` -- users, projects and access tokens\n- `/api/repository` -- git sources and the actions built from them\n- `/api/studio` -- workflow authoring\n- `/api/runner` -- deployments, runs and sites\n\nAuthenticate with the token of a Ryax user in an `Authorization: Bearer` header.\n"
   },
   "servers": [
