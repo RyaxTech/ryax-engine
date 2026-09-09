@@ -13,7 +13,13 @@ include:
     # 8.1.0 lets merge train pipelines run: the workflow rule used to exclude
     # every merge_request_event pipeline, which is the source a merge train
     # pipeline reports, so adding a merge request to a train dropped it again.
-    ref: 8.1.0
+    # 8.2.0 declares the CPU and memory each job needs, and 8.2.1 realises an
+    # image locally before pushing it -- neither touches this project, which
+    # builds no images and whose jobs declare their own resources.
+    # 8.3.0 makes jobs interruptible by default, so the "auto-cancel redundant
+    # pipelines" setting this project already has switched on finally does
+    # something: until now every superseded pipeline ran to completion.
+    ref: 8.3.0
     file: common-steps-gitlab-ci.yml
 
 stages:
