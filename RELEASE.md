@@ -50,6 +50,14 @@ helm get values -n ryaxns ryax --output yaml > values.yaml
 
 Admins should take care of the following elements when upgrading to this version:
 
+- **`--take-ownership` is required when upgrading from 26.7.0.** Three credential
+  secrets used to be created as Helm *hook* resources, which Helm never records as part
+  of the release: the Studio password encryption key in the main chart, and the
+  PostgreSQL credentials in both worker charts. They are now ordinary chart-managed
+  resources, so Helm finds them un-owned and refuses the upgrade with
+  `invalid ownership metadata` unless you let it adopt them. Adoption preserves the
+  existing values -- the templates read the current secret before falling back -- so the
+  encryption key and the database passwords are unchanged.
 - **Prometheus storage:** if your values set
   `kube-prometheus-stack.prometheus.storage.volumeClaimTemplate`, move it to
   `prometheus.prometheusSpec.storageSpec` and add
@@ -71,6 +79,7 @@ Then run the upgrade:
 ```sh
 helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine:26.9.0 \
   -n ryaxns \
+  --take-ownership \
   -f values.yaml
 ```
 
@@ -78,5 +87,6 @@ And each worker with its own values:
 ```sh
 helm upgrade ryax-worker-k8s oci://registry.ryax.org/release-charts/ryax-worker-k8s:26.9.0 \
   -n ryaxns \
+  --take-ownership \
   -f worker.yaml
 ```
