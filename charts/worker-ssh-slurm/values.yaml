@@ -77,7 +77,7 @@ config:
 
 # -- container image name and version
 image:
-  tag: "26.7.0"
+  tag: "26.9.0"
   registry: docker.io/ryaxtech
   repository: worker-ssh-slurm
   digest: ""
