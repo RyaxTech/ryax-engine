@@ -221,18 +221,51 @@ An engine with no site registered accepts a deployment and then hangs in
 *Deploying* forever with no error (roadmap#1445). Installing the worker is part
 of the install, not an optional extra.
 
-In the UI: **Infrastructure** → **New Site**, create a Kubernetes site (e.g.
+The site and node pool come first, then the worker chart is installed pointing at
+their IDs. In the UI that is **Infrastructure** → **New Site** (Kubernetes, e.g.
 "Local"), then **Add node pool** with a "k3s" pool and the resources to give Ryax
-actions — say 1000 mCPU and 2GB. Copy both IDs out of the UI, then:
+actions — say 1000 mCPU and 2GB — and copying both IDs out.
+
+Headless, the same two objects over the API — this is the route to use when
+driving the install from a terminal:
 
 ```sh
-SITE_ID="GET ME FROM UI"
-NODE_POOL_ID="GET ME FROM UI"
+JWT=$(curl -s -X POST http://localhost/api/authorization/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"user1","password":"pass1"}' | jq -r .jwt)
+
+SITE_ID=$(curl -s -X POST http://localhost/api/runner/sites \
+  -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \
+  -d '{"name":"Local","type":"KUBERNETES"}' | jq -r .site_id)
+
+NODE_POOL_ID=$(curl -s -X POST "http://localhost/api/runner/sites/$SITE_ID/node-pools" \
+  -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \
+  -d '{"name":"k3s","cpu":1000,"gpu":0,"memory":2147483648,
+       "energy_score":50,"performance_score":50,"cost_score":50,
+       "filter_no_gpu_action":true}' | jq -r .node_pool_id)
+```
+
+**`cpu` is millicores and `memory` is bytes**, though the schema types both as
+plain integers — 1000 mCPU and 2GiB above. Passing `2` for 2GB creates a pool
+nothing can ever fit on. The response keys are `site_id` and `node_pool_id`, not
+`id`. A site created by mistake is removed with
+`POST /api/runner/sites/{site_id}/archive`, not DELETE.
+
+Then, either way:
+
+```sh
 helm install ryax-worker-k8s oci://registry.ryax.org/release-charts/ryax-worker-k8s -n ryaxns \
   --set config.site.id=$SITE_ID \
   --set 'config.site.spec.nodePools[0].id'=$NODE_POOL_ID \
   --set 'config.site.spec.nodePools[0].selector.node\.kubernetes\.io/instance-type'=k3s
 ```
+
+On a minimal local install add `--set global.monitoring.otlpEndpoint=""`, or the
+worker retries trace exports to a `ryax-tempo` that is not deployed, forever.
+Note it is the *endpoint* that has to be blanked, not
+`global.monitoring.enabled` — that already defaults to `false` and only gates the
+ServiceMonitor CRD, while `RYAX_OTLP_ENDPOINT` is templated unconditionally from
+`otlpEndpoint`, which defaults to `ryax-tempo:4317`.
 
 Then add <https://gitlab.com/ryax-tech/workflows/default-actions.git> to the
 **Library**, scan it, and build a few triggers (*Emit Every*, *HTTP API JSON*,
