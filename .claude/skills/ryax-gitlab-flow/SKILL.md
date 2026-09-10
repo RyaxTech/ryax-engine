@@ -42,6 +42,43 @@ description. Prefer `glab ... --description "$(cat file.md)"`.
 > This applies to every other tool named here — `helm`, `kubectl`, `uv`,
 > `helm-docs` — not just `glab`.
 
+## Whose account you are acting as
+
+`glab` authenticates as a **person**, not a service account. Check before doing
+anything consequential:
+
+```sh
+glab api user | jq -r '.username, .bot'
+glab api "projects/ryax-tech%2Fryax%2Fryax-engine" | jq '.permissions'
+```
+
+On the usual developer setup that account holds **Owner on the `ryax-tech`
+group**, inherited by every project in it. Nothing is technically blocked:
+merging, force-pushing a protected branch, deleting a branch, closing an issue
+and deleting a project all succeed on the first try.
+
+Two consequences worth holding on to.
+
+**Everything is attributed to that person.** An issue, an MR, a comment, an
+approval and a merge all appear under their name, and nothing in the history
+distinguishes work they did themselves from work done through their token. A
+reviewer reading the MR list cannot tell the difference.
+
+**Capability is not permission.** Being able to merge is not the same as being
+the one who decides to. Leave to the human:
+
+| Leave to the human | Fine to do |
+|---|---|
+| Merging an MR — that is the reviewer's call, and self-merging through their account erases the review | Opening an MR, pushing to its branch, updating its description |
+| Force-pushing `master` or a release branch | Force-pushing your own feature branch (`--force-with-lease`) |
+| Closing or deleting issues, branches, projects | Creating issues and branches |
+| Anything against a production cluster | Local and staging, once the context is checked |
+| Approving | Requesting review (`--reviewer`) |
+
+When work is ready, say so and hand over the link rather than finishing the job
+yourself. An MR is a *request*; merging it is the answer, and the answer is not
+yours to give.
+
 ## Issues
 
 Always in `roadmap`, whatever repo the code lives in.
