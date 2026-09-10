@@ -1,6 +1,6 @@
 # repository
 
-![Version: 26.9.0-rc4](https://img.shields.io/badge/Version-26.9.0--rc4-informational?style=flat-square) ![AppVersion: 26.9.0-rc4](https://img.shields.io/badge/AppVersion-26.9.0--rc4-informational?style=flat-square)
+![Version: 26.9.0](https://img.shields.io/badge/Version-26.9.0-informational?style=flat-square) ![AppVersion: 26.9.0](https://img.shields.io/badge/AppVersion-26.9.0-informational?style=flat-square)
 
 Ryax repository that pull Ryax Actions from service Helm chart for Kubernetes
 
@@ -51,7 +51,7 @@ Ryax repository that pull Ryax Actions from service Helm chart for Kubernetes
 | brokerSecret | string | `"ryax-broker-secret"` |  |
 | datastoreSecret | string | `"ryax-datastore-secret"` |  |
 | fernetEncryptionKey | string | `nil` | Set this by generating a Key with this script:    ```python3    #!/usr/bin/env python3    import base64    import os     print(base64.urlsafe_b64encode(os.urandom(32)).decode())    ``` |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"repository","tag":"26.9.0-rc4"}` | container image name and version |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"repository","tag":"26.9.0"}` | container image name and version |
 | ingress.className | string | `""` | Value for `spec.ingressClassName`. Left empty, the Ingress is claimed by whichever IngressClass is marked default in the cluster -- which is a cluster-wide setting, not this chart's to rely on. |
 | ingress.enabled | bool | `true` | Render an Ingress for this service. Turn it off when routing is handled outside the chart -- Gateway API, a service mesh, an external load balancer. With no controller to fill in `.status.loadBalancer`, a GitOps engine that health-checks Ingresses reports them Progressing forever and parks the sync. |
 | jwtSecret | string | `"api-jwt-secret-key"` |  |

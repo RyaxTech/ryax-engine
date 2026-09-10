@@ -1,6 +1,6 @@
 # authorization
 
-![Version: 26.9.0-rc4](https://img.shields.io/badge/Version-26.9.0--rc4-informational?style=flat-square) ![AppVersion: 26.9.0-rc4](https://img.shields.io/badge/AppVersion-26.9.0--rc4-informational?style=flat-square)
+![Version: 26.9.0](https://img.shields.io/badge/Version-26.9.0-informational?style=flat-square) ![AppVersion: 26.9.0](https://img.shields.io/badge/AppVersion-26.9.0-informational?style=flat-square)
 
 The Ryax Authorizaion service manage authentication and user rights inside Ryax.
 
@@ -41,7 +41,7 @@ The Ryax Authorizaion service manage authentication and user rights inside Ryax.
 | affinity | object | `{}` |  |
 | apiPort | int | `8080` |  |
 | datastoreSecret | string | `"ryax-datastore-secret"` |  |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"authorization","tag":"26.9.0-rc4"}` | container image name and version |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"authorization","tag":"26.9.0"}` | container image name and version |
 | image.pullPolicy | string | `"IfNotPresent"` | Specify a imagePullPolicy ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images |
 | ingress.className | string | `""` | Value for `spec.ingressClassName`. Left empty, the Ingress is claimed by whichever IngressClass is marked default in the cluster -- which is a cluster-wide setting, not this chart's to rely on. |
 | ingress.enabled | bool | `true` | Render an Ingress for this service. Turn it off when routing is handled outside the chart -- Gateway API, a service mesh, an external load balancer. With no controller to fill in `.status.loadBalancer`, a GitOps engine that health-checks Ingresses reports them Progressing forever and parks the sync. |
