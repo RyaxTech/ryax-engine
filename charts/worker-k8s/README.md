@@ -1,6 +1,6 @@
 # ryax-worker-k8s
 
-![Version: 26.7.0](https://img.shields.io/badge/Version-26.7.0-informational?style=flat-square) ![AppVersion: 26.7.0](https://img.shields.io/badge/AppVersion-26.7.0-informational?style=flat-square)
+![Version: 26.9.0](https://img.shields.io/badge/Version-26.9.0-informational?style=flat-square) ![AppVersion: 26.9.0](https://img.shields.io/badge/AppVersion-26.9.0-informational?style=flat-square)
 
 The Ryax Worker service manages deployments and executions on Kubernetes
 
@@ -67,7 +67,7 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 | filestoreSecret | string | `"ryax-minio-secret"` |  |
 | global.ryax.logLevel | string | `nil` |  |
 | global.ryax.userNamespace | string | `"ryaxns-execs"` |  |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker-k8s","tag":"26.7.0"}` | container image name and version |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker-k8s","tag":"26.9.0"}` | container image name and version |
 | internalRegistryOverride | string | `""` | Registry host to pull action images from on this site, replacing the host the Runner recorded in the image reference. Only needed when the kubelet cannot resolve that host, e.g. when the Runner points at the in-cluster registry Service. With the bundled registry and no Ingress, the kubelet reaches it through the NodePort: set this to `127.0.0.1:30012`. Leave empty to pull from the address the Runner provides. |
 | labeler | object | `{"image":"bitnamilegacy/kubectl:latest","pauseImage":"k8s.gcr.io/pause:3.1"}` | Container images used by the labeler daemonSet |
 | logLevel | string | `nil` | log level of the service (override global.ryax.logLevel) |
