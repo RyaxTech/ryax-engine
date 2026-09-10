@@ -2,5 +2,5 @@ apiVersion: v2
 name: common-resources
 description: Common secrets and configuration for the Ryax platform
 type: application
-version: "26.9.0-rc3"
-appVersion: "26.9.0-rc3"
+version: "26.9.0-rc4"
+appVersion: "26.9.0-rc4"

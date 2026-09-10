@@ -26,6 +26,12 @@ Stability and security updates, plus a GitOps-ready Helm chart and a rebuilt web
 
 ## Bug fixes and Improvements
 
+- Action builds no longer get stuck in "Starting". When the builder reported back before
+  the queue had committed the action's status, the move to "Building" was lost, and the
+  successful build that followed was refused as well — leaving the action in "Starting"
+  for good and, since builds run one at a time, blocking every action queued behind it.
+  The Library now also offers Cancel Build while an action is "Starting" or "Cancelling",
+  so a stalled build can be cleared by hand.
 - Prometheus keeps its metrics across restarts: the volume request sat one level too high
   in the values and was silently ignored, leaving it on an `emptyDir`.
 - Kubernetes worker database upgrades work again — the PostgreSQL service name and the

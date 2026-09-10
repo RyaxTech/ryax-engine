@@ -1,6 +1,6 @@
 # registry
 
-![Version: 26.9.0-rc3](https://img.shields.io/badge/Version-26.9.0--rc3-informational?style=flat-square) ![AppVersion: 26.9.0-rc3](https://img.shields.io/badge/AppVersion-26.9.0--rc3-informational?style=flat-square)
+![Version: 26.9.0-rc4](https://img.shields.io/badge/Version-26.9.0--rc4-informational?style=flat-square) ![AppVersion: 26.9.0-rc4](https://img.shields.io/badge/AppVersion-26.9.0--rc4-informational?style=flat-square)
 
 Ryax internal container registry.
 
