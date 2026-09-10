@@ -14,18 +14,33 @@ Where things live:
 | **Release process** | Group wiki, `3-Release/howto-release` — the canonical reference |
 | Release note | `RELEASE.md` in `ryax-engine`, reused as the tag message |
 
-## glab is not on PATH
+## glab
 
-It is installed but absent from non-login shells. Either works:
+Everything below uses [`glab`](https://gitlab.com/gitlab-org/cli), the GitLab
+CLI. Install it however your machine does, then `glab auth login` once.
+
+Authenticate before assuming a failure is a permissions problem:
 
 ```sh
-nix run nixpkgs#glab -- <args>                          # slower, always available
-export PATH="$(ls -d /nix/store/*glab*/bin | head -1):$PATH"   # for loops and scripts
+glab auth status
 ```
 
-Already authenticated for gitlab.com. Push options (`git push -o merge_request.*`)
-reject any value with a newline, so they cannot carry a multi-line MR body — use
-`glab` with `--description "$(cat file.md)"`.
+Push options (`git push -o merge_request.*`) are the alternative to `glab`, but
+they reject any value containing a newline, so they cannot carry a multi-line MR
+description. Prefer `glab ... --description "$(cat file.md)"`.
+
+> **On NixOS**, tools are not installed imperatively and `glab` may be absent
+> from PATH in non-login shells even when present on the system. Check first:
+>
+> ```sh
+> grep -q '^ID=nixos' /etc/os-release && echo "NixOS"
+> ```
+>
+> If so, see the `nixos-tools` skill: in short, `nix run nixpkgs#glab -- <args>`
+> for one-offs, or put an existing store path on PATH for a loop or script:
+> `export PATH="$(ls -d /nix/store/*glab*/bin | head -1):$PATH"`.
+> This applies to every other tool named here — `helm`, `kubectl`, `uv`,
+> `helm-docs` — not just `glab`.
 
 ## Issues
 
@@ -35,7 +50,7 @@ Always in `roadmap`, whatever repo the code lives in.
 glab issue create --repo ryax-tech/ryax/roadmap \
   --title "..." --description "$(cat issue.md)" \
   --label "Triage" --label "BUG" \
-  --assignee mercierm --yes
+  --assignee mercierm --yes          # mercierm is the PO
 ```
 
 - `Triage` goes on everything new; the PO triages from there.
@@ -56,7 +71,7 @@ glab api "projects/ryax-tech%2Fryax%2Froadmap/issues/<iid>" \
 ```sh
 glab mr create --title "..." --description "$(cat mr.md)" \
   --source-branch <branch> --target-branch master \
-  --assignee mercierm --remove-source-branch --yes
+  --assignee <reviewer> --remove-source-branch --yes
 ```
 
 Link the issue **in the description**, with the full path:
