@@ -141,6 +141,35 @@ helm install ryax-worker-k8s oci://registry.ryax.org/release-charts/ryax-worker-
   --set 'config.site.spec.nodePools[0].selector.node\.kubernetes\.io/instance-type'=k3s
 ```
 
+<details>
+<summary>Prefer not to click? Create the site and node pool from the API instead</summary>
+
+The same two objects can be created over the REST API, which is handy for
+scripting the whole install. It needs [`jq`](https://jqlang.github.io/jq/):
+
+```sh
+JWT=$(curl -s -X POST http://localhost/api/authorization/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"user1","password":"pass1"}' | jq -r .jwt)
+
+SITE_ID=$(curl -s -X POST http://localhost/api/runner/sites \
+  -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \
+  -d '{"name":"Local","type":"KUBERNETES"}' | jq -r .site_id)
+
+# cpu is in millicores and memory in bytes: 1000 mCPU and 2GiB below.
+NODE_POOL_ID=$(curl -s -X POST "http://localhost/api/runner/sites/$SITE_ID/node-pools" \
+  -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \
+  -d '{"name":"k3s","cpu":1000,"gpu":0,"memory":2147483648,
+       "energy_score":50,"performance_score":50,"cost_score":50,
+       "filter_no_gpu_action":true}' | jq -r .node_pool_id)
+
+echo "SITE_ID=$SITE_ID NODE_POOL_ID=$NODE_POOL_ID"
+```
+
+Then run the `helm install` above — `$SITE_ID` and `$NODE_POOL_ID` are already set.
+
+</details>
+
 Now you can add actions to your **Library** by adding the default-action repository: https://gitlab.com/ryax-tech/workflows/default-actions.git
 Scan it, build useful triggers like, for example, ***Emit Every***, ***HTTP API JSON***, ***Run once***, and ***HTTP POST***.
 Also, build some example actions like ***Echo*** and ***Cat content of a file***.
