@@ -6,21 +6,21 @@ kubernetes resource to expose the internal registry. With the internal registry 
 enables to deploy actions within the same kubernetes cluster and will require the worker to be installed inside 
 the same kubernetes cluster. Multi-site behind proxy, although feasible, it is out of the scope of this tutorial.
 
-First retrieve the values of you current ryax installed release with helm, assuming your release is named
-`ryax` and installed on namespace `ryaxns`.
+First retrieve the values of your ryax helm release, assuming your release name is
+`ryax` installed on namespace `ryaxns` the command below should do it.
 
 ```shell
 helm get values -n ryaxns ryax --output yaml > ryax-current-values.yaml
 ```
 
-To be safe we can copy that file to another one so we can safely edit it to add the proxy support.
+To be careful we will copy that file to another one so we can safely edit it to add the proxy support.
 
 ```shell
 cp ryax-current-values.yaml ryax-proxy-values.yaml
 ```
 
-Now we can edit the `ryax-proxy-values.yaml`. First, when behind a proxy, you need to first disable tls and
-certificates so it does not deploy an internet exposed 
+Now we can edit the `ryax-proxy-values.yaml`. First, when behind a proxy, we need to disable tls and
+certificates this avoids deploying an internet exposed 
 registry, creating all necessary changes to deploy your actions from localhost.
 
 ```yaml
