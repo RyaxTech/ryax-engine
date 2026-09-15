@@ -21,21 +21,28 @@ cp ryax-current-values.yaml ryax-proxy-values.yaml
 
 Now we can edit the `ryax-proxy-values.yaml`. First, when behind a proxy, we need to disable tls and
 certificates this avoids deploying an internet exposed 
-registry, creating all necessary changes to deploy your actions from localhost.
+registry, creating all necessary changes to pull your actions from localhost.
 
 ```yaml
 certManager:
   enabled: false
+...
 global:
   tls:
     enabled: false
+...
+registry:
+  ingress:
+    enabled: false
+...
 ```
 
 Secondly, we need to add `extraEnvVars` to `grafana` and `extraEnv` to `action-builder` so it enables these
-services to access  the internet and download necessary dependencies.
+services to access  the internet and download necessary dependencies. Adapt `PROXY_IP:PROXY_PORT` to your 
+proxy server. Note that `NO_PROXY` should contain the subnets that not require a proxy in your local network.
 
 ```yaml
-global:
+kube-prometheus-stack:
   grafana:
     extraEnvVars:
     - name: HTTP_PROXY
@@ -43,7 +50,7 @@ global:
     - name: HTTPS_PROXY
       value: http://PROXY_IP:PROXY_PORT
     - name: NO_PROXY
-      value: localhost,127.0.0.1,::1,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local
+      value: localhost,.ryaxns,.ryaxns-execs,127.0.0.1,::1,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local
 action-builder:
   extraEnv:
   - name: HTTP_PROXY
@@ -51,7 +58,7 @@ action-builder:
   - name: HTTPS_PROXY
     value: http://PROXY_IP:PROXY_PORT
   - name: NO_PROXY
-    value: localhost,127.0.0.1,::1,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local
+    value: localhost,.ryaxns,.ryaxns-execs,127.0.0.1,::1,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local
   - name: NIX_CURL_FLAGS
     value: --proxy http://PROXY_IP:PROXY_PORT
   - name: UV_HTTP_PROXY
