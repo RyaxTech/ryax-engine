@@ -53,7 +53,7 @@ describe_check() {
     flaws)     echo "high-severity Python security flaws (bandit)" ;;
     deps)      echo "vulnerable Python dependencies of every submodule (uv audit)" ;;
     node-deps) echo "vulnerable Node dependencies of the front (osv-scanner)" ;;
-    images)    echo "known CVEs in the runner container images (vulnix)" ;;
+    images)    echo "known CVEs in the Ryax container images (vulnix)" ;;
     *)         echo "?" ;;
   esac
 }
@@ -147,7 +147,7 @@ check_deps() {
 #   id = "GHSA-xxxx-xxxx-xxxx"
 #   reason = "why this one does not apply to us"
 #
-# Same rule as runner/nix/vulnix-whitelist.toml: no entry without a reason.
+# Same rule as core/nix/vulnix-whitelist.toml: no entry without a reason.
 FRONT_LOCKFILE="front/yarn.lock"
 
 check_node_deps() {
@@ -257,10 +257,10 @@ OSVPY
 # vulnix can match every store path against the NVD database. Building
 # `.#<tool>.image` realises the nix2container JSON manifest and the closure it
 # references, which is all vulnix needs -- no container runtime involved.
-# See runner/docs/development.md for the image list, why the build needs a
+# See core/docs/development.md for the image list, why the build needs a
 # relaxed sandbox, and how to triage and whitelist findings.
-RUNNER_IMAGES="runner worker-k8s worker-ssh-slurm action-builder authorization"
-RUNNER_WHITELIST="runner/nix/vulnix-whitelist.toml"
+CORE_IMAGES="runner worker-k8s worker-ssh-slurm action-builder authorization"
+CORE_WHITELIST="core/nix/vulnix-whitelist.toml"
 # CVSSv3 base score at which a finding stops being a warning and fails the run.
 # 7.0 is the CVSS "high" boundary, so low and medium findings only warn.
 VULNIX_FAIL_SCORE="${VULNIX_FAIL_SCORE:-7.0}"
@@ -274,8 +274,8 @@ check_images() {
   local skip=""
   if ! command -v nix >/dev/null 2>&1; then
     skip="nix is not available, cannot build the image closures"
-  elif [ ! -f runner/flake.nix ]; then
-    skip="the runner submodule is not checked out"
+  elif [ ! -f core/flake.nix ]; then
+    skip="the core submodule is not checked out"
   fi
   if [ -n "$skip" ]; then
     if [ -n "${CI:-}" ]; then
@@ -287,11 +287,11 @@ check_images() {
   fi
 
   local whitelist=""
-  if [ -f "$RUNNER_WHITELIST" ]; then
-    whitelist="$PWD/$RUNNER_WHITELIST"
+  if [ -f "$CORE_WHITELIST" ]; then
+    whitelist="$PWD/$CORE_WHITELIST"
   else
     printf '%s  no whitelist at %s, every finding will be reported%s\n' \
-      "$DIM" "$RUNNER_WHITELIST" "$RESET"
+      "$DIM" "$CORE_WHITELIST" "$RESET"
   fi
 
   local scan_dir image rc verdict split_rc level pkg worst count msg
@@ -305,17 +305,17 @@ check_images() {
   # The per-image builds below then hit the local store. Failures are ignored
   # here on purpose: the loop reports which image failed and why.
   local -a all_attrs=()
-  for image in $RUNNER_IMAGES; do
+  for image in $CORE_IMAGES; do
     all_attrs+=(".#${image}.image")
   done
   printf '%s  realising %d image closures%s\n' "$DIM" "${#all_attrs[@]}" "$RESET"
-  (cd runner && nix build "${all_attrs[@]}" \
+  (cd core && nix build "${all_attrs[@]}" \
       --option sandbox relaxed --no-warn-dirty --no-link) || true
 
-  for image in $RUNNER_IMAGES; do
+  for image in $CORE_IMAGES; do
     printf '\n%s• %s%s\n' "$BLUE" "$image" "$RESET"
     # A build failure is a real error, distinct from a vulnerability finding.
-    if ! (cd runner && nix build ".#${image}.image" \
+    if ! (cd core && nix build ".#${image}.image" \
             --option sandbox relaxed --no-warn-dirty \
             --out-link "$scan_dir/$image"); then
       ko "$image: could not build the image"

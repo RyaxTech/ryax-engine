@@ -25,16 +25,6 @@ global:
     environment: "development" # development or production
     hostname: "local.ryax.io" # must be a valid dns address
 
-    # Shared but static:
-    # datastoreSecret: ryax-datastore-secret
-    # internalRegistry: ryax-registry:5000
-    # actionRegistrySecret: ryax-registry-creds-secret
-    # brokerSecret: ryax-broker-secret
-    # authorizationUrl: ryax-authorization:8080
-    # filestoreName: ryax-filestore
-    # filestoreSecret: ryax-minio-secret
-    # internalRegistry: 127.0.0.1:30012
-    # jwtSecret: api-jwt-secret-key
 
   # -- Needed by bitnami to avoid https://github.com/bitnami/charts/issues/30850
   security:

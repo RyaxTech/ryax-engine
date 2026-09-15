@@ -1,6 +1,6 @@
 # ryax-worker-slurm-ssh
 
-![Version: 26.7.0](https://img.shields.io/badge/Version-26.7.0-informational?style=flat-square) ![AppVersion: 26.7.0](https://img.shields.io/badge/AppVersion-26.7.0-informational?style=flat-square)
+![Version: 26.9.0](https://img.shields.io/badge/Version-26.9.0-informational?style=flat-square) ![AppVersion: 26.9.0](https://img.shields.io/badge/AppVersion-26.9.0-informational?style=flat-square)
 
 Ryax Worker that manages execution of Actions on SLURM cluster through SSH.
 
@@ -66,8 +66,8 @@ Ryax Worker that manages execution of Actions on SLURM cluster through SSH.
 | global.ryax.userNamespace | string | `"ryaxns-execs"` |  |
 | hpcConfigFile | string | `nil` | Inject the SSH config to customize the access to the HPC site here with `--set-file` |
 | hpcPrivateKeyFile | string | `nil` | Inject the private key to SSH to the HPC site with `--set-file hpcPrivateKeyFile=./my-private.key` |
-| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker-ssh-slurm","tag":"26.7.0"}` | container image name and version |
-| internalRegistryOverride | string | `"ryax-registry:5000"` | this is used for SLURM_SSH deployment mode on a private network mode. Don't change it unless you know what you are doing |
+| image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io/ryaxtech","repository":"worker-ssh-slurm","tag":"26.9.0"}` | container image name and version |
+| internalRegistryOverride | string | `""` | Registry host to pull action images from on this site, replacing the host the Runner recorded in the image reference. Only needed when that host is not reachable from the worker, e.g. a SLURM_SSH site on a private network: set it to the in-cluster registry Service, `ryax-registry:5000`. Leave empty to pull from the address the Runner provides. |
 | logLevel | string | `nil` | log level of the service (override global.ryax.logLevel) |
 | metricsPort | int | `8093` |  |
 | monitoring.serviceMonitor | object | `{"enabled":false}` | Enable service monitor for prometheus using ServiceMonitor CRD |
