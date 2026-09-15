@@ -234,6 +234,11 @@ taints:
    value: only
 ```
 
+GPU node pools need more than this: an autoscaled GPU node reports `Ready` before
+its NVIDIA driver and MIG geometry are in place, so actions landing in that
+window get a whole GPU instead of their MIG slice. See
+[GPU node pools and MIG](./gpu_node_pools.md).
+
 ### Install the worker
 
 Once your `worker-values.yaml` is ready, install the Kubernetes Worker (`ryax-worker-k8s` chart) in the same cluster and namespace as Ryax:

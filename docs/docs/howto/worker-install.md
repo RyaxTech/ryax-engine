@@ -191,35 +191,19 @@ taints:
 
 For GPU node pools, Ryax IntelliScale recommends a [Multi-Instance GPU (MIG)](https://docs.nvidia.com/datacenter/tesla/mig-user-guide/)
 profile per action so that several actions can share one physical GPU. Ryax does
-**not** partition the GPUs itself: the cluster administrator must pre-partition
-the GPU nodes into MIG instances. This is a one-time setup per GPU node pool.
+**not** partition the GPUs itself: the cluster administrator pre-partitions the
+GPU nodes with the [NVIDIA GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/index.html)
+and its MIG Manager, by labelling the nodes `nvidia.com/mig.config`.
 
-The standard way to do this on Kubernetes is the
-[NVIDIA GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/index.html)
-with its [MIG Manager](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/gpu-operator-mig.html),
-which reads the `nvidia.com/mig.config` node label and applies the matching MIG
-geometry to the GPUs on that node.
+Keep each GPU node pool **homogeneous** — one MIG profile per pool.
 
-Keep each GPU node pool **homogeneous** (one MIG profile per pool) and label its
-nodes with the MIG profile you want, prefixing it with `all-` to apply it to
-every GPU on the node:
+An autoscaled GPU node also needs a readiness gate, or actions land on it before
+its driver and MIG geometry are in place and get a whole GPU instead of their
+slice. The worker chart ships one, off by default.
 
-```sh
-# Example: split every GPU on the node into 1g.10gb MIG instances
-kubectl label node <node-name> nvidia.com/mig.config=all-1g.10gb --overwrite
-```
-
-Apply the same label to every node in the pool (for example through your cloud
-provider's node-pool labels so new nodes are labeled automatically on scale-up).
-
-The MIG profile you choose must be one of the profiles Ryax is configured to
-support (`.Values.config.MIG.supportedInstances`, e.g. `1g.10gb,3g.40gb,7g.80gb`)
-so that IntelliScale only recommends instances your nodes can actually provide.
-
-!!! note
-    Earlier Ryax versions shipped a node-labeler DaemonSet that derived the MIG
-    config from a `gpu-pool-mig-*` node label. That component has been removed;
-    label your GPU nodes with `nvidia.com/mig.config` directly as shown above.
+See **[GPU node pools and MIG](./gpu_node_pools.md)** for the full setup: the
+MIG label, the startup taint, the GPU Operator tolerations, the cluster
+autoscaler flag, and the `gpuReadiness` values.
 
 ### Preparing
 

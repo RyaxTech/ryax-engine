@@ -1,0 +1,237 @@
+{{- if .Values.gpuReadiness.enabled }}
+{{- $npd := include "worker-k8s.fullname" . | printf "%s-gpu-ready-monitor" }}
+{{- $untainter := include "worker-k8s.fullname" . | printf "%s-gpu-untainter" }}
+{{- $config := include "worker-k8s.fullname" . | printf "%s-gpu-readiness" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $config }}
+  labels: {{- include "worker-k8s.labels" . | nindent 4 }}
+data:
+  {{- include "worker-k8s.gpuReadiness.configData" . | nindent 2 }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $npd }}
+  labels: {{- include "worker-k8s.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $npd }}
+  labels: {{- include "worker-k8s.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get"]
+  # The node condition is written through the status subresource.
+  - apiGroups: [""]
+    resources: ["nodes/status"]
+    verbs: ["patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $npd }}
+  labels: {{- include "worker-k8s.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $npd }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ $npd }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ $npd }}
+  labels: {{- include "worker-k8s.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels: {{- include "worker-k8s.gpuReadiness.npd.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "worker-k8s.gpuReadiness.npd.selectorLabels" . | nindent 8 }}
+        {{- include "worker-k8s.gpuReadiness.podLabels" . | nindent 8 }}
+      annotations:
+        # node-problem-detector parses its configuration once, at startup.
+        checksum/config: {{ include "worker-k8s.gpuReadiness.configData" . | sha256sum }}
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+    spec:
+      serviceAccountName: {{ $npd }}
+      # NOT system-node-critical: the Priority admission plugin refuses the
+      # system-* classes outside kube-system, and this chart installs into the
+      # Ryax namespace. A rejected pod leaves the DaemonSet silently empty.
+      priorityClassName: {{ .Values.gpuReadiness.priorityClassName | default .Values.priorityClass }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # This pod exists to run on a node that is by definition still tainted,
+      # so it tolerates the startup taint it gates on -- and, by default,
+      # everything else.
+      tolerations:
+        {{- toYaml .Values.gpuReadiness.tolerations | nindent 8 }}
+      {{- with .Values.gpuReadiness.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: node-problem-detector
+          image: {{ .Values.gpuReadiness.nodeProblemDetector.image }}
+          command: ["/node-problem-detector"]
+          args:
+            - --logtostderr
+            - --config.custom-plugin-monitor=/config/gpu-ready-monitor.json
+          securityContext:
+            # chroot(2) into the driver container's root, and read /dev/nvidia*.
+            privileged: true
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          resources: {{- toYaml .Values.gpuReadiness.nodeProblemDetector.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: host
+              mountPath: /host
+              readOnly: true
+              # Load-bearing. The GPU Operator's driver container bind-mounts
+              # its own root at /run/nvidia/driver on the host *after* this pod
+              # has started; without HostToContainer that mount never appears
+              # here and the probe never goes green on a managed driver.
+              mountPropagation: HostToContainer
+      volumes:
+        - name: config
+          configMap:
+            name: {{ $config }}
+            # The probe is executed straight from the mount.
+            defaultMode: 0755
+        - name: host
+          hostPath:
+            path: /
+            type: Directory
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $untainter }}
+  labels: {{- include "worker-k8s.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $untainter }}
+  labels: {{- include "worker-k8s.labels" . | nindent 4 }}
+rules:
+  # get + list for `kubectl get nodes`, patch for `kubectl taint`, which issues
+  # a strategic-merge PATCH. No watch (this polls) and no update.
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $untainter }}
+  labels: {{- include "worker-k8s.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $untainter }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ $untainter }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $untainter }}
+  labels: {{- include "worker-k8s.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: "Recreate"
+  selector:
+    matchLabels: {{- include "worker-k8s.gpuReadiness.untainter.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "worker-k8s.gpuReadiness.untainter.selectorLabels" . | nindent 8 }}
+        {{- include "worker-k8s.gpuReadiness.podLabels" . | nindent 8 }}
+      annotations:
+        # The loop this runs *is* the ConfigMap.
+        checksum/config: {{ include "worker-k8s.gpuReadiness.configData" . | sha256sum }}
+    spec:
+      serviceAccountName: {{ $untainter }}
+      priorityClassName: {{ .Values.gpuReadiness.priorityClassName | default .Values.priorityClass }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # Not a DaemonSet, so it sits wherever the worker sits: it must not need a
+      # GPU node, and must not tolerate the startup taint it removes.
+      {{- with .Values.tolerations | default .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity | default .Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: gpu-untainter
+          image: {{ .Values.gpuReadiness.untainter.image }}
+          command: ["/config/untaint-gpu-nodes.sh"]
+          env:
+            - name: TAINT_KEY
+              value: {{ .Values.gpuReadiness.taintKey | quote }}
+            - name: CONDITION_TYPE
+              value: {{ .Values.gpuReadiness.conditionType | quote }}
+            - name: NODE_SELECTOR
+              value: {{ include "worker-k8s.gpuReadiness.nodeSelectorString" . | quote }}
+            - name: INTERVAL_SECONDS
+              value: {{ .Values.gpuReadiness.intervalSeconds | quote }}
+            - name: REQUIRE_MIG_SUCCESS
+              value: {{ .Values.gpuReadiness.untainter.requireMigConfigSuccess | quote }}
+            # kubectl caches API discovery under $HOME, which is read-only here.
+            - name: KUBECACHEDIR
+              value: /tmp/kubectl-cache
+          resources: {{- toYaml .Values.gpuReadiness.untainter.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: tmp-dir
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: {{ $config }}
+            defaultMode: 0755
+        - name: tmp-dir
+          emptyDir: {}
+{{- end }}

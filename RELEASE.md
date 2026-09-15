@@ -19,6 +19,13 @@ Stability and security updates, plus a GitOps-ready Helm chart and a rebuilt web
   with per-subchart overrides; the worker charts gained `tolerations` and `nodeSelector`.
 - **Per-site action registry.** A worker whose nodes cannot resolve the registry the
   Runner recorded overrides it with `internalRegistryOverride`.
+- **GPU readiness gate.** On an autoscaled GPU node pool the kubelet reports a node
+  Ready long before its NVIDIA driver, device plugin and MIG geometry are in place, so
+  actions landing in that window were handed a whole GPU instead of their MIG slice and
+  the NVIDIA device plugin crash-looped. The Kubernetes worker chart can now hold a
+  startup taint on such a node until a probe confirms the driver is up and the MIG
+  geometry is the one the pool asked for: set `gpuReadiness.enabled=true`. See the
+  [GPU node pools How-To](https://docs.ryax.tech/howto/gpu_node_pools/).
 - **Rebuilt web interface.** Angular 16 → 21, Nx 22, TypeScript 5.9.
 - **Generated API reference.** <https://docs.ryax.tech/reference/api/> is now built from
   the service sources on every release, so it cannot drift again — the 26.7.0 document
@@ -76,6 +83,15 @@ Admins should take care of the following elements when upgrading to this version
   chart it changed from `ryax-registry:5000` to empty. If you never set it yourself, set
   it explicitly to keep pulling through the in-cluster registry. On a Kubernetes worker
   whose nodes cannot resolve the Runner's address, use `127.0.0.1:30012`.
+- **GPU node pools that relied on the MIG node-labeler:** the `gpu-node-labeler`
+  DaemonSet is removed from the Kubernetes worker chart, along with the `config.MIG` and
+  `labeler` values. It derived `nvidia.com/mig.config` from a node label starting with
+  `all-`. Set `nvidia.com/mig.config` directly in your cloud node-pool labels **before**
+  upgrading: nodes already running keep the label it wrote, but nodes created afterwards
+  would never be partitioned. Helm deletes the DaemonSet and its ServiceAccount,
+  ClusterRole and ClusterRoleBinding (all named
+  `<release>-ryax-worker-k8s-gpu-node-labeler`); ArgoCD and Flux only do so with pruning
+  enabled.
 - **API users:** the Repository V1 endpoints `/api/repository/modules` and
   `/api/repository/modules/{module_id}` are removed; use `/api/repository/v2/`.
 - **Still on the pre-26.7.0 `ryax-worker` chart:** migrate to `ryax-worker-k8s` or
