@@ -190,8 +190,12 @@ node-feature-discovery:
 ```
 
 If you would rather not depend on node-feature-discovery reaching the node, set
-`gpuReadiness.nodeSelector: {}` in the worker values: the probe then runs on
+`gpuReadiness.nodeSelector: null` in the worker values: the probe then runs on
 every node instead of only on labelled GPU nodes.
+
+!!! warning
+    It must be `null`, not `{}`. Helm deep-merges maps, so an empty map leaves
+    the chart's default selector in place and changes nothing.
 
 ## Step 5 — tell the cluster autoscaler the taint is temporary
 

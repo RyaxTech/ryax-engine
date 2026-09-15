@@ -115,9 +115,11 @@ gpuReadiness:
   conditionType: nvidia.com/GPUReady
 
   # -- Nodes the gate looks at. `nvidia.com/gpu.present` is set by the GPU
-  # Operator's node-feature-discovery. Set to `{}` to run the probe on every
+  # Operator's node-feature-discovery. Set to `null` to run the probe on every
   # node instead, which removes the dependency on node-feature-discovery being
   # able to run on a tainted node at the cost of a privileged pod everywhere.
+  # It has to be `null` and not `{}`: Helm deep-merges maps, so an empty map
+  # leaves this default in place instead of clearing it.
   # @section -- GPU Readiness
   nodeSelector:
     nvidia.com/gpu.present: "true"
