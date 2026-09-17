@@ -67,18 +67,6 @@ action-builder:
     value: http://PROXY_IP:PROXY_PORT
   - name: ALL_PROXY
     value: http://PROXY_IP:PROXY_PORT
-  - name: NIX_CONFIG
-    value: |-
-      sandbox = false
-      extra-sandbox-paths = /etc/proxy/proxy
-  - name: PIP_INDEX_URL
-    value: https://pypi.org/simple
-  - name: PIP_TRUSTED_HOST
-    value: pypi.org
-  - name: UV_HTTP_TIMEOUT
-    value: "600"
-  - name: UV_HTTP_CONNECT_TIMEOUT
-    value: "600"
   - name: RYAX_BUILD_ENV_HTTP_PROXY
     value: http://PROXY_IP:PROXY_PORT
   - name: RYAX_BUILD_ENV_HTTPS_PROXY
