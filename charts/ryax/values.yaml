@@ -153,6 +153,15 @@ minio:
   metrics:
     enabled: true
   mode: standalone
+  # -- Replace the pod rather than rolling it, because the data volume is
+  # ReadWriteOnce: a rolling update starts the new pod before retiring the old
+  # one, the new one then waits forever for a volume the old one still holds,
+  # and the rollout never converges -- `helm upgrade --wait` blocks until it
+  # times out and marks the release failed. Deleting the stuck pod does not
+  # help either; the old ReplicaSet simply recreates it. There is no
+  # availability to lose: this is a single replica on a single volume.
+  updateStrategy:
+    type: Recreate
   persistence:
     enabled: true
     size: 20Gi
@@ -351,6 +360,12 @@ kube-prometheus-stack:
     ingress:
       enabled: false
           
+    # -- Replace the pod rather than rolling it; the dashboard volume below is
+    # ReadWriteOnce and a rolling update deadlocks on it. See the same setting
+    # on `minio` for the full reasoning.
+    deploymentStrategy:
+      type: Recreate
+
     persistence:
       enabled: true
       size: 1Gi
