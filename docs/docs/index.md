@@ -3,7 +3,7 @@ title: Welcome
 summary: Documentation to start to use Ryax, a multi-infrastructure orchestrator
 authors:
   - Michael Mercier
-  - Pedro Vehlo
+  - Pedro Velho
   - Yiannis Goergiou
   - Adrien Faure
   - Ryax Dev Team
