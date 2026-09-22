@@ -63,8 +63,9 @@ Then we need to select what resources we want to autoscale among CPU, Memory and
 !!! note
     To recommend GPU MIG instances, the GPU nodes must be pre-partitioned into
     MIG instances by the cluster administrator. See
-    [GPU node pools with MIG](../howto/worker-install.md#gpu-node-pools-with-mig)
-    for how to label your GPU nodes with `nvidia.com/mig.config`.
+    [GPU node pools and MIG](../howto/gpu_node_pools.md) for how to label your
+    GPU nodes with `nvidia.com/mig.config` and how to keep actions off a GPU
+    node until its MIG geometry is in place.
 
 ```plaintext
 --scaled-resource-types string (default "cpu,memory") : Comma separated list of scaled resource types, choose from cpu, memory and gpu_mig_instance.
@@ -83,10 +84,16 @@ After setting scaled resources, we can configure some resource-specific args. We
 
 --gpu-bumpup-timeout duration (15m0s): [For GPU MIG instance] Timeout for finishing gpu OOM bump-up. If no other GPU OOM happens in this duration, the MIG instance recommendation will recover to raw recommendation.
 
---gpu-mig-instances-support string ("1g.10gb,3g.40gb,7g.80gb") : [For GPU MIG instance] Comma separated list of all GPU MIG instances that we want to support. This should be the subset of all supported MIG profiles by the GPU. THIS LIST SHOULD BE SYNCHRONIZED WITH RYAX PLATFORM. DONT MODIFY HERE. SHOULD BE SET IN HELM CHART values.yaml: .Values.config.MIG.supportedInstances
+--gpu-mig-instances-support string ("1g.10gb,3g.40gb,7g.80gb") : [For GPU MIG instance] Comma separated list of all GPU MIG instances that we want to support. This should be the subset of all supported MIG profiles by the GPU.
 
 --gpu-oom-error-code int (26) : [For GPU MIG instance] When the user program inside container encounters an GPU OOM kill, it should return with this error code to let VPA know the occurrence of the GPU OOM. Because GPU OOM is only handled by user program not the linux. The VPA cannot know from Kubernetes unless the user raises this code by themselves. Code number range should be 1 to 255.
 ```
+
+!!! note
+    The MIG profiles IntelliScale can recommend are currently fixed at
+    `mig-1g.10gb`, `mig-3g.40gb` and `mig-7g.80gb`, in the recommender itself
+    rather than in a chart value. Give your GPU node pools one of these
+    profiles — see [GPU node pools and MIG](../howto/gpu_node_pools.md).
 
 ```plaintext
 --vpa-algorithm string ("rule"): Recommendation algorithm: 'rule' for Rule-based, 'ml' for ML-driven

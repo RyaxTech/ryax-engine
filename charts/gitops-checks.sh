@@ -18,6 +18,10 @@
 set -u
 
 CHART="${CHART:-charts/ryax}"
+# Extra `helm template` arguments, so a chart whose feature is off by default can
+# still be checked with it on, e.g.
+#   CHART=charts/worker-k8s CHART_ARGS='--set gpuReadiness.enabled=true' ...
+CHART_ARGS="${CHART_ARGS:-}"
 
 # ---------------------------------------------------------------------------
 # Colors (auto-disabled when stdout is not a TTY or when NO_COLOR is set)
@@ -52,7 +56,8 @@ describe_check() {
   esac
 }
 
-render() { helm template ryax "$CHART" "$@"; }
+# shellcheck disable=SC2086  # CHART_ARGS is a deliberate word-split
+render() { helm template ryax "$CHART" $CHART_ARGS "$@"; }
 
 # ---------------------------------------------------------------------------
 # determinism -- the reason a GitOps engine would otherwise rotate credentials
@@ -144,9 +149,12 @@ MARKER_ENV = "RYAX_RELEASE_INSTALLED"
 # Ryax-owned subcharts. Upstream dependencies ship hooks of their own
 # (kube-prometheus-stack's CRD upgrade and admission certgen jobs); they are
 # self-contained, not ours to guard, and reported rather than silently skipped.
+# These are matched against the helm.sh/chart label, which carries the chart's
+# `name:` -- the worker charts are named ryax-worker-*, not worker-*, so listing
+# them without the prefix silently classified every worker pod as third-party.
 OURS = ("action-builder", "authorization", "common-resources", "datastore", "front",
         "intelliscale", "registry", "repository", "runner", "studio",
-        "worker-k8s", "worker-ssh-slurm", "ryax-engine")
+        "ryax-worker-k8s", "ryax-worker-slurm-ssh", "ryax-engine")
 problems, checked, upstream = [], 0, []
 
 for doc in yaml.safe_load_all(open(sys.argv[1])):
@@ -248,10 +256,12 @@ import sys, yaml
 
 PROBE = "gitops.ryax.tech/probe"
 # the Ryax-owned subcharts; anything else is an upstream dependency whose
-# placement lives in its own values, and is reported rather than silently skipped
+# placement lives in its own values, and is reported rather than silently skipped.
+# Matched against the helm.sh/chart label, which carries the chart's `name:` --
+# the worker charts are named ryax-worker-*, not worker-*.
 OURS = ("action-builder", "authorization", "common-resources", "datastore", "front",
         "intelliscale", "registry", "repository", "runner", "studio",
-        "worker-k8s", "worker-ssh-slurm", "ryax-engine")
+        "ryax-worker-k8s", "ryax-worker-slurm-ssh", "ryax-engine")
 POD_PARENT = {
     "Deployment":  lambda d: [d["spec"]["template"]],
     "StatefulSet": lambda d: [d["spec"]["template"]],

@@ -73,6 +73,7 @@ nav:
   - ./howto/install_ryax_argocd.md
   - ./howto/install_ryax_kubernetes_airgap.md
   - ./howto/worker-install.md
+  - ./howto/gpu_node_pools.md
   - ./howto/create-backups.md
   - ./reference/configuration.md
   - ./reference/intelliscale.md
