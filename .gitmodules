@@ -1,27 +1,27 @@
 [submodule "repository"]
 	path = repository
-	url = git@gitlab.com:ryax-tech/ryax/ryax-repository.git
+	url = https://gitlab.com/ryax-tech/ryax/ryax-repository.git
 [submodule "core"]
 	path = core
-	url = git@gitlab.com:ryax-tech/ryax/ryax-core.git
+	url = https://gitlab.com/ryax-tech/ryax/ryax-core.git
 [submodule "front"]
 	path = front
-	url = git@gitlab.com:ryax-tech/ryax/ryax-front.git
+	url = https://gitlab.com/ryax-tech/ryax/ryax-front.git
 [submodule "studio"]
 	path = studio
-	url = git@gitlab.com:ryax-tech/ryax/ryax-studio.git
+	url = https://gitlab.com/ryax-tech/ryax/ryax-studio.git
 [submodule "action-wrappers"]
 	path = action-wrappers
-	url = git@gitlab.com:ryax-tech/ryax/ryax-action-wrappers.git
+	url = https://gitlab.com/ryax-tech/ryax/ryax-action-wrappers.git
 [submodule "default-modules"]
 	path = actions/default-actions
-	url = git@gitlab.com:ryax-tech/workflows/default-actions.git
+	url = https://gitlab.com/ryax-tech/workflows/default-actions.git
 [submodule "ci_common"]
 	path = ci_common
-	url = git@gitlab.com:ryax-tech/dev/backend/ci_common.git
+	url = https://gitlab.com/ryax-tech/dev/backend/ci_common.git
 [submodule "hpc-actions"]
 	path = actions/hpc-actions
-    url = git@gitlab.com:ryax-tech/workflows/hpc-actions.git
+    url = https://gitlab.com/ryax-tech/workflows/hpc-actions.git
 [submodule "intelliscale"]
 	path = intelliscale
-	url = git@gitlab.com:ryax-tech/ryax/ryax-intelliscale.git
+	url = https://gitlab.com/ryax-tech/ryax/ryax-intelliscale.git
