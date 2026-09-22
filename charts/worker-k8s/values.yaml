@@ -68,18 +68,142 @@ internalRegistryOverride: ""
 # https://docs.ryax.tech/reference/configuration.html#worker-configuration
 # @section -- Ryax
 config:
-  # -- Enable NVIDIA MIG auto-labeler that partition the supported NVIDIA cards 
-  MIG:
-    enabled: true
   site:
     spec:
       namespace: "{{ .Values.global.ryax.userNamespace }}"
 
-# -- Container images used by the labeler daemonSet
-labeler:
-  image: bitnamilegacy/kubectl:latest
-  pauseImage: k8s.gcr.io/pause:3.1
-# 
+# -- Gate GPU nodes so that no action pod lands on one before the NVIDIA stack
+# is usable. On a scale-up the kubelet reports Ready long before the driver, the
+# container toolkit, the device plugin and the MIG geometry are in place: a pod
+# scheduled in that window is handed a whole GPU instead of its MIG slice, and
+# nvidia-device-plugin crash-loops with "device 0 has no MIG devices configured"
+# (NVIDIA/gpu-operator#2670).
+#
+# This is only half of the setup, and the other half is outside this chart:
+#
+#  1. the node pool template must carry the startup taint itself, e.g. for
+#     eksctl: `taints: [{key: readiness.k8s.io/nvidia-gpu-not-ready,
+#     value: pending, effect: NoSchedule}]`;
+#  2. the cluster-autoscaler must be told it is a *startup* taint --
+#     `--startup-taint-prefix=readiness.k8s.io/` (>= 1.36) or
+#     `--startup-taint=readiness.k8s.io/nvidia-gpu-not-ready` -- otherwise it
+#     reads it as permanent and never scales the pool up at all;
+#  3. the GPU Operator must tolerate it, in BOTH `daemonsets.tolerations` and
+#     `node-feature-discovery.worker.tolerations`. Both replace their defaults,
+#     so keep the entries that are already there. Miss the second one and
+#     node-feature-discovery never labels the node `nvidia.com/gpu.present`,
+#     the probe below never runs, and the pool is bricked.
+#
+# See https://docs.ryax.tech/howto/gpu_node_pools/
+# @section -- GPU Readiness
+gpuReadiness:
+  # -- Deploy the gate: a node-problem-detector DaemonSet that publishes the
+  # `nvidia.com/GPUReady` node condition, and a controller that removes the
+  # startup taint once that condition is True. Off by default -- it does nothing
+  # unless the node pools carry the taint, and a tainted pool with this off is a
+  # pool that never runs anything. Enable it *before* adding the taint.
+  # @section -- GPU Readiness
+  enabled: false
+
+  # -- The startup taint to remove. Must match the taint on the node pool
+  # template and the autoscaler's startup-taint flag.
+  # @section -- GPU Readiness
+  taintKey: readiness.k8s.io/nvidia-gpu-not-ready
+
+  # -- Node condition the probe publishes and the untainter waits for.
+  # @section -- GPU Readiness
+  conditionType: nvidia.com/GPUReady
+
+  # -- Nodes the gate looks at. `nvidia.com/gpu.present` is set by the GPU
+  # Operator's node-feature-discovery. Set to `null` to run the probe on every
+  # node instead, which removes the dependency on node-feature-discovery being
+  # able to run on a tainted node at the cost of a privileged pod everywhere.
+  # It has to be `null` and not `{}`: Helm deep-merges maps, so an empty map
+  # leaves this default in place instead of clearing it.
+  # @section -- GPU Readiness
+  nodeSelector:
+    nvidia.com/gpu.present: "true"
+
+  # -- Tolerations for the probe DaemonSet. It exists to run on a node that is
+  # by definition still tainted, so it tolerates everything. Narrow it to the
+  # taints your GPU pools actually carry if you prefer.
+  # @section -- GPU Readiness
+  tolerations:
+    - operator: Exists
+
+  # -- Priority class for both gate workloads. Left empty it falls back to
+  # `priorityClass`. Do NOT set `system-node-critical` here: the Priority
+  # admission plugin refuses it outside the kube-system namespace, and the
+  # DaemonSet then produces no pod at all.
+  # @section -- GPU Readiness
+  priorityClassName:
+
+  # -- How often the probe runs and the untainter polls, in seconds.
+  # @section -- GPU Readiness
+  intervalSeconds: 10
+
+  # -- How long the probe may take before node-problem-detector gives up on it.
+  # A timed-out probe leaves the condition `Unknown`, which the untainter cannot
+  # tell apart from "never ready", so do not trim this: `nvidia-smi` on a node
+  # whose driver has just loaded is slow.
+  # @section -- GPU Readiness
+  probeTimeoutSeconds: 10
+
+  nodeProblemDetector:
+    # -- Image that runs the GPU probe and publishes the node condition. A full
+    # reference on purpose: `global.imageRegistry` does not apply to it, so an
+    # airgapped install overrides this key with its mirror.
+    # @section -- GPU Readiness
+    image: registry.k8s.io/node-problem-detector/node-problem-detector:v0.8.20
+    # -- Recommended resource requirement
+    # @section -- GPU Readiness
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+
+  nodeLabelWatcher:
+    # -- kubectl image of the sidecar that publishes this node's
+    # `nvidia.com/mig.config` to the readiness probe. The probe cannot read it
+    # itself: the node-problem-detector image ships no HTTP client, and that
+    # label is the only place the pool's MIG intent lives -- without it the
+    # probe cannot tell "MIG is off for good" on a full-GPU pool from "MIG is
+    # not enabled yet" on a MIG one. A full reference on purpose, see
+    # nodeProblemDetector.image.
+    # @section -- GPU Readiness
+    image: docker.io/bitnamilegacy/kubectl:1.33
+    # -- Recommended resource requirement
+    # @section -- GPU Readiness
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 64Mi
+
+  untainter:
+    # -- kubectl image of the loop that removes the startup taint. A full
+    # reference on purpose, see nodeProblemDetector.image.
+    # @section -- GPU Readiness
+    image: docker.io/bitnamilegacy/kubectl:1.33
+    # -- Also require `nvidia.com/mig.config.state: success` before releasing a
+    # node that carries a `nvidia.com/mig.config` label. This is what the probe
+    # cannot check: it sees the geometry that exists, not the one that was
+    # asked for, so a node still carrying the previous pool's geometry looks
+    # perfectly ready to it.
+    # @section -- GPU Readiness
+    requireMigConfigSuccess: true
+    # -- Recommended resource requirement
+    # @section -- GPU Readiness
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 64Mi
+
 # -- Resource limit and request for individual user actions if not set in the action `resources` section.
 # Requires a LimitRange Kubernetes object. See for more details: https://kubernetes.io/docs/concepts/policy/limit-range/
 # @section -- Ryax User Actions Settings

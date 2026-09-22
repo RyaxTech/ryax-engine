@@ -274,6 +274,11 @@ check_chart_gitops:
     - uv sync --python "$(command -v python3)"
     - export PATH="$PWD/.venv/bin:$PATH"
     - nix shell nixpkgs#kubernetes-helm --command ./charts/gitops-checks.sh
+    # The worker charts too. `verify_helm_charts` lints them with default values
+    # only, so a feature that is off by default -- the GPU readiness gate -- is
+    # otherwise never rendered anywhere in CI, and a typo in its templates ships.
+    - nix shell nixpkgs#kubernetes-helm --command env CHART=charts/worker-k8s CHART_ARGS="--set gpuReadiness.enabled=true" ./charts/gitops-checks.sh
+    - nix shell nixpkgs#kubernetes-helm --command env CHART=charts/worker-ssh-slurm ./charts/gitops-checks.sh
   rules:
     - if: $CI_COMMIT_TAG
       when: never

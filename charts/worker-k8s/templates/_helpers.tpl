@@ -108,3 +108,46 @@ Return the proper image name.
 {{- end -}}
 {{- end -}}
 
+
+{{/*
+Selector labels for the GPU readiness probe and the untainter.
+
+Deliberately NOT "worker-k8s.selectorLabels": the worker's Service selects on
+those two labels and nothing else (see services.yaml), so any pod that carries
+them becomes an endpoint of the worker's API and metrics ports, and a target of
+its ServiceMonitor. The MIG labeler DaemonSet these replace did exactly that.
+*/}}
+{{- define "worker-k8s.gpuReadiness.npd.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "worker-k8s.name" . }}-gpu-ready-monitor
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{- define "worker-k8s.gpuReadiness.untainter.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "worker-k8s.name" . }}-gpu-untainter
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+The non-selector half of the common labels, for the pod templates above: they
+need their own selector but should still say which chart produced them.
+*/}}
+{{- define "worker-k8s.gpuReadiness.podLabels" -}}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+helm.sh/chart: {{ include "worker-k8s.chart" . }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+app.kubernetes.io/component: "internal"
+ryax.tech/resource-type: "internal"
+{{- end }}
+
+{{/*
+gpuReadiness.nodeSelector as the `key=value,key=value` string kubectl wants.
+Go templates range over a map in sorted key order, so this is deterministic --
+which the GitOps determinism check depends on.
+*/}}
+{{- define "worker-k8s.gpuReadiness.nodeSelectorString" -}}
+{{- $pairs := list -}}
+{{- range $k, $v := .Values.gpuReadiness.nodeSelector -}}
+{{- $pairs = append $pairs (printf "%s=%s" $k $v) -}}
+{{- end -}}
+{{- join "," $pairs -}}
+{{- end }}
