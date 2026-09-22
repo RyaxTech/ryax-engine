@@ -29,9 +29,15 @@ if __name__ == "__main__":
     studio_frenet_key = frenet_key()
     worker_pg_pass = password()
     rabbitmq_pg_pass = password()
+    admin_pass = password()
 
     print(
         f"""
+authorization:
+  # Credentials of the admin account created on the very first start. Changing
+  # the password from the web interface afterwards does not update this.
+  adminUsername: admin
+  adminPassword: "{admin_pass}"
 runner:
   fernetEncryptionKey: {runner_frenet_key}
 repository:

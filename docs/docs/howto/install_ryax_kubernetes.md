@@ -159,13 +159,28 @@ The default values give comfortable volume sizes to start working on the platfor
 
 Now you can access your cluster with its IP address in your web browser.
 
-Default credentials are:
+The admin account is created on the first start with a password generated for
+your installation. `helm install` printed the commands to read it back; they are:
 
-- user: `user1`
-- password: `pass1`
+```sh
+kubectl -n <namespace> get secret ryax-admin-credentials -o jsonpath='{.data.admin-user}' | base64 -d; echo
+kubectl -n <namespace> get secret ryax-admin-credentials -o jsonpath='{.data.admin-password}' | base64 -d; echo
+```
 
 !!! warning
-    Change this password and user as soon as you're logged in!
+    Change this password as soon as you're logged in. The secret is **not**
+    updated when you do, so the value above stops working — keep the new one
+    somewhere safe.
+
+!!! note
+    The secret is only read when the user table is empty, which is the very first
+    start. Upgrading an existing installation never changes your password, and the
+    value in the secret of an instance that has been upgraded is not the one in use.
+
+To choose the credentials yourself instead of having them generated, set
+`authorization.adminUsername` and `authorization.adminPassword` before the first
+install, or create the `ryax-admin-credentials` secret yourself and set
+`authorization.adminSecretCreate: false`.
 
 ## Install a Worker
 

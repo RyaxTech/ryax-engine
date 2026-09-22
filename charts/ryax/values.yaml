@@ -106,7 +106,13 @@ registry:
 datastore:
   pvcSize: 2Gi
   priorityClass: backbone
-  
+
+authorization:
+  # -- Name of the secret holding the initial admin credentials. Repeated from the
+  # subchart's own default because a parent chart does not see its subcharts'
+  # defaults, and NOTES.txt has to name this secret.
+  adminSecret: "ryax-admin-credentials"
+
 front:
   enabled: true
 

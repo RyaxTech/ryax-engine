@@ -1,0 +1,31 @@
+# Welcome to Ryax
+
+{{- if .Values.global.tls.enabled }}
+Your cluster is available at :
+{{ .Values.global.tls.hostname | required "Please set the cluster hostname using `--set global.tls.hostname=ryax.example.com`"}} 
+{{- else }}
+For production with environment please set global.tls.enabled=true
+{{- end }}
+
+{{- if .Release.IsInstall }}
+
+Your initial admin account. Unless you supplied one, the password was generated
+for this installation and these two commands are where to read it:
+
+  kubectl -n {{ .Release.Namespace }} get secret {{ .Values.authorization.adminSecret }} -o jsonpath='{.data.admin-user}' | base64 -d; echo
+  kubectl -n {{ .Release.Namespace }} get secret {{ .Values.authorization.adminSecret }} -o jsonpath='{.data.admin-password}' | base64 -d; echo
+
+Change it from Users in the web interface once you are in. The secret is not
+updated when you do.
+{{- end }}
+
+{{- if .Values.global.monitoring.enabled }}
+{{- $grafanaSecret := index .Values "kube-prometheus-stack" "grafana" "admin" "existingSecret" }}
+
+Grafana user and password :
+
+  kubectl -n {{ .Release.Namespace }} get secret {{ $grafanaSecret }} -o jsonpath='{.data.admin-user}' | base64 -d; echo
+  kubectl -n {{ .Release.Namespace }} get secret {{ $grafanaSecret }} -o jsonpath='{.data.admin-password}' | base64 -d; echo
+{{- end }}
+
+For more info, see https://docs.ryax.tech 

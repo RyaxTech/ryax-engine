@@ -56,6 +56,7 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | alloy.alloy.securityContext | object | `{"runAsGroup":0,"runAsUser":0}` | Required to read the pod log files on the host |
 | alloy.controller.tolerations | list | `[{"effect":"NoSchedule","operator":"Exists"}]` | Be sure that Alloy runs on every node |
 | alloy.crds | object | `{"create":false}` | No need for the PodLogs CRD: logs are collected from the node filesystem |
+| authorization.adminSecret | string | `"ryax-admin-credentials"` | Name of the secret holding the initial admin credentials. Repeated from the subchart's own default because a parent chart does not see its subcharts' defaults, and NOTES.txt has to name this secret. |
 | datastore.priorityClass | string | `"backbone"` |  |
 | datastore.pvcSize | string | `"2Gi"` |  |
 | front.enabled | bool | `true` |  |

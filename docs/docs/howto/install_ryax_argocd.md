@@ -49,6 +49,7 @@ whatever `global.ryax.userNamespace` is set to.
 | `ryax-broker-cookie` | Opaque | `rabbitmq-erlang-cookie` |
 | `ryax-minio-secret` | Opaque | `filestore`, `filestore-access`, `filestore-secret`, `root-user`, `root-password` |
 | `api-jwt-secret-key` | Opaque | `jwt-secret-key` |
+| `ryax-admin-credentials` | Opaque | `admin-user`, `admin-password` |
 | `grafana-credentials` | Opaque | `admin-user`, `admin-password` |
 | `runner-encryption-key` | Opaque | `encryption-key` |
 | `studio-password-encryption-key` | Opaque | `encryption-key` |
@@ -66,10 +67,17 @@ datastore-runner = postgresql://runner:<datastore-runner-pass>@ryax-datastore/ru
 broker           = ampq://ryaxmq:<rabbitmq-password>@ryax-broker.<release ns>:5672/
 ```
 
+`ryax-admin-credentials` is the one exception to "before the first sync": it
+holds the credentials of the admin account seeded when the user table is empty,
+and the Deployment reads both keys with `optional: true`. An **existing**
+installation therefore syncs without it — it will never seed again. A **new** one
+must have it, or the authorization pod stops with
+`No initial admin password configured`.
+
 Each credential also has its own flag, so you can hand over one at a time —
 `datastore.datastoreSecretCreate`, `common-resources.jwtSecretCreate`,
-`registry.credentials.createSecret`, and so on. See the chart README for the
-full list.
+`authorization.adminSecretCreate`, `registry.credentials.createSecret`, and so
+on. See the chart README for the full list.
 
 !!! note "Keeping chart-generated secrets"
     If you would rather let the chart generate them, add the `ignoreDifferences`

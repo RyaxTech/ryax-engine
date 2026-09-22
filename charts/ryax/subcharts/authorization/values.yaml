@@ -80,6 +80,18 @@ apiPort: 8080
 jwtSecret: "api-jwt-secret-key"
 datastoreSecret: "ryax-datastore-secret"
 
+# -- Name of the secret holding the credentials of the admin account created on
+# the very first start, while the user table is still empty. Changing that
+# password from the web interface afterwards does not update this secret.
+adminSecret: "ryax-admin-credentials"
+# -- Create the secret above. Set to false to provide it yourself; it must then
+# carry the key(s): admin-user and admin-password.
+adminSecretCreate: true
+# -- Username of that initial admin account
+adminUsername: "admin"
+# -- Password of that initial admin account. Leave empty to generate a random one.
+adminPassword: ""
+
 # -- Recommended resource requirement
 # WARNING: This must be set in production !
 # @section -- Resource Settings
