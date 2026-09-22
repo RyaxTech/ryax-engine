@@ -38,6 +38,10 @@ The Ryax Authorizaion service manage authentication and user rights inside Ryax.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| adminPassword | string | `""` | Password of that initial admin account. Leave empty to generate a random one. |
+| adminSecret | string | `"ryax-admin-credentials"` | Name of the secret holding the credentials of the admin account created on the very first start, while the user table is still empty. Changing that password from the web interface afterwards does not update this secret. |
+| adminSecretCreate | bool | `true` | Create the secret above. Set to false to provide it yourself; it must then carry the key(s): admin-user and admin-password. |
+| adminUsername | string | `"admin"` | Username of that initial admin account |
 | affinity | object | `{}` |  |
 | apiPort | int | `8080` |  |
 | datastoreSecret | string | `"ryax-datastore-secret"` |  |

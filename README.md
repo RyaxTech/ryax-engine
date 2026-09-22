@@ -124,10 +124,17 @@ Be patient, this may take some minutes depending on your internet connection.
 Once it's done, you can access your cluster at:
 [http://localhost/app/login]()
 
-Default credentials are:
+The admin password is generated for your installation. The `helm install` output
+above tells you how to read it back; here are the same two commands:
 
-- user: `user1`
-- password: `pass1`
+```sh
+RYAX_USER=$(kubectl -n ryaxns get secret ryax-admin-credentials -o jsonpath='{.data.admin-user}' | base64 -d)
+RYAX_PASSWORD=$(kubectl -n ryaxns get secret ryax-admin-credentials -o jsonpath='{.data.admin-password}' | base64 -d)
+echo "$RYAX_USER / $RYAX_PASSWORD"
+```
+
+Change it from **Users** once you are logged in; the secret is not updated when
+you do.
 
 Go to the **Infrastructure** > **New Site** and create a Kubernetes site called "Local".
 Now click on **Add node pool** and add a "k3s" node pool with the quantity of resources you want to give to Ryax actions, for example: 1000 mCPU and 2GB of memory.
@@ -150,7 +157,7 @@ scripting the whole install. It needs [`jq`](https://jqlang.github.io/jq/):
 ```sh
 JWT=$(curl -s -X POST http://localhost/api/authorization/login \
   -H 'Content-Type: application/json' \
-  -d '{"username":"user1","password":"pass1"}' | jq -r .jwt)
+  -d "{\"username\":\"$RYAX_USER\",\"password\":\"$RYAX_PASSWORD\"}" | jq -r .jwt)
 
 SITE_ID=$(curl -s -X POST http://localhost/api/runner/sites \
   -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \

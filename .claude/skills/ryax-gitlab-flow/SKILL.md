@@ -249,8 +249,15 @@ helm install ryax oci://registry.ryax.org/release-charts/ryax-engine \
   -n ryaxns --create-namespace -f ./charts/ryax/env/minimal.yaml
 ```
 
-UI at <http://localhost/app/login>, `user1` / `pass1`. `docker-compose down -v`
-destroys it, including the database.
+UI at <http://localhost/app/login>. The admin password is generated per install;
+`helm install` prints how to read it back, which is:
+
+```sh
+RYAX_USER=$(kubectl -n ryaxns get secret ryax-admin-credentials -o jsonpath='{.data.admin-user}' | base64 -d)
+RYAX_PASSWORD=$(kubectl -n ryaxns get secret ryax-admin-credentials -o jsonpath='{.data.admin-password}' | base64 -d)
+```
+
+`docker-compose down -v` destroys it, including the database.
 
 ### Register a worker — the engine alone cannot run anything
 
@@ -269,7 +276,7 @@ driving the install from a terminal:
 ```sh
 JWT=$(curl -s -X POST http://localhost/api/authorization/login \
   -H 'Content-Type: application/json' \
-  -d '{"username":"user1","password":"pass1"}' | jq -r .jwt)
+  -d "{\"username\":\"$RYAX_USER\",\"password\":\"$RYAX_PASSWORD\"}" | jq -r .jwt)
 
 SITE_ID=$(curl -s -X POST http://localhost/api/runner/sites \
   -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \

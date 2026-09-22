@@ -92,6 +92,22 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.datastoreSecret }}
                   key: "datastore-authorization"
+            # `optional` because only a *fresh* install needs these: the service
+            # seeds the first admin and then never reads them again. An operator
+            # who supplies their own secrets can therefore upgrade before creating
+            # this one, instead of the pod wedging in CreateContainerConfigError.
+            - name: "RYAX_DEFAULT_USER_NAME"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.adminSecret }}
+                  key: "admin-user"
+                  optional: true
+            - name: "RYAX_DEFAULT_USER_PASS"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.adminSecret }}
+                  key: "admin-password"
+                  optional: true
             - name: "RYAX_LOG_LEVEL"
               value: {{ .Values.logLevel }}
             {{- with .Values.extraEnv }}
