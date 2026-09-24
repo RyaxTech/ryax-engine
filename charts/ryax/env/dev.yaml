@@ -55,12 +55,6 @@ authorization:
     registry: registry.ryax.org/dev
     pullPolicy: Always
 
-webui:
-  image:
-    tag: master
-    registry: registry.ryax.org/dev
-    pullPolicy: Always
-
 repository:
   image:
     tag: master
