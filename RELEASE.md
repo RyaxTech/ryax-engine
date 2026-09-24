@@ -1,3 +1,32 @@
+## Unreleased
+
+<!-- Folded into the next version's sections when the release is cut, then removed. -->
+
+### New features
+
+- **The initial admin password is random.** Every installation used to boot with the
+  same `user1` / `pass1` — hard-coded in the service, never set by the chart, and
+  published in the README and the install guide. The chart now generates one per
+  installation into the `ryax-admin-credentials` secret, and `helm install` prints the
+  command to read it back. The account is `admin`. Existing installations keep their
+  users and passwords: the secret is only ever read when the user table is empty, which
+  is the very first start.
+- **`helm install` prints its notes.** `NOTES.txt` had always sat at the chart root
+  rather than in `templates/`, where Helm is the only place it looks, so no install had
+  ever printed anything. It now carries the admin credentials command and the Grafana
+  one.
+
+### Upgrade
+
+- **A new GitOps install needs one more secret.** With `global.secrets.create=false`,
+  create `ryax-admin-credentials` (keys `admin-user` and `admin-password`) before the
+  first sync, or set `authorization.adminUsername` and `authorization.adminPassword`.
+  Without it the authorization pod stops with `No initial admin password configured`.
+  An **existing** installation needs nothing — it never seeds again, and both
+  `secretKeyRef`s are `optional`.
+
+---
+
 We are proud to announce the release of:
 
 ✨ ✨ ✨ ✨ ✨ ✨ ✨ ✨ ✨
