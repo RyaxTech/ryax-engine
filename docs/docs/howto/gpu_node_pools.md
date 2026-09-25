@@ -123,6 +123,16 @@ runner:
 
 `best_fit` suits a shared cluster, where leaving the big partitions free for
 the jobs that need them matters more than any single action's score.
+
+!!! warning "Memory and compute describe **one** GPU"
+    `gpu: 2` with `memory_GB: 40` means *two cards of 40GB each*, not 80GB
+    spread across two. VRAM cannot be pooled across cards unless the action
+    shards its model itself, so a per-card figure is the only one it can act
+    on. A node with 4x40GB will not satisfy a request for a single 160GB card.
+
+    On a node pool running MIG, an action gets **one slice**, whatever
+    `gpu` says — the pool may have slices to spare, but Ryax allocates one per
+    action. Ask for several whole GPUs on a `full` pool instead.
 IntelliScale recommends an amount of memory and a share of a card, not a
 profile, so its recommendations feed straight into this.
 
