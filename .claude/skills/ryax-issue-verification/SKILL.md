@@ -95,9 +95,10 @@ describes — an engine with no worker accepts a deployment and hangs in *Deploy
 
 ### Log in: the header is not `Bearer`
 
-The README's API snippet says `Authorization: Bearer $JWT`. The **runner** accepts that;
-**authorization** and **repository** do not and answer `{"error":"Access denied"}`. The
-front sends the raw token (`headers.set('Authorization', token)`), so do the same:
+The README's API snippet says `Authorization: Bearer $JWT`. The **runner** and **studio**
+accept that; **authorization** and **repository** answer 401 `{"error":"Access denied"}`.
+The front sends the raw token (`headers.set('Authorization', token)`), so do the same —
+it is the one form every service accepts:
 
 ```sh
 JWT=$(curl -s -X POST http://localhost/api/authorization/login \
@@ -105,6 +106,10 @@ JWT=$(curl -s -X POST http://localhost/api/authorization/login \
   -d '{"username":"user1","password":"pass1"}' | jq -r .jwt)
 curl -s http://localhost/api/studio/workflows -H "Authorization: $JWT"   # no "Bearer "
 ```
+
+This split is tracked as **ryax-tech/ryax/roadmap#1453** — the runner has a `bare_token()`
+helper that strips the prefix, the studio has its own copy, and the other two have none. If
+that is fixed, `Bearer` becomes safe everywhere and this paragraph can go.
 
 Credentials depend on the version: **26.9.0 and earlier boot with `user1` / `pass1`**. The
 per-install random password in `ryax-admin-credentials` is newer — if that secret is
