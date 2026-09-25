@@ -1,6 +1,6 @@
 ---
 name: ryax-issue-verification
-description: How to settle whether a Ryax roadmap issue is still real — triage from the code, stand up a local instance, drive the REST API to build workflows and run them, and measure front-end bugs in Chrome. Use when asked to check if an issue is fixed, to sweep old or stalled issues, or to reproduce a reported bug on a working instance.
+description: How to settle whether a Ryax roadmap issue is still real — triage from the code, stand up a local instance, drive the REST API to build workflows and run them, and measure front-end bugs in a browser. Use when asked to check if an issue is fixed, to sweep old or stalled issues, or to reproduce a reported bug on a working instance.
 ---
 
 # Verifying Ryax issues
@@ -25,7 +25,7 @@ with the exact file and line is worth as much as a close.
 | `glab`, `helm`, `kubectl`, `uv` not on PATH | the `nixos-tools` skill — nothing is installed imperatively here |
 | Opening the issue comment or an MR | the `ryax-gitlab-flow` skill — issues live in `roadmap`, and closing them is normally the human's call |
 | Installing the engine and a worker | `ryax-gitlab-flow` again, plus the README for the k3s-in-Docker route |
-| Driving Chrome | the `claude-in-chrome` skill — see step 3, it must be invoked before any browser tool exists |
+| Driving a browser | the `agent-browser` skill — the default; `claude-in-chrome` only for a real logged-in session |
 
 `glab` is authenticated but absent from PATH in non-login shells:
 
@@ -209,115 +209,60 @@ Downloading the artefact and checking its bytes is the strongest evidence availa
 proved `#1245` by showing the directory round-tripped with its nesting intact. Prefer it
 over "the run said Success".
 
-## Step 3: the browser, and its limits
+## Known traps, with their issues
 
-Only for rendering and UI-only behaviour — anything the backend decides belongs in step 2,
-which is faster and far more reliable. Expect trouble here, and time-box it.
+Things that will otherwise look like a bug in your setup:
 
-### Getting a browser at all
+| Symptom | What it is |
+|---|---|
+| Pods restarting 1-3x during install | roadmap#1454 — liveness probes with `failureThreshold: 1` and no `startupProbe`. Expect it; do not chase it |
+| A build fails with *"The Action builder has restarted"* | same cause, mid-build |
+| `/app/studio/new` saves nothing, POSTs to `…/workflows//modules` → 405 | roadmap#1456 — create via the dashboard button |
+| A validation error arriving as 404 from a per-input endpoint | roadmap#1455 — the v2 batched route returns the correct 400 |
+| `Bearer` rejected by authorization and repository | roadmap#1453 |
 
-Automation runs through **Claude in Chrome**: a Chrome extension driving the user's own
-browser, not a headless instance you spawn. Two consequences — it acts inside their real
-profile and logged-in session, and it cannot run unattended.
+And one that is **not** a bug: a single transient execution failure right after the worker
+is installed. A 58MB file through Echo failed once with an opaque
+`AioRpcError … Internal error from Core`, then succeeded on retry with the same input.
+Retry before theorising about size limits — the real large-file issue is roadmap#1230, and
+it is about an `integer out of range` on a 10.7GB output, not tens of megabytes.
 
-**Invoke the `claude-in-chrome` skill first.** The `mcp__claude-in-chrome__*` tools do not
-exist until you do, and invoking it is what installs and connects the extension.
+## Step 3: the browser
 
-What has to be true before any of it works:
+For rendering and UI-only behaviour — anything the backend decides belongs in step 2, which
+is faster and more reliable.
 
-- Chrome is running, and signed into claude.ai with the same account as Claude Code.
-- The extension has **site-level permission for the origin** you are about to drive. For
-  issue work that is `http://localhost` — a permission the user grants in the extension,
-  so ask rather than assume it is there.
-- A first install may need Chrome restarted before the connection comes up.
+**Use `agent-browser`; see the `agent-browser` skill** for install (including the NixOS
+path, where the documented one fails), the ng-zorro selectors that make the studio
+drivable, and the measurement techniques. The short version of why: it drives a disposable
+Chromium over CDP as plain Bash, so it runs unattended and in CI, its snapshots cost
+~200-400 tokens, and it clicks by CSS selector — which is what finally made the studio
+reachable after the Chrome extension could not select a trigger card at all.
 
-The tools are **deferred**: their schemas are not loaded, and calling one before loading it
-fails with `InputValidationError`. Load them in a *single* `ToolSearch` — the `select:`
-query takes a comma-separated list, and one call per tool wastes a round trip each:
+What this buys in practice: #1269 and #1013 had both been handed back as unsettleable under
+the extension, and took about fifteen minutes each once the tooling could click.
 
-```
-select:mcp__claude-in-chrome__tabs_context_mcp,mcp__claude-in-chrome__navigate,
-mcp__claude-in-chrome__computer,mcp__claude-in-chrome__read_page,
-mcp__claude-in-chrome__tabs_create_mcp,mcp__claude-in-chrome__tabs_close_mcp,
-mcp__claude-in-chrome__javascript_tool,mcp__claude-in-chrome__read_console_messages,
-mcp__claude-in-chrome__find,mcp__claude-in-chrome__browser_batch
-```
+Reach for `claude-in-chrome` only when the real session matters — SSO, the user's own
+profile, extensions. It cannot run unattended and, on this app, screenshots time out, the
+extension drops its connection mid-session, and `read_console_messages` returns empty after
+a reconnect, so an empty read there is not evidence of no errors.
 
-For this kind of work `javascript_tool` is the one that earns its place — see below.
-`get_page_text` and `resize_window` are occasionally handy; `gif_creator` is for showing a
-flow to someone, not for verification.
+Neither drives Firefox, so a *Chrome vs Firefox* rendering bug (#1211) can only be reasoned
+about, never observed. Say so rather than implying otherwise.
 
-Session mechanics:
+### What the browser settles, and what it does not
 
-- Call `tabs_context_mcp` **once before anything else** — the other tools need a tab id.
-  Create your own tab rather than reusing one of theirs, and close it when you are done.
-- `browser_batch` runs a sequence in one round trip and stops at the first error.
-  Coordinates inside a batch refer to the screenshot taken *before* the call, so a batch
-  that clicks based on what a mid-batch screenshot shows will not work.
-- `Browser extension is not connected` and `the renderer may be frozen` both turn up
-  mid-session on this app. Recover by calling `tabs_context_mcp` again for fresh ids; if it
-  keeps happening, that is the signal to stop, not to retry harder.
-- Never trigger `alert`/`confirm`/`prompt`. A modal blocks every subsequent command and the
-  session is stuck until a human dismisses it.
+A UI verdict usually needs three things together, and the third is the one people skip:
 
-### What actually worked
+1. The code path — the handler, the template binding, the selector.
+2. The live observation — what the DOM actually does.
+3. **Proof the thing you measured actually happened.** A button that never changes because
+   no request was ever made proves nothing. Confirm with
+   `agent-browser network requests --filter <something>` before drawing a conclusion.
 
-- **Measure with JavaScript, not screenshots.** Screenshots time out
-  (`Page.captureScreenshot timed out`) and sometimes return a wrongly scaled frame. For a
-  CSS bug, read `getComputedStyle` and the box metrics instead — numbers are better
-  evidence than a picture anyway.
-- **A/B the proposed fix at runtime.** Snapshot, inject a `<style>` with the fix, snapshot
-  again, remove it, snapshot a third time to prove the measurement is reversible. That
-  turned `#1211` from "the property is still there" into "6×7px of gutter per cell, row
-  79px → 61px, restored to 79px".
-- **Clean up injected styles by every id you used.** A call that times out may still have
-  appended its `<style>`; the next run then measures the *fixed* state and reports nonsense.
-  Start with `document.querySelectorAll('style#myid').forEach(e => e.remove())`.
-- **Navigate by route, not by clicking.** Routes come from `front/apps/ryax/src/app/**/*.routes.ts`.
-  Note `/app/settings` is the older `project` module that owns the variables list, while
-  `/app/projects` is the newer `project-new` module — easy to land on the wrong page.
-
-A measurement in that shape, with `javascript_tool`:
-
-```js
-document.querySelectorAll('style#ab').forEach(e => e.remove());   // clear a leaked run
-const t = document.querySelector('#ryax-variable-list');
-const cell = [...t.querySelectorAll('td')].find(c => c.innerText.includes('…'));
-const snap = () => ({
-  overflow: getComputedStyle(cell).overflowX,
-  gutterW: cell.offsetWidth - cell.clientWidth,
-  gutterH: cell.offsetHeight - cell.clientHeight,
-  rowH: t.querySelector('tbody tr').offsetHeight,
-});
-const before = snap();
-const s = Object.assign(document.createElement('style'), {
-  id: 'ab', textContent: '#ryax-variable-list th, #ryax-variable-list td { overflow: hidden !important; }',
-});
-document.head.appendChild(s);
-void t.offsetHeight;                     // force layout
-const after = snap();
-s.remove(); void t.offsetHeight;
-({ before, after, restored: snap() });
-```
-
-### What did not work
-
-Clicking ng-zorro cards and selects. The studio's trigger cards and the config panel's
-value-type dropdown are not exposed as buttons in the accessibility tree — `read_page`
-with `filter: "interactive"` shows the tabs and the search box and nothing else — and
-synthetic clicks on their coordinates did not register. `find` locates them by text and
-returns a `ref`, but clicking the `ref` selects nothing either.
-
-Console capture was also unreliable: `read_console_messages` reports tracking as starting
-at the first call, and after an extension reconnect it came back empty even for errors the
-app had definitely logged. Do not read "no console messages" as "no errors".
-
-If a verdict depends on driving that panel, say so and hand it back rather than guessing.
-
-When the UI blocks you, fall back to reasoning about the front's own code — the NgRx
-`displayErrors$` effect in `studio/state/effects/builder.effects.ts` lists exactly which
-error actions raise a toast, which settled `#1246`. Label that as code evidence, not an
-observation.
+#1013 is the worked example: the handler buffers a blob with no `reportProgress`, the button
+binds only `[disabled]`, 125 samples over 2.5s showed one distinct state, *and* the network
+log showed the `GET` completing inside that window.
 
 ## Writing the verdict
 
