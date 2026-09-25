@@ -89,11 +89,24 @@ After setting scaled resources, we can configure some resource-specific args. We
 --gpu-oom-error-code int (26) : [For GPU MIG instance] When the user program inside container encounters an GPU OOM kill, it should return with this error code to let VPA know the occurrence of the GPU OOM. Because GPU OOM is only handled by user program not the linux. The VPA cannot know from Kubernetes unless the user raises this code by themselves. Code number range should be 1 to 255.
 ```
 
-!!! note
-    The MIG profiles IntelliScale can recommend are currently fixed at
-    `mig-1g.10gb`, `mig-3g.40gb` and `mig-7g.80gb`, in the recommender itself
-    rather than in a chart value. Give your GPU node pools one of these
-    profiles — see [GPU node pools and MIG](../howto/gpu_node_pools.md).
+!!! note "IntelliScale recommends a size, not a profile"
+    A GPU recommendation is an amount of **GPU memory in GB** and a **share of
+    a card** between 0 and 1 — not a MIG profile name. IntelliScale knows what
+    a workload used, not what hardware exists; the Runner resolves the pair
+    against the partitions its node pools actually registered and picks one,
+    under `RYAX_SCHEDULER_GPU_FIT_POLICY`. See
+    [GPU node pools and MIG](../howto/gpu_node_pools.md).
+
+    The profile ladder it reasons over defaults to `mig-1g.10gb`,
+    `mig-3g.40gb` and `mig-7g.80gb` on a 7-slice card, and is configurable
+    under `algorithm_configs.simple_mig_recommender`
+    (`supported_profiles`, `total_compute_slices` — an A30 splits into 4, not
+    7). It does not have to match your hardware, since what leaves IntelliScale
+    is normalised, but a closer ladder gives better recommendations.
+
+    IntelliScale still sends the old `gpu_mig_instance` field alongside, so a
+    Runner that predates the change keeps working; the Runner prefers the pair
+    and falls back to the profile name.
 
 ```plaintext
 --vpa-algorithm string ("rule"): Recommendation algorithm: 'rule' for Rule-based, 'ml' for ML-driven

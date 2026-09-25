@@ -114,8 +114,6 @@ priorityClass:
 
 # -- Intelliscalse configuration
 config:
-  MIG:
-    enabled: true
   algorithm_configs:
     vpa_pilot_rule:
       cpu_request:
@@ -144,10 +142,14 @@ config:
         safety_margin_upper: 0.15
 
     simple_mig_recommender:
-      gpu_mig_instance:
-        a: 100
-        b: 200
-        
+      # The ladder the GPU recommender reasons over, and how many slices a
+      # whole card splits into. Neither has to match your hardware exactly:
+      # the recommendation leaves IntelliScale as a normalised (GB, fraction
+      # of a card) pair, and the Runner resolves it against the partitions
+      # your node pools registered. Set total_compute_slices to 4 for an A30.
+      supported_profiles: ["mig-1g.10gb", "mig-3g.40gb", "mig-7g.80gb"]
+      total_compute_slices: 7
+
     memory_oom_processor:
       bump_up_ratio: 2.0
 

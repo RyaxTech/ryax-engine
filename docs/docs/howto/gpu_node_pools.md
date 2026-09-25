@@ -63,8 +63,76 @@ Two rules about the pool itself:
   `nvidia.com/gpu`, not per-profile resources such as `nvidia.com/mig-1g.10gb`,
   and `single` is the strategy that advertises MIG instances under that name.
 
-The MIG profiles Ryax IntelliScale can recommend are currently fixed at
-`mig-1g.10gb`, `mig-3g.40gb` and `mig-7g.80gb`. Give your pools one of these.
+## Tell Ryax which card the pool has
+
+A node pool declares a `gpu_mode` -- `full`, or a MIG profile such as
+`mig-1g.10gb`. On its own that names a slice without saying how big it is, so
+also give the pool its **brand** and **model** from the catalog:
+
+```sh
+curl -X POST "$RYAX_URL/api/runner/sites/$SITE_ID/node-pools" \
+  -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \
+  -d '{"name":"gpu","cpu":8000,"gpu":4,"memory":68719476736,
+       "energy_score":50,"performance_score":50,"cost_score":50,
+       "filter_no_gpu_action":true,
+       "gpu_mode":"mig-3g.20gb",
+       "gpu_brand":"NVIDIA","gpu_model":"A100 40GB"}'
+```
+
+`GET /api/runner/gpu-models` lists the catalog: every model, and for each the
+partitions it can be registered as. A brand, model or partition the catalog
+does not have is rejected with a 422 rather than accepted as a pool that
+silently matches nothing.
+
+Declaring the model is what lets the scheduler know how much memory and
+compute `gpu_mode` stands for, so it can satisfy a request for *"20GB of GPU"*
+without being told which profile to use. A pool that omits it still works --
+Ryax recovers the memory from a MIG profile name, and treats what it cannot
+determine as unknown rather than as zero -- but it cannot be matched on brand
+or model, and a `full` pool with no model tells Ryax nothing about its size.
+
+!!! note "Upgrading"
+    `gpu_brand` and `gpu_model` are new, so pools registered before them have
+    neither. Nothing stops working: an unknown pool stays eligible for every
+    request. Fill them in to get precise matching, and to let `best_fit` reason
+    about the pool at all.
+
+## How a GPU request is placed
+
+An action asks for a shape of GPU -- a brand, a model, an amount of memory, a
+share of a card -- and Ryax picks a node pool whose partition meets it. Any
+partition at least as large will do; the scheduler is not handed a profile name
+to match exactly.
+
+`RYAX_SCHEDULER_GPU_FIT_POLICY` on the Runner decides which of the pools that
+fit is taken:
+
+| Value | Picks |
+|---|---|
+| `first_fit` (default) | the best-scoring pool that fits |
+| `best_fit` | the pool that wastes the least card, ties going to score |
+
+Set it through `runner.extraEnv`:
+
+```yaml
+runner:
+  extraEnv:
+    - name: RYAX_SCHEDULER_GPU_FIT_POLICY
+      value: best_fit
+```
+
+`best_fit` suits a shared cluster, where leaving the big partitions free for
+the jobs that need them matters more than any single action's score.
+IntelliScale recommends an amount of memory and a share of a card, not a
+profile, so its recommendations feed straight into this.
+
+The profile ladder IntelliScale reasons over defaults to `mig-1g.10gb`,
+`mig-3g.40gb` and `mig-7g.80gb` on a 7-slice card. It does not have to match
+your hardware -- the recommendation leaves as a normalised pair and is resolved
+against your pools -- but you can set it under
+`intelliscale.config.algorithm_configs.simple_mig_recommender` if you want it
+closer. An A30 splits into 4 slices, not 7, so set `total_compute_slices: 4`
+there.
 
 ## Step 1 — set the MIG profile on the node pool
 
