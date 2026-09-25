@@ -18,6 +18,21 @@ issues never need step 3.
 Write the verdict as a comment on the issue whatever the outcome. A "still broken" comment
 with the exact file and line is worth as much as a close.
 
+## Skills and tooling this leans on
+
+| Need | Where it comes from |
+|---|---|
+| `glab`, `helm`, `kubectl`, `uv` not on PATH | the `nixos-tools` skill — nothing is installed imperatively here |
+| Opening the issue comment or an MR | the `ryax-gitlab-flow` skill — issues live in `roadmap`, and closing them is normally the human's call |
+| Installing the engine and a worker | `ryax-gitlab-flow` again, plus the README for the k3s-in-Docker route |
+| Driving Chrome | the `claude-in-chrome` skill — see step 3, it must be invoked before any browser tool exists |
+
+`glab` is authenticated but absent from PATH in non-login shells:
+
+```sh
+export PATH="$(ls -d /nix/store/*glab*/bin | head -1):$PATH"
+```
+
 ## Step 1: what the code alone can settle
 
 Plenty of stalled issues are decidable without a cluster. Some patterns that paid off:
@@ -191,9 +206,56 @@ over "the run said Success".
 
 ## Step 3: the browser, and its limits
 
-Only for rendering and UI-only behaviour. Expect trouble, and time-box it.
+Only for rendering and UI-only behaviour — anything the backend decides belongs in step 2,
+which is faster and far more reliable. Expect trouble here, and time-box it.
 
-What actually worked:
+### Getting a browser at all
+
+Automation runs through **Claude in Chrome**: a Chrome extension driving the user's own
+browser, not a headless instance you spawn. Two consequences — it acts inside their real
+profile and logged-in session, and it cannot run unattended.
+
+**Invoke the `claude-in-chrome` skill first.** The `mcp__claude-in-chrome__*` tools do not
+exist until you do, and invoking it is what installs and connects the extension.
+
+What has to be true before any of it works:
+
+- Chrome is running, and signed into claude.ai with the same account as Claude Code.
+- The extension has **site-level permission for the origin** you are about to drive. For
+  issue work that is `http://localhost` — a permission the user grants in the extension,
+  so ask rather than assume it is there.
+- A first install may need Chrome restarted before the connection comes up.
+
+The tools are **deferred**: their schemas are not loaded, and calling one before loading it
+fails with `InputValidationError`. Load them in a *single* `ToolSearch` — the `select:`
+query takes a comma-separated list, and one call per tool wastes a round trip each:
+
+```
+select:mcp__claude-in-chrome__tabs_context_mcp,mcp__claude-in-chrome__navigate,
+mcp__claude-in-chrome__computer,mcp__claude-in-chrome__read_page,
+mcp__claude-in-chrome__tabs_create_mcp,mcp__claude-in-chrome__tabs_close_mcp,
+mcp__claude-in-chrome__javascript_tool,mcp__claude-in-chrome__read_console_messages,
+mcp__claude-in-chrome__find,mcp__claude-in-chrome__browser_batch
+```
+
+For this kind of work `javascript_tool` is the one that earns its place — see below.
+`get_page_text` and `resize_window` are occasionally handy; `gif_creator` is for showing a
+flow to someone, not for verification.
+
+Session mechanics:
+
+- Call `tabs_context_mcp` **once before anything else** — the other tools need a tab id.
+  Create your own tab rather than reusing one of theirs, and close it when you are done.
+- `browser_batch` runs a sequence in one round trip and stops at the first error.
+  Coordinates inside a batch refer to the screenshot taken *before* the call, so a batch
+  that clicks based on what a mid-batch screenshot shows will not work.
+- `Browser extension is not connected` and `the renderer may be frozen` both turn up
+  mid-session on this app. Recover by calling `tabs_context_mcp` again for fresh ids; if it
+  keeps happening, that is the signal to stop, not to retry harder.
+- Never trigger `alert`/`confirm`/`prompt`. A modal blocks every subsequent command and the
+  session is stuck until a human dismisses it.
+
+### What actually worked
 
 - **Measure with JavaScript, not screenshots.** Screenshots time out
   (`Page.captureScreenshot timed out`) and sometimes return a wrongly scaled frame. For a
@@ -210,10 +272,42 @@ What actually worked:
   Note `/app/settings` is the older `project` module that owns the variables list, while
   `/app/projects` is the newer `project-new` module — easy to land on the wrong page.
 
-What did not work: clicking ng-zorro cards and selects. The studio's trigger cards and the
-config panel's value-type dropdown are not exposed as buttons in the accessibility tree,
-and synthetic clicks on their coordinates did not register. If a verdict depends on driving
-that panel, say so and hand it back rather than guessing.
+A measurement in that shape, with `javascript_tool`:
+
+```js
+document.querySelectorAll('style#ab').forEach(e => e.remove());   // clear a leaked run
+const t = document.querySelector('#ryax-variable-list');
+const cell = [...t.querySelectorAll('td')].find(c => c.innerText.includes('…'));
+const snap = () => ({
+  overflow: getComputedStyle(cell).overflowX,
+  gutterW: cell.offsetWidth - cell.clientWidth,
+  gutterH: cell.offsetHeight - cell.clientHeight,
+  rowH: t.querySelector('tbody tr').offsetHeight,
+});
+const before = snap();
+const s = Object.assign(document.createElement('style'), {
+  id: 'ab', textContent: '#ryax-variable-list th, #ryax-variable-list td { overflow: hidden !important; }',
+});
+document.head.appendChild(s);
+void t.offsetHeight;                     // force layout
+const after = snap();
+s.remove(); void t.offsetHeight;
+({ before, after, restored: snap() });
+```
+
+### What did not work
+
+Clicking ng-zorro cards and selects. The studio's trigger cards and the config panel's
+value-type dropdown are not exposed as buttons in the accessibility tree — `read_page`
+with `filter: "interactive"` shows the tabs and the search box and nothing else — and
+synthetic clicks on their coordinates did not register. `find` locates them by text and
+returns a `ref`, but clicking the `ref` selects nothing either.
+
+Console capture was also unreliable: `read_console_messages` reports tracking as starting
+at the first call, and after an extension reconnect it came back empty even for errors the
+app had definitely logged. Do not read "no console messages" as "no errors".
+
+If a verdict depends on driving that panel, say so and hand it back rather than guessing.
 
 When the UI blocks you, fall back to reasoning about the front's own code — the NgRx
 `displayErrors$` effect in `studio/state/effects/builder.effects.ts` lists exactly which
