@@ -109,20 +109,23 @@ fit is taken:
 
 | Value | Picks |
 |---|---|
-| `first_fit` (default) | the best-scoring pool that fits |
-| `best_fit` | the pool that wastes the least card, ties going to score |
+| `best_fit` (default) | the pool that wastes the least card, ties going to score |
+| `first_fit` | the best-scoring pool that fits |
 
-Set it through `runner.extraEnv`:
+`best_fit` is the default because a GPU cannot be over-committed the way CPU
+can. Leaving the large partitions free for the actions that need them is worth
+more than any single action's objective score, and an action placed on a
+tighter partition that still meets its request loses nothing.
+
+Choose `first_fit` if you would rather an action's energy, cost and performance
+scores decide, and you are not short of GPUs. Set it through `runner.extraEnv`:
 
 ```yaml
 runner:
   extraEnv:
     - name: RYAX_SCHEDULER_GPU_FIT_POLICY
-      value: best_fit
+      value: first_fit
 ```
-
-`best_fit` suits a shared cluster, where leaving the big partitions free for
-the jobs that need them matters more than any single action's score.
 
 !!! warning "Memory and compute describe **one** GPU"
     `gpu: 2` with `memory_GB: 40` means *two cards of 40GB each*, not 80GB
