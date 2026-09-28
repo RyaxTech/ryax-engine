@@ -114,6 +114,18 @@ After setting scaled resources, we can configure some resource-specific args. We
     Runner that predates the memory/compute pair therefore receives no GPU
     recommendation and keeps its own default, the largest partition available.
 
+!!! note "One model per piece of hardware, not per site"
+    A recommendation is only valid for the machine it was measured on. The GPU
+    share is learned per **GPU model**, CPU and memory per **instance type**.
+    Site is not part of the key: two sites holding the same card are one
+    population and learn faster together, while two node pools in one site
+    holding different cards no longer contaminate each other.
+
+    Hardware that cannot be identified — a node pool with no `gpu_model`
+    recorded, or an HPC site, which has no instance type — is one shared
+    population, which is how every recommendation behaved before this key
+    existed. Nothing fragments on upgrade.
+
 ```plaintext
 --vpa-algorithm string ("rule"): Recommendation algorithm: 'rule' for Rule-based, 'ml' for ML-driven
 ```

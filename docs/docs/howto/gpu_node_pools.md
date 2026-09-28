@@ -141,8 +141,14 @@ runner:
     On a node pool running MIG, an action gets **one slice**, whatever
     `gpu` says — the pool may have slices to spare, but Ryax allocates one per
     action. Ask for several whole GPUs on a `full` pool instead.
-IntelliScale recommends an amount of memory and a share of a card, not a
-profile, so its recommendations feed straight into this.
+
+!!! info "`gpu` on an action, `gpu_count` on a node pool"
+    Two different things, deliberately named apart. An action's
+    `spec.resources.gpu` is how many GPUs *it wants*; a node pool's
+    `gpu_count` is how many *one of its nodes has*. The action-facing name is
+    unchanged.
+
+## What IntelliScale recommends, and to which pool it applies
 
 IntelliScale recommends a share of a card rather than a partition, picked from
 an even 20-bucket split that has nothing to do with your hardware. The step
@@ -158,6 +164,31 @@ a single cluster-wide number that assumes every card splits the same way. It
 defaults to 7, so on an all-A30 cluster (4 slices) an unrecorded pool has its
 observations read about 43% small. Set it to 4 there, or record the models and
 it goes unused.
+
+### Recommendations are keyed by hardware, not by site
+
+A recommendation is only valid for the machine it was measured on, so
+IntelliScale keeps one model per piece of hardware rather than one per site:
+
+| What it recommends | Learned and stored per |
+|---|---|
+| share of a GPU | **GPU model** — a share is a share of a *card* |
+| CPU and memory | **instance type** — equal core counts, unequal throughput |
+
+Two consequences worth knowing:
+
+* **Two sites holding the same card share one model**, and learn faster
+  together. Site is not part of the key at all.
+* **Two node pools in one site holding different cards no longer contaminate
+  each other.** This was never a multi-site problem — a model trained on mixed
+  hardware was wrong for every pool.
+
+Hardware Ryax cannot identify — a pool with no `gpu_model` recorded, or an HPC
+site, which has no instance type — is one shared population, which is exactly
+how every recommendation behaved before this key existed. Nothing fragments on
+upgrade: narrower models only appear where there is hardware information to
+build them from, so the cold start of a narrower key is paid only where you
+have opted into it by recording the model.
 
 ## Step 1 — set the MIG profile on the node pool
 
