@@ -124,6 +124,58 @@ dash-separated names (`fix-nz-tabs-selectors`, `bump-fast-uri-3.1.6`). An MR's
 source branch cannot be changed after creation, so getting this wrong means
 renaming the branch, recreating the MR and closing the old one.
 
+### The diff is against the target, not against where you branched
+
+Rebasing a branch onto `master` while its MR targets something older puts **every commit in
+between** into the diff. It reads as your work — a reviewer asking why your GPU MR changes the
+admin password is seeing 27 unrelated master commits, not a mistake in your code.
+
+Two ways out, and the choice is not free:
+
+*   **Target `master`.** If your branch is stacked on an unmerged MR, that MR's commits appear in
+    yours. They drop out by themselves when it merges, so say so in the description and point the
+    reviewer at the other MR.
+*   **Target the branch you are stacked on**, and rebase onto *that* rather than master. The diff
+    is then only yours — but you inherit its base, which may be far enough behind that CI runs
+    different tooling than master does. Check before assuming this is the clean option.
+
+Verify after creating or retargeting, because the count is easy to misread:
+
+```sh
+glab api "projects/<enc>/merge_requests/<iid>/changes" \
+  | python3 -c "import json,sys; print(len(json.load(sys.stdin)['changes']), 'files')"
+git diff --name-only <target>...<branch> | wc -l     # should match
+```
+
+### `git add -A` in the superproject commits submodule pointers
+
+`ryax-engine` tracks each service as a submodule, so a dirty `core/` or `intelliscale/` shows up as
+a modified path and `git add -A` sweeps the gitlink in. The MR then silently bumps a service to
+**your unmerged feature branch**.
+
+It does not look like a submodule problem when it fails. `check_api_spec` regenerates
+`docs/docs/reference/ryax-spec.json` from the pinned sources, sees endpoints the committed spec
+lacks, and reports the spec as stale. Stage paths explicitly in this repo, and check before
+pushing:
+
+```sh
+git diff --name-only origin/master...HEAD     # a bare 'core' or 'intelliscale' line is the bug
+```
+
+### Baseline the target branch before blaming your MR
+
+Several `ryax-engine` jobs fail on `master` continuously — `check_helm_deps` (upstream charts drift
+out of date) and the two `security_checks`. Compare before investigating:
+
+```sh
+glab api "projects/<enc>/pipelines?ref=master&per_page=1" \
+  | python3 -c "import json,sys; p=json.load(sys.stdin)[0]; print(p['status'], p['web_url'])"
+```
+
+Distinguish a **system failure** too: `ERROR: Job failed (system failure): prepare environment:
+waiting for pod running: timed out` is the runner cluster out of capacity, not your change. Retry
+it. A real failure ends `command terminated with exit code 1`.
+
 ### Every `mr note create` blocks the merge
 
 Each note is filed as its own **resolvable discussion**, and `ryax-repository`
