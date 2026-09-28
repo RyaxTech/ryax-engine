@@ -190,6 +190,28 @@ upgrade: narrower models only appear where there is hardware information to
 build them from, so the cold start of a narrower key is paid only where you
 have opted into it by recording the model.
 
+### Which number an action actually gets
+
+Because a recommendation belongs to a machine, there is no single answer to
+apply before a machine has been chosen. So the scheduler works out what the
+action would ask for on **each** candidate node pool, judges every pool against
+its own number, and the pool that wins carries that number to the worker.
+
+On a cluster with an A100 pool and an A30 pool, one action can therefore ask
+for 20GB on the first and 6GB on the second in the same scheduling round —
+which is what IntelliScale measured on each. A single folded number could not
+express that, and was wrong for both pools.
+
+Two consequences:
+
+* **A number measured on a big card cannot condemn a small one.** A 40GB
+  recommendation learned on an A100 never applied to the A30 beside it, so it
+  no longer makes that pool look infeasible.
+* **A retried action keeps its bump.** When an action is retried after running
+  out of memory, the raised allocation is pinned and no recommendation may
+  lower it. It is what the workload needed after failing; overriding it would
+  send the retry back to the allocation that just failed.
+
 ## Step 1 — set the MIG profile on the node pool
 
 Label the nodes with the profile you want, prefixed with `all-` so it applies to

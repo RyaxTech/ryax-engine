@@ -126,6 +126,12 @@ After setting scaled resources, we can configure some resource-specific args. We
     population, which is how every recommendation behaved before this key
     existed. Nothing fragments on upgrade.
 
+    The Runner resolves a recommendation **after** it has chosen a node pool,
+    against that pool's hardware, rather than at execution-creation time when
+    no hardware has been chosen yet. So one action can be offered a different
+    number on each candidate pool, and runs with the one belonging to the pool
+    it lands on.
+
 ```plaintext
 --vpa-algorithm string ("rule"): Recommendation algorithm: 'rule' for Rule-based, 'ml' for ML-driven
 ```
