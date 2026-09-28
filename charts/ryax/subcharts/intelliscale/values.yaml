@@ -142,12 +142,15 @@ config:
         safety_margin_upper: 0.15
 
     simple_mig_recommender:
-      # The ladder the GPU recommender reasons over, and how many slices a
-      # whole card splits into. Neither has to match your hardware exactly:
-      # the recommendation leaves IntelliScale as a normalised (GB, fraction
-      # of a card) pair, and the Runner resolves it against the partitions
-      # your node pools registered. Set total_compute_slices to 4 for an A30.
-      supported_profiles: ["mig-1g.10gb", "mig-3g.40gb", "mig-7g.80gb"]
+      # How finely a card can be recommended: an even split into this many
+      # buckets. Nothing to do with your hardware -- 20 gives a 0.05 step,
+      # finer than any MIG geometry, so the Runner can always round the answer
+      # up to a partition that exists and takes the tightest one that fits.
+      compute_buckets: 20
+      # Only used to READ observations: the worker reports the MIG profile an
+      # execution ran on ("3g.20gb") and nothing on the wire says how many
+      # slices that card splits into. Set to 4 for an A30. Does not limit what
+      # can be recommended.
       total_compute_slices: 7
 
     memory_oom_processor:

@@ -97,16 +97,17 @@ After setting scaled resources, we can configure some resource-specific args. We
     under `RYAX_SCHEDULER_GPU_FIT_POLICY`. See
     [GPU node pools and MIG](../howto/gpu_node_pools.md).
 
-    The profile ladder it reasons over defaults to `mig-1g.10gb`,
-    `mig-3g.40gb` and `mig-7g.80gb` on a 7-slice card, and is configurable
-    under `algorithm_configs.simple_mig_recommender`
-    (`supported_profiles`, `total_compute_slices` — an A30 splits into 4, not
-    7). It does not have to match your hardware, since what leaves IntelliScale
-    is normalised, but a closer ladder gives better recommendations.
+    The candidates it ranks are an even split of a card into
+    `compute_buckets` (20 by default, under
+    `algorithm_configs.simple_mig_recommender`) and describe no real hardware.
+    A 0.05 step is finer than any MIG geometry, so the Runner can always round
+    the answer up to a partition that exists. `total_compute_slices` in the
+    same block is only used to *read* the profile an execution ran on — set it
+    to 4 for an A30 — and does not limit what can be recommended.
 
-    IntelliScale still sends the old `gpu_mig_instance` field alongside, so a
-    Runner that predates the change keeps working; the Runner prefers the pair
-    and falls back to the profile name.
+    The old `gpu_mig_instance` field is gone and its field number reserved. A
+    Runner that predates the memory/compute pair therefore receives no GPU
+    recommendation and keeps its own default, the largest partition available.
 
 ```plaintext
 --vpa-algorithm string ("rule"): Recommendation algorithm: 'rule' for Rule-based, 'ml' for ML-driven

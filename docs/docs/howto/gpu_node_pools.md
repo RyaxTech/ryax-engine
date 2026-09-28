@@ -136,13 +136,17 @@ the jobs that need them matters more than any single action's score.
 IntelliScale recommends an amount of memory and a share of a card, not a
 profile, so its recommendations feed straight into this.
 
-The profile ladder IntelliScale reasons over defaults to `mig-1g.10gb`,
-`mig-3g.40gb` and `mig-7g.80gb` on a 7-slice card. It does not have to match
-your hardware -- the recommendation leaves as a normalised pair and is resolved
-against your pools -- but you can set it under
-`intelliscale.config.algorithm_configs.simple_mig_recommender` if you want it
-closer. An A30 splits into 4 slices, not 7, so set `total_compute_slices: 4`
-there.
+IntelliScale recommends a share of a card rather than a partition, picked from
+an even 20-bucket split that has nothing to do with your hardware. The step
+(0.05) is finer than any MIG geometry, so Ryax can always round the answer up
+to a partition your pools actually offer. Raise `compute_buckets` under
+`intelliscale.config.algorithm_configs.simple_mig_recommender` for a finer
+answer.
+
+The one setting there that *is* hardware-dependent is `total_compute_slices`,
+used to read the profile an execution ran on: the worker reports `3g.20gb` and
+nothing says how many slices that card splits into. Set it to 4 for an A30.
+It does not limit what can be recommended.
 
 ## Step 1 — set the MIG profile on the node pool
 
