@@ -142,14 +142,17 @@ profile, so its recommendations feed straight into this.
 IntelliScale recommends a share of a card rather than a partition, picked from
 an even 20-bucket split that has nothing to do with your hardware. The step
 (0.05) is finer than any MIG geometry, so Ryax can always round the answer up
-to a partition your pools actually offer. Raise `compute_buckets` under
-`intelliscale.config.algorithm_configs.simple_mig_recommender` for a finer
-answer.
+to a partition your pools actually offer.
 
-The one setting there that *is* hardware-dependent is `total_compute_slices`,
-used to read the profile an execution ran on: the worker reports `3g.20gb` and
-nothing says how many slices that card splits into. Set it to 4 for an A30.
-It does not limit what can be recommended.
+It learns from the share each execution actually had, which Ryax resolves from
+the node pool's GPU model and sends along with the execution. **This is another
+reason to record brand and model on a GPU pool**: without them the share has to
+be inferred from the MIG profile name against
+`intelliscale.config.algorithm_configs.simple_mig_recommender.total_compute_slices`,
+a single cluster-wide number that assumes every card splits the same way. It
+defaults to 7, so on an all-A30 cluster (4 slices) an unrecorded pool has its
+observations read about 43% small. Set it to 4 there, or record the models and
+it goes unused.
 
 ## Step 1 — set the MIG profile on the node pool
 

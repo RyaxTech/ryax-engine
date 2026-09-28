@@ -97,13 +97,18 @@ After setting scaled resources, we can configure some resource-specific args. We
     under `RYAX_SCHEDULER_GPU_FIT_POLICY`. See
     [GPU node pools and MIG](../howto/gpu_node_pools.md).
 
-    The candidates it ranks are an even split of a card into
-    `compute_buckets` (20 by default, under
-    `algorithm_configs.simple_mig_recommender`) and describe no real hardware.
-    A 0.05 step is finer than any MIG geometry, so the Runner can always round
-    the answer up to a partition that exists. `total_compute_slices` in the
-    same block is only used to *read* the profile an execution ran on — set it
-    to 4 for an A30 — and does not limit what can be recommended.
+    The candidates it ranks are an even split of a card into 20 buckets and
+    describe no real hardware. A 0.05 step is finer than any MIG geometry, so
+    the Runner can always round the answer up to a partition that exists.
+
+    It learns from the share each execution actually had, which Ryax resolves
+    from the node pool's GPU model and sends with the execution.
+    `total_compute_slices` (under `algorithm_configs.simple_mig_recommender`)
+    is the fallback for an execution that arrives without it — an older worker,
+    or a pool with no model recorded — and reads the reported MIG profile as a
+    fraction of that many slices. It is cluster-wide, so it is only right on
+    homogeneous hardware; set it to 4 for an all-A30 cluster, or record the
+    models and it goes unused. It never limits what can be recommended.
 
     The old `gpu_mig_instance` field is gone and its field number reserved. A
     Runner that predates the memory/compute pair therefore receives no GPU

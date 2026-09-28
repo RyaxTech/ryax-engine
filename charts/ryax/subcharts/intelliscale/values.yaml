@@ -142,16 +142,20 @@ config:
         safety_margin_upper: 0.15
 
     simple_mig_recommender:
-      # Only used to READ observations: the worker reports the MIG profile an
-      # execution ran on ("3g.20gb") and nothing on the wire says how many
-      # slices that card splits into. It does not limit what can be
-      # recommended, and it is optional -- leave it out and 7 is assumed.
+      # Fallback only. Ryax sends the exact share of a card each execution had,
+      # resolved from the node pool's GPU model, so this is used solely when an
+      # execution arrives without it -- a worker that predates that, or a pool
+      # whose model is not recorded.
       #
-      # It is one value for the whole cluster, while the thing it describes is
-      # a property of a card, so it is only right on homogeneous GPU hardware.
-      # Set it to 4 if every GPU node is an A30; leave it alone on a mixed
-      # cluster, where no single value is correct. Ryax sending the exact
-      # figure per execution is roadmap#1458.
+      # It reads the MIG profile the worker reports ("3g.20gb") as a fraction
+      # of this many slices. It never limits what can be recommended, and it is
+      # optional: leave it out and 7 is assumed.
+      #
+      # One value for the whole cluster, describing a property of a card, so it
+      # is only right on homogeneous GPU hardware. Set it to 4 if every GPU
+      # node is an A30. On a mixed cluster no single value is correct -- record
+      # the GPU model on each node pool instead, which is what makes the exact
+      # figure available and this setting unused.
       total_compute_slices: 7
 
     memory_oom_processor:
