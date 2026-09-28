@@ -67,40 +67,45 @@ Two rules about the pool itself:
 
 A node pool declares a `gpu_mode` -- `full`, or a MIG profile such as
 `mig-1g.10gb`. On its own that names a slice without saying how big it is, so
-also give the pool its **brand** and **model** from the catalog:
+also give the pool its **model** from the catalog. The model name alone
+identifies a card, so there is no brand to send beside it:
 
 ```sh
 curl -X POST "$RYAX_URL/api/runner/sites/$SITE_ID/node-pools" \
   -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \
-  -d '{"name":"gpu","cpu":8000,"gpu":4,"memory":68719476736,
+  -d '{"name":"gpu","cpu":8000,"gpu_count":4,"memory":68719476736,
        "energy_score":50,"performance_score":50,"cost_score":50,
        "filter_no_gpu_action":true,
        "gpu_mode":"mig-3g.20gb",
-       "gpu_brand":"NVIDIA","gpu_model":"A100 40GB"}'
+       "gpu_model":"A100 40GB"}'
 ```
 
 `GET /api/runner/gpu-models` lists the catalog: every model, and for each the
-partitions it can be registered as. A brand, model or partition the catalog
-does not have is rejected with a 422 rather than accepted as a pool that
-silently matches nothing.
+partitions it can be registered as. A model, or a partition of it, that the
+catalog does not have is rejected with a 422 rather than accepted as a pool
+that silently matches nothing.
 
 Declaring the model is what lets the scheduler know how much memory and
 compute `gpu_mode` stands for, so it can satisfy a request for *"20GB of GPU"*
 without being told which profile to use. A pool that omits it still works --
 Ryax recovers the memory from a MIG profile name, and treats what it cannot
-determine as unknown rather than as zero -- but it cannot be matched on brand
-or model, and a `full` pool with no model tells Ryax nothing about its size.
+determine as unknown rather than as zero -- but it cannot be matched on
+model, and a `full` pool with no model tells Ryax nothing about its size.
 
 !!! note "Upgrading"
-    `gpu_brand` and `gpu_model` are new, so pools registered before them have
-    neither. Nothing stops working: an unknown pool stays eligible for every
-    request. Fill them in to get precise matching, and to let `best_fit` reason
-    about the pool at all.
+    `gpu_model` is new, so pools registered before it have none. Nothing
+    stops working: an unknown pool stays eligible for every request. Fill it
+    in to get precise matching, and to let `best_fit` reason about the pool at
+    all.
+
+    `gpu_count` is the same field the pool has always had, renamed from `gpu`
+    to say what it counts. Existing pools are migrated; a client that still
+    sends `gpu` on create gets a 422.
 
 ## How a GPU request is placed
 
-An action asks for a shape of GPU -- a brand, a model, an amount of memory, a
-share of a card -- and Ryax picks a node pool whose partition meets it. Any
+An action asks for a shape of GPU -- a model, an amount of memory, a share
+of a card -- and Ryax picks a node pool whose partition meets it. Any
 partition at least as large will do; the scheduler is not handed a profile name
 to match exactly.
 
@@ -146,8 +151,8 @@ to a partition your pools actually offer.
 
 It learns from the share each execution actually had, which Ryax resolves from
 the node pool's GPU model and sends along with the execution. **This is another
-reason to record brand and model on a GPU pool**: without them the share has to
-be inferred from the MIG profile name against
+reason to record the model on a GPU pool**: without it the share has to be
+inferred from the MIG profile name against
 `intelliscale.config.algorithm_configs.simple_mig_recommender.total_compute_slices`,
 a single cluster-wide number that assumes every card splits the same way. It
 defaults to 7, so on an all-A30 cluster (4 slices) an unrecorded pool has its
