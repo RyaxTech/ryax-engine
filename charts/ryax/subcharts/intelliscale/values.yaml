@@ -142,15 +142,16 @@ config:
         safety_margin_upper: 0.15
 
     simple_mig_recommender:
-      # How finely a card can be recommended: an even split into this many
-      # buckets. Nothing to do with your hardware -- 20 gives a 0.05 step,
-      # finer than any MIG geometry, so the Runner can always round the answer
-      # up to a partition that exists and takes the tightest one that fits.
-      compute_buckets: 20
       # Only used to READ observations: the worker reports the MIG profile an
       # execution ran on ("3g.20gb") and nothing on the wire says how many
-      # slices that card splits into. Set to 4 for an A30. Does not limit what
-      # can be recommended.
+      # slices that card splits into. It does not limit what can be
+      # recommended, and it is optional -- leave it out and 7 is assumed.
+      #
+      # It is one value for the whole cluster, while the thing it describes is
+      # a property of a card, so it is only right on homogeneous GPU hardware.
+      # Set it to 4 if every GPU node is an A30; leave it alone on a mixed
+      # cluster, where no single value is correct. Ryax sending the exact
+      # figure per execution is roadmap#1458.
       total_compute_slices: 7
 
     memory_oom_processor:
