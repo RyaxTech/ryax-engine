@@ -205,6 +205,47 @@ glab api "projects/<enc>/merge_requests/<iid>" \
 so a newly published CVE in `yarn.lock` blocks every MR until it is cleared —
 add a `resolutions` entry in `package.json` and regenerate the lockfile.
 
+## Documentation for an unreleased feature goes on the release branch
+
+`master` publishes the **live** docs site, so a doc merged there is public the
+moment it lands — whether or not the thing it describes has shipped. The `pages`
+rules in `ryax-engine/.gitlab-ci.yml` decide this:
+
+| Branch | `PAGES_PREFIX` | Published to |
+|---|---|---|
+| `master` (default) | empty | <https://docs.ryax.tech> — the live site |
+| `release-*` | the branch name | a prefixed preview path, beside the live site |
+
+So a docs MR for something unreleased is retargeted, not merged to `master`:
+
+```sh
+P=projects/ryax-tech%2Fryax%2Fryax-engine
+# name it for the full version, so it matches ^release-.*
+glab api --method POST "$P/repository/branches?branch=release-26.10.0&ref=master"
+glab mr update <iid> --target-branch release-26.10.0
+```
+
+The branch merges back into `master` when the release ships, and the docs go
+live with the release they describe.
+
+**Only the documentation is held back.** Chart values, templates and code in the
+same MR belong on `master` as usual — they are unreleased, but they are not
+published.
+
+If unreleased docs have already reached `master`, restore `docs/` to the last
+tag rather than reverting the commits, which carry chart changes that must stay:
+
+```sh
+git checkout <last-tag> -- docs/
+# checkout restores, it does not delete: remove the pages added since
+git diff --diff-filter=A --name-only <last-tag> origin/master -- docs/ | xargs -r git rm
+git diff --exit-code <last-tag> HEAD -- docs/   # must be empty
+```
+
+GitLab cannot rename a branch: create the new name at the same SHA, verify both
+point at it, then delete the old one. A merged MR keeps recording the old target
+branch name, which is cosmetic and not worth rewriting history for.
+
 ## Cutting a release candidate
 
 **Read the wiki page first** (`3-Release/howto-release`); it is the reference and
