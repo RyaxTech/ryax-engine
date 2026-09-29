@@ -63,8 +63,154 @@ Two rules about the pool itself:
   `nvidia.com/gpu`, not per-profile resources such as `nvidia.com/mig-1g.10gb`,
   and `single` is the strategy that advertises MIG instances under that name.
 
-The MIG profiles Ryax IntelliScale can recommend are currently fixed at
-`mig-1g.10gb`, `mig-3g.40gb` and `mig-7g.80gb`. Give your pools one of these.
+## Tell Ryax which card the pool has
+
+A node pool declares a `gpu_mode` -- `full`, or a MIG profile such as
+`mig-1g.10gb`. On its own that names a slice without saying how big it is, so
+also give the pool its **model** from the catalog. The model name alone
+identifies a card, so there is no brand to send beside it:
+
+```sh
+curl -X POST "$RYAX_URL/api/runner/sites/$SITE_ID/node-pools" \
+  -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \
+  -d '{"name":"gpu","cpu":8000,"gpu_count":4,"memory":68719476736,
+       "energy_score":50,"performance_score":50,"cost_score":50,
+       "filter_no_gpu_action":true,
+       "gpu_mode":"mig-3g.20gb",
+       "gpu_model":"A100 40GB"}'
+```
+
+`GET /api/runner/gpu-models` lists the catalog: every model, and for each the
+partitions it can be registered as. A model, or a partition of it, that the
+catalog does not have is rejected with a 422 rather than accepted as a pool
+that silently matches nothing.
+
+Declaring the model is what lets the scheduler know how much memory and
+compute `gpu_mode` stands for, so it can satisfy a request for *"20GB of GPU"*
+without being told which profile to use. A pool that omits it still works --
+Ryax recovers the memory from a MIG profile name, and treats what it cannot
+determine as unknown rather than as zero -- but it cannot be matched on
+model, and a `full` pool with no model tells Ryax nothing about its size.
+
+!!! note "Upgrading"
+    `gpu_model` is new, so pools registered before it have none. Nothing
+    stops working: an unknown pool stays eligible for every request. Fill it
+    in to get precise matching, and to let `best_fit` reason about the pool at
+    all.
+
+    `gpu_count` is the same field the pool has always had, renamed from `gpu`
+    to say what it counts. Existing pools are migrated; a client that still
+    sends `gpu` on create gets a 422.
+
+## How a GPU request is placed
+
+An action asks for a shape of GPU -- a model, an amount of memory, a share
+of a card -- and Ryax picks a node pool whose partition meets it. Any
+partition at least as large will do; the scheduler is not handed a profile name
+to match exactly.
+
+`RYAX_SCHEDULER_GPU_FIT_POLICY` on the Runner decides which of the pools that
+fit is taken:
+
+| Value | Picks |
+|---|---|
+| `best_fit` (default) | the pool that wastes the least card, ties going to score |
+| `first_fit` | the best-scoring pool that fits |
+
+`best_fit` is the default because a GPU cannot be over-committed the way CPU
+can. Leaving the large partitions free for the actions that need them is worth
+more than any single action's objective score, and an action placed on a
+tighter partition that still meets its request loses nothing.
+
+Choose `first_fit` if you would rather an action's energy, cost and performance
+scores decide, and you are not short of GPUs. Set it through `runner.extraEnv`:
+
+```yaml
+runner:
+  extraEnv:
+    - name: RYAX_SCHEDULER_GPU_FIT_POLICY
+      value: first_fit
+```
+
+!!! warning "Memory and compute describe **one** GPU"
+    `gpu: 2` with `memory_GB: 40` means *two cards of 40GB each*, not 80GB
+    spread across two. VRAM cannot be pooled across cards unless the action
+    shards its model itself, so a per-card figure is the only one it can act
+    on. A node with 4x40GB will not satisfy a request for a single 160GB card.
+
+    On a node pool running MIG, an action gets **one slice**, whatever
+    `gpu` says — the pool may have slices to spare, but Ryax allocates one per
+    action. Ask for several whole GPUs on a `full` pool instead.
+
+!!! info "`gpu` on an action, `gpu_count` on a node pool"
+    Two different things, deliberately named apart. An action's
+    `spec.resources.gpu` is how many GPUs *it wants*; a node pool's
+    `gpu_count` is how many *one of its nodes has*. The action-facing name is
+    unchanged.
+
+## What IntelliScale recommends, and to which pool it applies
+
+IntelliScale recommends a share of a card rather than a partition, picked from
+an even 20-bucket split that has nothing to do with your hardware. The step
+(0.05) is finer than any MIG geometry, so Ryax can always round the answer up
+to a partition your pools actually offer.
+
+It learns from the share each execution actually had, which Ryax resolves from
+the node pool's GPU model and sends along with the execution. **This is another
+reason to record the model on a GPU pool**: without it the share has to be
+inferred from the MIG profile name against
+`intelliscale.config.algorithm_configs.simple_mig_recommender.total_compute_slices`,
+a single cluster-wide number that assumes every card splits the same way. It
+defaults to 7, so on an all-A30 cluster (4 slices) an unrecorded pool has its
+observations read about 43% small. Set it to 4 there, or record the models and
+it goes unused.
+
+### Recommendations are keyed by hardware, not by site
+
+A recommendation is only valid for the machine it was measured on, so
+IntelliScale keeps one model per piece of hardware rather than one per site:
+
+| What it recommends | Learned and stored per |
+|---|---|
+| share of a GPU | **GPU model** — a share is a share of a *card* |
+| CPU and memory | **instance type** — equal core counts, unequal throughput |
+
+Two consequences worth knowing:
+
+* **Two sites holding the same card share one model**, and learn faster
+  together. Site is not part of the key at all.
+* **Two node pools in one site holding different cards no longer contaminate
+  each other.** This was never a multi-site problem — a model trained on mixed
+  hardware was wrong for every pool.
+
+Hardware Ryax cannot identify — a pool with no `gpu_model` recorded, or an HPC
+site, which has no instance type — is one shared population, which is exactly
+how every recommendation behaved before this key existed. Nothing fragments on
+upgrade: narrower models only appear where there is hardware information to
+build them from, so the cold start of a narrower key is paid only where you
+have opted into it by recording the model.
+
+### Which number an action actually gets
+
+Because a recommendation belongs to a machine, there is no single answer to
+apply before a machine has been chosen. So the scheduler works out what the
+action would ask for on **each** candidate node pool, judges every pool against
+its own number, and the pool that wins carries that number to the worker.
+
+On a cluster with an A100 pool and an A30 pool, one action can therefore ask
+for 20GB on the first and 6GB on the second in the same scheduling round —
+which is what IntelliScale measured on each. A single folded number could not
+express that, and was wrong for both pools.
+
+Two consequences:
+
+* **A number measured on a big card cannot condemn a small one.** A 40GB
+  recommendation learned on an A100 never applied to the A30 beside it, so it
+  no longer makes that pool look infeasible.
+* **A retried action keeps its bump.** When an action is retried after running
+  out of memory, the raised allocation is pinned and no recommendation may
+  lower it. It is what the workload needed after failing; overriding it would
+  send the retry back to the allocation that just failed.
 
 ## Step 1 — set the MIG profile on the node pool
 

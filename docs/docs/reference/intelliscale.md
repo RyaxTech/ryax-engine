@@ -89,11 +89,48 @@ After setting scaled resources, we can configure some resource-specific args. We
 --gpu-oom-error-code int (26) : [For GPU MIG instance] When the user program inside container encounters an GPU OOM kill, it should return with this error code to let VPA know the occurrence of the GPU OOM. Because GPU OOM is only handled by user program not the linux. The VPA cannot know from Kubernetes unless the user raises this code by themselves. Code number range should be 1 to 255.
 ```
 
-!!! note
-    The MIG profiles IntelliScale can recommend are currently fixed at
-    `mig-1g.10gb`, `mig-3g.40gb` and `mig-7g.80gb`, in the recommender itself
-    rather than in a chart value. Give your GPU node pools one of these
-    profiles — see [GPU node pools and MIG](../howto/gpu_node_pools.md).
+!!! note "IntelliScale recommends a size, not a profile"
+    A GPU recommendation is an amount of **GPU memory in GB** and a **share of
+    a card** between 0 and 1 — not a MIG profile name. IntelliScale knows what
+    a workload used, not what hardware exists; the Runner resolves the pair
+    against the partitions its node pools actually registered and picks one,
+    under `RYAX_SCHEDULER_GPU_FIT_POLICY`. See
+    [GPU node pools and MIG](../howto/gpu_node_pools.md).
+
+    The candidates it ranks are an even split of a card into 20 buckets and
+    describe no real hardware. A 0.05 step is finer than any MIG geometry, so
+    the Runner can always round the answer up to a partition that exists.
+
+    It learns from the share each execution actually had, which Ryax resolves
+    from the node pool's GPU model and sends with the execution.
+    `total_compute_slices` (under `algorithm_configs.simple_mig_recommender`)
+    is the fallback for an execution that arrives without it — an older worker,
+    or a pool with no model recorded — and reads the reported MIG profile as a
+    fraction of that many slices. It is cluster-wide, so it is only right on
+    homogeneous hardware; set it to 4 for an all-A30 cluster, or record the
+    models and it goes unused. It never limits what can be recommended.
+
+    The old `gpu_mig_instance` field is gone and its field number reserved. A
+    Runner that predates the memory/compute pair therefore receives no GPU
+    recommendation and keeps its own default, the largest partition available.
+
+!!! note "One model per piece of hardware, not per site"
+    A recommendation is only valid for the machine it was measured on. The GPU
+    share is learned per **GPU model**, CPU and memory per **instance type**.
+    Site is not part of the key: two sites holding the same card are one
+    population and learn faster together, while two node pools in one site
+    holding different cards no longer contaminate each other.
+
+    Hardware that cannot be identified — a node pool with no `gpu_model`
+    recorded, or an HPC site, which has no instance type — is one shared
+    population, which is how every recommendation behaved before this key
+    existed. Nothing fragments on upgrade.
+
+    The Runner resolves a recommendation **after** it has chosen a node pool,
+    against that pool's hardware, rather than at execution-creation time when
+    no hardware has been chosen yet. So one action can be offered a different
+    number on each candidate pool, and runs with the one belonging to the pool
+    it lands on.
 
 ```plaintext
 --vpa-algorithm string ("rule"): Recommendation algorithm: 'rule' for Rule-based, 'ml' for ML-driven
