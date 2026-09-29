@@ -159,28 +159,13 @@ The default values give comfortable volume sizes to start working on the platfor
 
 Now you can access your cluster with its IP address in your web browser.
 
-The admin account is created on the first start with a password generated for
-your installation. `helm install` printed the commands to read it back; they are:
+Default credentials are:
 
-```sh
-kubectl -n <namespace> get secret ryax-admin-credentials -o jsonpath='{.data.admin-user}' | base64 -d; echo
-kubectl -n <namespace> get secret ryax-admin-credentials -o jsonpath='{.data.admin-password}' | base64 -d; echo
-```
+- user: `user1`
+- password: `pass1`
 
 !!! warning
-    Change this password as soon as you're logged in. The secret is **not**
-    updated when you do, so the value above stops working — keep the new one
-    somewhere safe.
-
-!!! note
-    The secret is only read when the user table is empty, which is the very first
-    start. Upgrading an existing installation never changes your password, and the
-    value in the secret of an instance that has been upgraded is not the one in use.
-
-To choose the credentials yourself instead of having them generated, set
-`authorization.adminUsername` and `authorization.adminPassword` before the first
-install, or create the `ryax-admin-credentials` secret yourself and set
-`authorization.adminSecretCreate: false`.
+    Change this password and user as soon as you're logged in!
 
 ## Install a Worker
 
@@ -248,11 +233,6 @@ taints:
    key: ryax.tech/ryaxns-execs
    value: only
 ```
-
-GPU node pools need more than this: an autoscaled GPU node reports `Ready` before
-its NVIDIA driver and MIG geometry are in place, so actions landing in that
-window get a whole GPU instead of their MIG slice. See
-[GPU node pools and MIG](./gpu_node_pools.md).
 
 ### Install the worker
 
