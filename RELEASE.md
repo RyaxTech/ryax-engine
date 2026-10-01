@@ -25,7 +25,14 @@ We are proud to announce the release of:
 
 ## Bug fixes and Improvements
 
-<!-- Nothing recorded yet for 26.10.0. -->
+- **An install reached through a proxy or by IP answers again.** Since 26.9.0 every
+  Ingress was pinned to `global.tls.hostname` whenever it was set, with or without TLS,
+  so a request arriving under any other name got a 404 from the whole UI. The hosts the
+  Ingresses match are now their own value, `global.ingress.hosts`, empty by default,
+  which matches any host. List several names to serve all of them; with TLS the
+  certificate covers each one. `global.tls.hostname` keeps naming the certificate (when
+  the list is empty) and the registry, and defaults to the first listed host.
+  (roadmap#1448)
 
 ## Upgrade to this version
 
@@ -35,6 +42,19 @@ helm get values -n ryaxns ryax --output yaml > values.yaml
 ```
 
 Admins should take care of the following elements when upgrading to this version:
+
+- **`global.tls.hostname` no longer restricts the hosts Ryax answers for.** Since
+  26.9.0 it pinned every Ingress to that name. If you relied on it — typically on a
+  cluster shared with other applications, where the bundled Traefik would otherwise
+  answer for every host — move the name to `global.ingress.hosts`:
+  ```yaml
+  global:
+    ingress:
+      hosts: ["ryax.example.com"]
+  ```
+  You can keep `global.tls.hostname` as well; when both are set it must be one of the
+  listed hosts, or the chart refuses to render. An install that sets neither, or only
+  wants TLS for its name, needs nothing.
 
 - **A new GitOps install needs one more secret.** With `global.secrets.create=false`,
   create `ryax-admin-credentials` (keys `admin-user` and `admin-password`) before the

@@ -1,5 +1,5 @@
 {{- if .Values.ingress.enabled }}
-{{ $hostname := tpl (.Values.ingress.hostname | default (printf "%s.%s" "registry" .Values.global.tls.hostname)) . }}
+{{ $hostname := tpl (.Values.ingress.hostname | default (printf "%s.%s" "registry" (.Values.global.tls.hostname | default (first (.Values.global.ingress.hosts | default (list "")))))) . }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

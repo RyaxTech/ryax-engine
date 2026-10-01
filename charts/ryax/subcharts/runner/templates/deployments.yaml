@@ -74,7 +74,7 @@ spec:
               value: {{ .Values.logLevel | default .Values.global.ryax.logLevel | default "warning" }}
             - name: RYAX_INTERNAL_REGISTRY
               {{- if .Values.global.tls.enabled }}
-              value: registry.{{ .Values.global.tls.hostname | required "global.tls.hostname is required when global.tls.enabled"  }}
+              value: registry.{{ .Values.global.tls.hostname | default (first (.Values.global.ingress.hosts | default (list ""))) | required "global.tls.hostname or global.ingress.hosts is required when global.tls.enabled" }}
               {{- else }}
               value: {{ .Values.internalRegistry }}
               {{- end }}

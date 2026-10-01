@@ -1,5 +1,13 @@
 {{- $tlsEnabled := .Values.global.tls.enabled }}
 {{- $hostname := .Values.global.tls.hostname }}
+{{- /* Hosts the rules match; empty matches any host (roadmap#1448). */}}
+{{- $ingressHosts := .Values.global.ingress.hosts | default list }}
+{{- if and $ingressHosts $hostname (not (has $hostname $ingressHosts)) }}
+{{- fail (printf "global.tls.hostname (%s) must be one of global.ingress.hosts (%s)" $hostname (join ", " $ingressHosts)) }}
+{{- end }}
+{{- /* The certificate covers every host the rules match, or global.tls.hostname
+     alone when they match any host. */}}
+{{- $tlsHosts := $ingressHosts | default (compact (list $hostname)) }}
 {{- if .Values.ingress.enabled }}
 apiVersion: "networking.k8s.io/v1"
 kind: "Ingress"
@@ -18,8 +26,9 @@ spec:
   ingressClassName: {{ tpl . $ }}
   {{- end }}
   rules:
-    {{- if $hostname }}
-    - host: {{ $hostname }}
+    {{- range $host := $ingressHosts | default (list "") }}
+    {{- if $host }}
+    - host: {{ $host }}
       http:
     {{- else }}
     - http:
@@ -27,29 +36,35 @@ spec:
         paths:
           - backend:
               service:
-                name: {{ include "runner.fullname" . }}
+                name: {{ include "runner.fullname" $ }}
                 port:
                   name: "api"
-            path: '/{{ .Values.baseApiUrl }}'
+            path: '/{{ $.Values.baseApiUrl }}'
             pathType: "Prefix"
           - backend:
               service:
-                name: {{ include "runner.fullname" . }}
+                name: {{ include "runner.fullname" $ }}
                 port:
                   name: "api"
-            path: '/api/{{ .Values.baseApiUrl }}'
+            path: '/api/{{ $.Values.baseApiUrl }}'
             pathType: "Prefix"
           - backend:
               service:
-                name: {{ include "runner.fullname" . }}
+                name: {{ include "runner.fullname" $ }}
                 port:
                   name: "user-api"
             path: '/user-api'
             pathType: "Prefix"
+    {{- end }}
   {{- if $tlsEnabled }}
+  {{- if not $tlsHosts }}
+  {{- fail "ERROR: global.tls.hostname or global.ingress.hosts is required when TLS is enabled" }}
+  {{- end }}
   tls:
     - hosts:
-        - {{ required "ERROR: global.tls.hostname is required when TLS is enabled" $hostname }}
+        {{- range $tlsHosts }}
+        - {{ . }}
+        {{- end }}
       secretName: {{ .Values.global.tls.existingCertificatSecret | default (printf "ryax-cert-%s" .Values.global.tls.environment) }}
   {{- end }}
 ---
