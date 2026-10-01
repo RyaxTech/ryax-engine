@@ -1,6 +1,6 @@
 ---
 name: ryax-gitlab-flow
-description: The GitLab and cluster workflow for Ryax — where the release process lives, how to open issues in roadmap and MRs in the service repos, how to cut a release candidate, and how to deploy to local or a remote cluster. Use when creating an issue or MR, cutting a release, or running helm against any Ryax cluster.
+description: The GitLab and cluster workflow for Ryax — where the release process lives, how to open issues in roadmap and MRs in the service repos, how to cut a release candidate, and how to deploy to local or a remote cluster. Use when creating an issue or MR, bumping a submodule in ryax-engine, moving issues between iterations or changing a sprint, cutting a release, or running helm against any Ryax cluster.
 ---
 
 # The Ryax GitLab and deployment flow
@@ -103,6 +103,58 @@ glab api "projects/ryax-tech%2Fryax%2Froadmap/issues/<iid>" \
   | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['labels'], [a['username'] for a in d['assignees']])"
 ```
 
+## Iterations (sprints)
+
+Iterations are GraphQL-only through `glab api graphql -f query='…'`. Two
+cadences exist, and only one is in use:
+
+| Cadence | Group | Kind | Titles |
+|---|---|---|---|
+| `3 weeks` (2072404) | `ryax-tech` | manual | `Sprint 8.26`, … — **the one in use** |
+| `Sprint` (25803) | `ryax-tech/ryax` | was automatic, manual since 2026-10-01 | none, only iid numbers |
+
+An iteration URL `…/cadences/<cadence>/iterations/<id>` gives the global id
+`gid://gitlab/Iteration/<id>`. The recipes:
+
+```graphql
+# what is in it -- issues live in the subgroup, so includeSubgroups
+query { group(fullPath: "ryax-tech") {
+  issues(iterationId: ["<id>"], includeSubgroups: true, first: 100) {
+    count nodes { reference(full: true) title state } } } }
+
+# the cadence's iterations, to check for overlap before changing dates
+query { group(fullPath: "ryax-tech") {
+  iterations(iterationCadenceIds: ["gid://gitlab/Iterations::Cadence/<c>"], first: 50,
+             sort: CADENCE_AND_DUE_DATE_DESC) { nodes { id title startDate dueDate state } } } }
+
+# move issues: one aliased mutation per issue, all in one request
+mutation {
+  i1: issueSetIteration(input: {projectPath: "ryax-tech/ryax/roadmap", iid: "1465",
+        iterationId: "gid://gitlab/Iteration/<id>"}) { issue { iid iteration { title } } errors }
+  i2: … }
+
+# extend: groupPath is the group that owns the cadence (ryax-tech for "3 weeks")
+mutation { updateIteration(input: { groupPath: "ryax-tech", id: "gid://gitlab/Iteration/<id>",
+  dueDate: "YYYY-MM-DD" }) { iteration { dueDate state } errors } }
+```
+
+Extending a closed iteration past today reopens it as `current`. Iterations in
+one cadence may not overlap, so check the next one first.
+
+Deleting is where it gets awkward:
+
+- **Iterations of an automatic cadence cannot be deleted**:
+  `Deleting iterations from automatic iteration cadences is not allowed`.
+- `iterationCadenceUpdate(input: {id, automatic: false})` makes it manual. It
+  also **turns `rollOver` off silently**, and the cadence stops creating
+  iterations.
+- Even then, a current or upcoming iteration is deletable only if it is the
+  **last** of its cadence: `upcoming/current iterations can't be deleted unless
+  they are the last one in the cadence`. Delete the later ones first. Moving its
+  dates past them with `updateIteration` should also work, but it is untested.
+- Empty the iteration first, and confirm `count: 0` with the first query above.
+  A deleted iteration does not come back.
+
 ## Merge requests
 
 ```sh
@@ -115,6 +167,42 @@ Link the issue **in the description**, with the full path:
 `Closes ryax-tech/ryax/roadmap#1445`. The `--related-issue` flag only resolves
 issues in the *same* project, so it does not work for the roadmap → service-repo
 direction, which is the normal case here.
+
+### Through the API, when `$(cat …)` is not an option
+
+Some sandboxes refuse command substitution. `glab api` reads a file itself with
+`-F key=@path`, so the description needs no shell help:
+
+```sh
+glab api --method POST "projects/<enc>/merge_requests" \
+  -f source_branch=<branch> -f target_branch=master -f remove_source_branch=true \
+  -f "title=Draft: ..." -F description=@mr.md
+glab mr update <iid> --repo <group>/<project> --assignee mercierm
+```
+
+The same `-F description=@mr.md` on `--method PUT …/merge_requests/<iid>` rewrites
+the description of an existing MR. That is the way to add test evidence without
+a note, which would block the merge (see below).
+
+**`assignee_username` is not an API field.** GitLab drops it silently and the MR
+comes back with `assignees: []`. Use `assignee_ids`, or `glab mr update
+--assignee` afterwards as above, and check `.assignees` either way.
+
+### `ryax-studio` and `ryax-core` squash on merge
+
+Both have `squash_option: default_on`, while `ryax-engine` merges commits as they
+are. Two consequences:
+
+- One commit per issue on the branch lands as **one** commit, carrying the MR
+  title. Per-commit messages and their `Closes` lines are gone. Put every
+  `Closes ryax-tech/ryax/roadmap#…` line in the MR description.
+- Your local branch is no longer an ancestor of `master`, so `git branch -d`
+  refuses it. Check the squash carried everything, then force the delete:
+
+  ```sh
+  git diff --stat HEAD <squash-sha>      # empty = identical tree
+  git branch -D <branch>
+  ```
 
 ### Branch names must not contain `/`
 
@@ -161,6 +249,40 @@ pushing:
 ```sh
 git diff --name-only origin/master...HEAD     # a bare 'core' or 'intelliscale' line is the bug
 ```
+
+### Bumping a submodule on purpose
+
+Once a service MR is merged, `ryax-engine` still pins the old commit until
+someone moves the gitlink. The developer's own checkout usually carries dirty
+gitlinks, so work from a fresh worktree of `origin/master`. You do not need to
+check out the submodules: write the gitlinks straight into the index.
+
+```sh
+git -C core fetch origin master                     # same for studio, …
+git -C core merge-base --is-ancestor <pinned> origin/master && echo ff   # must be a fast-forward
+git -C core log --oneline --first-parent <pinned>..origin/master        # the merges coming in
+
+git worktree add --no-track -b bump-core-studio .claude/worktrees/bump origin/master
+git -C .claude/worktrees/bump update-index \
+  --cacheinfo 160000,<core-sha>,core --cacheinfo 160000,<studio-sha>,studio
+git -C .claude/worktrees/bump diff --name-only --cached      # only the bumped paths
+```
+
+`<pinned>` is `git ls-tree origin/master <submodule>`.
+
+Squashed commits carry no issue refs (see above), so get them from the MRs
+themselves for the commit message and the MR description:
+
+```sh
+glab api "projects/ryax-tech%2Fryax%2Fryax-core/merge_requests?state=merged&source_branch=<branch>" \
+  | python3 -c "import json,re,sys
+for m in json.load(sys.stdin): print(m['iid'], m['title'], sorted(set(re.findall(r'roadmap#\d+', m['description'] or ''))))"
+```
+
+A bump that removes an IO type expects a warning from `check_api_spec`. Studio
+!491 removed `table`, which is still listed in the IO type enum of the committed
+`ryax-spec.json`. The job is `allow_failure`, and `./jef.py update_api` at
+release brings the spec back in line.
 
 ### Baseline the target branch before blaming your MR
 
