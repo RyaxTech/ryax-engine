@@ -96,6 +96,15 @@ helm install ryax oci://registry.ryax.org/release-charts/ryax-engine \
   --set global.tls.hostname='example.company.io'
 ```
 
+This names the certificate, but Ryax still answers for any host that reaches the
+cluster. To restrict it to its own names, for instance on a cluster shared with
+other applications, list them in `global.ingress.hosts` (the certificate then covers
+all of them, so each must resolve to the cluster):
+
+```sh
+  --set 'global.ingress.hosts={example.company.io}'
+```
+
 !!! warning
 
     Depending on your Kubernetes cluster setup, you might have issue

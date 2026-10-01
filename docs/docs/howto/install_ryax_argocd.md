@@ -125,9 +125,15 @@ IngressClass the cluster marks default.
 
 Two things to know if you *do* keep the bundled Traefik:
 
-- Set `global.tls.hostname`. Without it the Ingress rules match **every** host,
-  so once Traefik's Service gets an external address it answers for everything in
-  the cluster, not just Ryax.
+- List Ryax's names in `global.ingress.hosts`. Left empty, the Ingress rules
+  match **every** host, so once Traefik's Service gets an external address it
+  answers for everything in the cluster, not just Ryax. `global.tls.hostname` does
+  not do this: it only names the certificate and the registry.
+  ```yaml
+  global:
+    ingress:
+      hosts: ["ryax.example.com"]
+  ```
 - Do not set `traefik.ingressClass.isDefaultClass: true`. The
   `ingressclass.kubernetes.io/is-default-class` annotation is cluster-scoped, so
   the bundled Traefik would claim every classless Ingress in every namespace —
