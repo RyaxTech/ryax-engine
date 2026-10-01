@@ -47,10 +47,16 @@ spec:
               resources: {{- toYaml .Values.garbageCollect.resources | nindent 16 }}
               image: {{ include "registry.image" . }}
               imagePullPolicy: {{ .Values.garbageCollect.imagePullPolicy }}
+              # Registry v3 (distribution v3) reads its config from
+              # /etc/distribution/, not v2's /etc/docker/registry/. Nothing may
+              # swallow a non-zero exit here: an "|| echo" used to hide that
+              # the old path did not exist, so GC never ran and the Job still
+              # reported Completed (roadmap#1294).
               args:
-                - /bin/sh
-                - -c
-                - "/bin/registry garbage-collect --delete-untagged /etc/docker/registry/config.yml || echo Nothing to be cleaned"
+                - /bin/registry
+                - garbage-collect
+                - --delete-untagged
+                - /etc/distribution/config.yml
               {{- if .Values.persistence.enable }}
               volumeMounts:
                 - name: registry-data-dir
