@@ -122,8 +122,8 @@ kube-prometheus-stack:
 
     grafana.ini:
       server:
-        domain: "{{ .Values.global.tls.hostname }}"
-        root_url: "https://{{ .Values.global.tls.hostname }}/grafana"
+        domain: '{{ default (first (default (list "") .Values.global.ingress.hosts)) .Values.global.tls.hostname }}'
+        root_url: 'https://{{ default (first (default (list "") .Values.global.ingress.hosts)) .Values.global.tls.hostname }}/grafana'
         serve_from_sub_path: true
 
     ingress:
@@ -134,6 +134,6 @@ kube-prometheus-stack:
         cert-manager.io/cluster-issuer: "letsencrypt-{{ .Values.global.tls.environment }}"
       tls:
         - hosts:
-          - "{{ .Values.global.tls.hostname }}"
+          - '{{ default (first (default (list "") .Values.global.ingress.hosts)) .Values.global.tls.hostname }}'
           secretName: "{{ .Values.global.tls.existingCertificatSecret | default (printf \"ryax-cert-%s\" .Values.global.tls.environment) }}"
 
