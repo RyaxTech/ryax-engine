@@ -25,7 +25,8 @@ We are proud to announce the release of:
 
 ## Bug fixes and Improvements
 
-<!-- Nothing recorded yet for 26.10.0. -->
+- **An install reached through a proxy or by IP answers again.**
+  ([roadmap#1448](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1448))
 
 ## Upgrade to this version
 
@@ -35,6 +36,19 @@ helm get values -n ryaxns ryax --output yaml > values.yaml
 ```
 
 Admins should take care of the following elements when upgrading to this version:
+
+- **⚠️ If you set `global.tls.hostname`, Ryax answers for every host again.** 26.9.0
+  restricted the Ingresses to that name; they are now restricted only to the names in
+  `global.ingress.hosts`, which is empty (any host) by default. To keep Ryax to its own
+  names, typically on a cluster shared with other applications, list them:
+  ```yaml
+  global:
+    ingress:
+      hosts: ["ryax.example.com"]
+  ```
+  If you keep `global.tls.hostname` as well, it must be one of these hosts, or the chart
+  refuses to render. Installs that set neither value need nothing. More in
+  [Install Ryax with ArgoCD › Routing](https://docs.ryax.tech/howto/install_ryax_argocd/#routing).
 
 - **A new GitOps install needs one more secret.** With `global.secrets.create=false`,
   create `ryax-admin-credentials` (keys `admin-user` and `admin-password`) before the
