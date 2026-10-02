@@ -1,0 +1,121 @@
+suite: Registry hostname from the primary name (roadmap#1448)
+# The primary name is global.tls.hostname, or the first of global.ingress.hosts
+# when it is unset. The registry is served at registry.<primary name>, unless
+# ingress.hostname overrides it.
+templates:
+  - templates/ingress.yaml
+  - templates/secrets.yaml
+set:
+  global.ingress.className: traefik
+tests:
+  - template: templates/ingress.yaml
+    it: serves registry.<tls.hostname>
+    set:
+      ingress.enabled: true
+      global.tls.hostname: n.example.com
+    asserts:
+      - equal:
+          path: spec.rules[0].host
+          value: registry.n.example.com
+  - template: templates/ingress.yaml
+    it: falls back to the first listed host without tls.hostname
+    set:
+      ingress.enabled: true
+      global.ingress.hosts: [a.example.com, b.example.com]
+    asserts:
+      - equal:
+          path: spec.rules[0].host
+          value: registry.a.example.com
+  - template: templates/ingress.yaml
+    it: prefers tls.hostname over the first listed host
+    set:
+      ingress.enabled: true
+      global.ingress.hosts: [a.example.com, b.example.com]
+      global.tls.hostname: b.example.com
+    asserts:
+      - equal:
+          path: spec.rules[0].host
+          value: registry.b.example.com
+  - template: templates/ingress.yaml
+    it: lets ingress.hostname override the primary name
+    set:
+      ingress.enabled: true
+      ingress.hostname: reg.example.com
+      global.tls.hostname: n.example.com
+    asserts:
+      - equal:
+          path: spec.rules[0].host
+          value: reg.example.com
+  - template: templates/ingress.yaml
+    it: binds the certificate to the same name with TLS on
+    set:
+      ingress.enabled: true
+      global.tls.enabled: true
+      global.tls.environment: production
+      global.ingress.hosts: [a.example.com]
+    asserts:
+      - equal:
+          path: spec.tls[0].hosts
+          value: [registry.a.example.com]
+
+  # The pull secret names the registry the kubelet pulls from: the node port
+  # unless an Ingress with TLS serves it.
+  - template: templates/secrets.yaml
+    documentIndex: 1
+    it: pulls from the node port without an Ingress
+    set:
+      global.tls.enabled: true
+      global.tls.environment: production
+      global.tls.hostname: n.example.com
+    asserts:
+      - matchRegex:
+          path: data[".dockerconfigjson"]
+          decodeBase64: true
+          pattern: '"127\.0\.0\.1:30012":'
+  - template: templates/secrets.yaml
+    documentIndex: 1
+    it: pulls from the node port with an Ingress but TLS off
+    set:
+      ingress.enabled: true
+      global.tls.hostname: n.example.com
+    asserts:
+      - matchRegex:
+          path: data[".dockerconfigjson"]
+          decodeBase64: true
+          pattern: '"127\.0\.0\.1:30012":'
+  - template: templates/secrets.yaml
+    documentIndex: 1
+    it: pulls from registry.<first listed host> with an Ingress and TLS
+    set:
+      ingress.enabled: true
+      global.tls.enabled: true
+      global.tls.environment: production
+      global.ingress.hosts: [a.example.com, b.example.com]
+    asserts:
+      - matchRegex:
+          path: data[".dockerconfigjson"]
+          decodeBase64: true
+          pattern: '"registry\.a\.example\.com":'
+  - template: templates/secrets.yaml
+    documentIndex: 1
+    it: pulls from ingress.hostname when it is set
+    set:
+      ingress.enabled: true
+      ingress.hostname: reg.example.com
+      global.tls.enabled: true
+      global.tls.environment: production
+      global.tls.hostname: n.example.com
+    asserts:
+      - matchRegex:
+          path: data[".dockerconfigjson"]
+          decodeBase64: true
+          pattern: '"reg\.example\.com":'
+  - template: templates/secrets.yaml
+    it: refuses an Ingress with TLS and no name to serve it at
+    set:
+      ingress.enabled: true
+      global.tls.enabled: true
+      global.tls.environment: production
+    asserts:
+      - failedTemplate:
+          errorPattern: "One of 'global.tls.hostname', 'global.ingress.hosts' or 'ingress.hostname' is required"

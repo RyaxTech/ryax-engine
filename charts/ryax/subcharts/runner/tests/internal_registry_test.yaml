@@ -1,0 +1,55 @@
+suite: RYAX_INTERNAL_REGISTRY from the primary name (roadmap#1448)
+# With TLS on, the runner points actions at registry.<primary name>: the
+# primary name is global.tls.hostname, or the first of global.ingress.hosts
+# when it is unset. With TLS off, it uses internalRegistry, the node port.
+templates:
+  - templates/deployments.yaml
+set:
+  global.ingress.className: traefik
+tests:
+  - it: uses internalRegistry with TLS off, even with a hostname
+    set:
+      global.tls.hostname: n.example.com
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: RYAX_INTERNAL_REGISTRY
+            value: 127.0.0.1:30012
+  - it: uses registry.<tls.hostname> with TLS on
+    set:
+      global.tls.enabled: true
+      global.tls.hostname: n.example.com
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: RYAX_INTERNAL_REGISTRY
+            value: registry.n.example.com
+  - it: falls back to the first listed host without tls.hostname
+    set:
+      global.tls.enabled: true
+      global.ingress.hosts: [a.example.com, b.example.com]
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: RYAX_INTERNAL_REGISTRY
+            value: registry.a.example.com
+  - it: prefers tls.hostname over the first listed host
+    set:
+      global.tls.enabled: true
+      global.ingress.hosts: [a.example.com, b.example.com]
+      global.tls.hostname: b.example.com
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: RYAX_INTERNAL_REGISTRY
+            value: registry.b.example.com
+  - it: refuses TLS with no name to serve the registry at
+    set:
+      global.tls.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "global.tls.hostname or global.ingress.hosts is required when global.tls.enabled"
