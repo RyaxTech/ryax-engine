@@ -1,0 +1,85 @@
+suite: GPU readiness gate placement
+# The gate is off by default, so the shared placement suite never renders it.
+# Its two workloads are placed differently:
+# - the untainter Deployment is an ordinary Ryax pod, on the global placement;
+# - the probe DaemonSet has to run on the GPU nodes that are still tainted, so
+#   it takes gpuReadiness.tolerations and gpuReadiness.nodeSelector, never the
+#   global ones.
+templates:
+  - templates/gpu_readiness.yaml
+set:
+  postgresql.enabled: false
+  gpuReadiness.enabled: true
+  global.tolerations:
+    - {key: example.com/dedicated, operator: Exists, effect: NoSchedule}
+  global.nodeSelector:
+    example.com/pool: ryax
+  global.affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - {key: example.com/zone, operator: In, values: [a]}
+tests:
+  - it: puts the untainter on the global placement
+    documentSelector: {path: kind, value: Deployment}
+    asserts:
+      - equal:
+          path: spec.template.spec.tolerations
+          value:
+            - {key: example.com/dedicated, operator: Exists, effect: NoSchedule}
+      - equal:
+          path: spec.template.spec.nodeSelector
+          value:
+            example.com/pool: ryax
+      - equal:
+          path: spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].values
+          value: [a]
+  - it: lets the chart's own placement replace the global one on the untainter
+    documentSelector: {path: kind, value: Deployment}
+    set:
+      tolerations:
+        - {key: example.com/own, operator: Exists}
+      nodeSelector:
+        example.com/own-pool: "true"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+    asserts:
+      - equal:
+          path: spec.template.spec.tolerations
+          value:
+            - {key: example.com/own, operator: Exists}
+      - equal:
+          path: spec.template.spec.nodeSelector
+          value:
+            example.com/own-pool: "true"
+      - notExists:
+          path: spec.template.spec.affinity.nodeAffinity
+
+  - it: runs the probe on every tainted GPU node, whatever the global placement
+    documentSelector: {path: kind, value: DaemonSet}
+    asserts:
+      - equal:
+          path: spec.template.spec.tolerations
+          value:
+            - {operator: Exists}
+      - equal:
+          path: spec.template.spec.nodeSelector
+          value:
+            nvidia.com/gpu.present: "true"
+      - notExists:
+          path: spec.template.spec.affinity
+  - it: takes gpuReadiness.tolerations on the probe
+    documentSelector: {path: kind, value: DaemonSet}
+    set:
+      gpuReadiness.tolerations:
+        - {key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}
+    asserts:
+      - equal:
+          path: spec.template.spec.tolerations
+          value:
+            - {key: nvidia.com/gpu, operator: Exists, effect: NoSchedule}

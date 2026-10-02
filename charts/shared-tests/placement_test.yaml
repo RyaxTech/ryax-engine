@@ -1,0 +1,117 @@
+suite: Pod placement from global.tolerations, nodeSelector and affinity
+# Every Ryax Deployment and Job takes its tolerations, nodeSelector and affinity
+# from the chart's own value, or from the global one when that is empty. The
+# chart's value replaces the global one, it does not merge with it.
+#
+# The selector picks the documents by kind across all the chart's templates, so
+# a new Deployment or Job is covered without touching this suite. It skips the
+# templates that render none -- and it also skips a template that FAILS to
+# render, so a broken chart would pass every test below without asserting
+# anything. The first test guards against that.
+#
+# Pods placed on purpose another way (a DaemonSet that must run on every node,
+# a CronJob bound to the registry's node) are not Deployments or Jobs, and their
+# charts test them on their own. So are pods off by default (gpuReadiness).
+templates:
+  - "templates/*.yaml"
+set:
+  # worker-k8s names its database through the bitnami postgresql subchart's
+  # helpers, which are not there without `helm dependency build`. The other
+  # charts have no such value.
+  postgresql.enabled: false
+tests:
+  - it: renders every template
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: sets no placement by default
+    documentSelector: &deployments
+      path: kind
+      value: Deployment
+      matchMany: true
+      skipEmptyTemplates: true
+    asserts: &unplaced
+      - notExists:
+          path: spec.template.spec.tolerations
+      - notExists:
+          path: spec.template.spec.nodeSelector
+      - notExists:
+          path: spec.template.spec.affinity
+  - it: sets no placement on a Job by default
+    documentSelector: &jobs
+      path: kind
+      value: Job
+      matchMany: true
+      skipEmptyTemplates: true
+    asserts: *unplaced
+
+  - it: takes the global placement
+    documentSelector: *deployments
+    set: &global
+      global.tolerations:
+        - {key: example.com/dedicated, operator: Exists, effect: NoSchedule}
+      global.nodeSelector:
+        example.com/pool: ryax
+      global.affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - {key: example.com/zone, operator: In, values: [a]}
+    asserts: &globallyPlaced
+      - equal:
+          path: spec.template.spec.tolerations
+          value:
+            - {key: example.com/dedicated, operator: Exists, effect: NoSchedule}
+      - equal:
+          path: spec.template.spec.nodeSelector
+          value:
+            example.com/pool: ryax
+      - equal:
+          path: spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].values
+          value: [a]
+  - it: takes the global placement on a Job
+    documentSelector: *jobs
+    set: *global
+    asserts: *globallyPlaced
+
+  - it: lets the chart's own placement replace the global one
+    documentSelector: *deployments
+    set: &own
+      global.tolerations:
+        - {key: example.com/dedicated, operator: Exists, effect: NoSchedule}
+      global.nodeSelector:
+        example.com/pool: ryax
+      global.affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - {key: example.com/zone, operator: In, values: [a]}
+      tolerations:
+        - {key: example.com/own, operator: Exists}
+      nodeSelector:
+        example.com/own-pool: "true"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+    asserts: &ownPlaced
+      - equal:
+          path: spec.template.spec.tolerations
+          value:
+            - {key: example.com/own, operator: Exists}
+      - equal:
+          path: spec.template.spec.nodeSelector
+          value:
+            example.com/own-pool: "true"
+      - exists:
+          path: spec.template.spec.affinity.podAntiAffinity
+      - notExists:
+          path: spec.template.spec.affinity.nodeAffinity
+  - it: lets the chart's own placement replace the global one on a Job
+    documentSelector: *jobs
+    set: *own
+    asserts: *ownPlaced
