@@ -11,6 +11,10 @@
 #
 # A chart gets covered by adding a tests/ directory to it; list `tests/` in its
 # .helmignore too, or the suites ship in the packaged chart.
+#
+# A suite that several charts must pass, because their templates share the
+# logic, lives once in charts/shared-tests/ and is symlinked into each chart's
+# tests/. helm-unittest follows the link and reports the result per chart.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

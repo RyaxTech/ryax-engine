@@ -1,0 +1,58 @@
+suite: Ingress hosts (roadmap#1448)
+templates:
+  - templates/ingresses.yaml
+set:
+  global.ingress.className: traefik
+tests:
+  - documentIndex: 0
+    it: matches any host when nothing is set (row 1)
+    asserts:
+      - notExists:
+          path: spec.rules[0].host
+      - notExists:
+          path: spec.tls
+  - documentIndex: 0
+    it: does not pin to tls.hostname when TLS is off (row 2, the 1448 fix)
+    set:
+      global.tls.hostname: n.example.com
+    asserts:
+      - notExists:
+          path: spec.rules[0].host
+  - documentIndex: 0
+    it: binds rules and certificate to the listed host (row 7)
+    set:
+      global.tls.enabled: true
+      global.tls.environment: production
+      global.ingress.hosts: [a.example.com]
+    asserts:
+      - equal:
+          path: spec.rules[0].host
+          value: a.example.com
+      - equal:
+          path: spec.tls[0].hosts
+          value: [a.example.com]
+  - documentIndex: 0
+    it: one rule per host, the certificate covers all (row 9)
+    set:
+      global.tls.enabled: true
+      global.tls.environment: production
+      global.ingress.hosts: [a.example.com, b.example.com]
+      global.tls.hostname: b.example.com
+    asserts:
+      - lengthEqual:
+          path: spec.rules
+          count: 2
+      - equal:
+          path: spec.rules[1].host
+          value: b.example.com
+      - equal:
+          path: spec.tls[0].hosts
+          value: [a.example.com, b.example.com]
+  - documentIndex: 0
+    it: refuses a hostname outside the listed hosts (row 10)
+    set:
+      global.ingress.hosts: [a.example.com]
+      global.tls.hostname: n.example.com
+    asserts:
+      - failedTemplate:
+          errorPattern: "must be one of global.ingress.hosts"
