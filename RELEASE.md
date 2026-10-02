@@ -25,14 +25,8 @@ We are proud to announce the release of:
 
 ## Bug fixes and Improvements
 
-- **An install reached through a proxy or by IP answers again.** Since 26.9.0 every
-  Ingress was pinned to `global.tls.hostname` whenever it was set, with or without TLS,
-  so a request arriving under any other name got a 404 from the whole UI. The hosts the
-  Ingresses match are now their own value, `global.ingress.hosts`, empty by default,
-  which matches any host. List several names to serve all of them; with TLS the
-  certificate covers each one. `global.tls.hostname` keeps naming the certificate (when
-  the list is empty) and the registry, and defaults to the first listed host.
-  (roadmap#1448)
+- **An install reached through a proxy or by IP answers again.**
+  ([roadmap#1448](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1448))
 
 ## Upgrade to this version
 
@@ -43,18 +37,18 @@ helm get values -n ryaxns ryax --output yaml > values.yaml
 
 Admins should take care of the following elements when upgrading to this version:
 
-- **`global.tls.hostname` no longer restricts the hosts Ryax answers for.** Since
-  26.9.0 it pinned every Ingress to that name. If you relied on it — typically on a
-  cluster shared with other applications, where the bundled Traefik would otherwise
-  answer for every host — move the name to `global.ingress.hosts`:
+- **⚠️ If you set `global.tls.hostname`, Ryax answers for every host again.** 26.9.0
+  restricted the Ingresses to that name; they are now restricted only to the names in
+  `global.ingress.hosts`, which is empty (any host) by default. To keep Ryax to its own
+  names, typically on a cluster shared with other applications, list them:
   ```yaml
   global:
     ingress:
       hosts: ["ryax.example.com"]
   ```
-  You can keep `global.tls.hostname` as well; when both are set it must be one of the
-  listed hosts, or the chart refuses to render. An install that sets neither, or only
-  wants TLS for its name, needs nothing.
+  If you keep `global.tls.hostname` as well, it must be one of these hosts, or the chart
+  refuses to render. Installs that set neither value need nothing. More in
+  [Install Ryax with ArgoCD › Routing](https://docs.ryax.tech/howto/install_ryax_argocd/#routing).
 
 - **A new GitOps install needs one more secret.** With `global.secrets.create=false`,
   create `ryax-admin-credentials` (keys `admin-user` and `admin-password`) before the
