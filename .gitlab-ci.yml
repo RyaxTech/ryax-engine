@@ -194,6 +194,19 @@ check_chart_docs:
       when: never
     - when: on_success
 
+check_chart_unit_tests:
+  stage: verify
+  # Same nix-based default image as check_chart_docs: helm-unittest is packaged
+  # in nixpkgs as a Helm plugin directory, which HELM_PLUGINS points at.
+  tags: [docker]
+  script:
+    - export HELM_PLUGINS=$(nix build --no-link --print-out-paths nixpkgs#kubernetes-helmPlugins.helm-unittest)
+    - nix shell nixpkgs#kubernetes-helm --command ./charts/unit-tests.sh
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - when: on_success
+
 # The published API reference is generated from the four FastAPI applications, so
 # nothing stops an endpoint change from landing without it -- the same problem
 # check_chart_docs guards for the chart READMEs. The release regenerates it
