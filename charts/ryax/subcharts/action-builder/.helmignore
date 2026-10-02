@@ -8,3 +8,5 @@
 *.tmp
 *.orig
 *~
+# helm-unittest suites, run by charts/unit-tests.sh.
+tests/

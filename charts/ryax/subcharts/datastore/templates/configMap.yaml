@@ -36,5 +36,5 @@ metadata:
   labels: {{- include "datastore.labels" . | nindent 4}}
     grafana_dashboard: "1"
 data:
-  grafana-dashboard.json: {{ (.Files.Glob "grafana-dashboard.json").AsConfig | nindent 2 }}
+  {{- (.Files.Glob "grafana-dashboard.json").AsConfig | nindent 2 }}
 {{- end }}
