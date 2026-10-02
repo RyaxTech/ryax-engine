@@ -1,0 +1,4 @@
+# Patterns to ignore when building packages.
+# helm-unittest suites, run by charts/unit-tests.sh: this chart's own, and the
+# subcharts' that the raw subcharts/ directory would otherwise carry.
+tests/
