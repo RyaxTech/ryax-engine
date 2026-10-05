@@ -46,7 +46,6 @@ whatever `global.ryax.userNamespace` is set to.
 |---|---|---|
 | `ryax-datastore-secret` | Opaque | `datastore`, `datastore-db`, `datastore-user`, `datastore-pass`, `all-databases`, and `datastore-<db>`, `datastore-<db>-db`, `datastore-<db>-user`, `datastore-<db>-pass` for each of `repository`, `studio`, `authorization`, `runner` |
 | `ryax-broker-secret` (release ns **and** `ryaxns-execs`) | Opaque | `broker`, `broker-user`, `rabbitmq-password` |
-| `ryax-broker-cookie` | Opaque | `rabbitmq-erlang-cookie` |
 | `ryax-minio-secret` | Opaque | `filestore`, `filestore-access`, `filestore-secret`, `root-user`, `root-password` |
 | `api-jwt-secret-key` | Opaque | `jwt-secret-key` |
 | `ryax-admin-credentials` | Opaque | `admin-user`, `admin-password` |
@@ -60,7 +59,9 @@ whatever `global.ryax.userNamespace` is set to.
 | `<release>-db-pass` (worker charts, only when `postgresql.enabled`) | Opaque | `password`, `postgres-password`, `datastore-worker-k8s` / `datastore-worker-ssh-slurm` |
 
 The `datastore-*` and `broker` values are connection URLs, so they must agree
-with the passwords in the same secret:
+with the passwords in the same secret. The broker's own user is seeded from
+`broker-user` and `rabbitmq-password` the first time it starts, so keep the
+password URL-safe (alphanumeric is simplest):
 
 ```
 datastore-runner = postgresql://runner:<datastore-runner-pass>@ryax-datastore/runner
@@ -160,18 +161,34 @@ global:
       effect: NoSchedule
 ```
 
+The broker reads them too: `rabbitmq.tolerations`, `rabbitmq.nodeSelector` and
+`rabbitmq.affinity` override them for the RabbitMQ pod, and the same keys under
+`rabbitmq.operator` for its operator.
+
 The bundled upstream subcharts do **not** read those globals — they have their own
 values:
 
 | Subchart | Where placement goes |
 |---|---|
 | `kube-prometheus-stack` | `prometheusOperator.*`, `prometheus.prometheusSpec.*`, `grafana.*` (each takes `tolerations`, `nodeSelector`, `affinity`) |
-| `minio`, `rabbitmq` | `tolerations`, `nodeSelector`, `affinity` |
+| `minio` | `tolerations`, `nodeSelector`, `affinity` |
 | `loki` | `singleBinary.tolerations`, `singleBinary.nodeSelector` |
 | `tempo` | `tolerations`, `nodeSelector` |
 | `alloy` | `controller.tolerations` (already tolerates every taint by default) |
 | `traefik` | `tolerations`, `nodeSelector` |
 | worker charts' `postgresql` | `postgresql.primary.tolerations`, `postgresql.primary.nodeSelector` |
+
+## The broker and its CRD
+
+The message broker is a `RabbitmqCluster`, run by the RabbitMQ Cluster Operator
+that the chart deploys in the release namespace, watching that namespace only.
+ArgoCD applies the chart's `rabbitmqclusters.rabbitmq.com` CRD before the
+resource that uses it, in the same sync. Keep `ServerSideApply=true`: the CRD is
+too large for the annotation a client-side apply records.
+
+If the cluster already runs a RabbitMQ Cluster Operator that watches the Ryax
+namespace, set `rabbitmq.operator.enabled: false`, or both operators reconcile
+the same broker.
 
 ## The first sync runs no migration, on purpose
 

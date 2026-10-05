@@ -40,6 +40,7 @@ Hardware:
   yes
   ```
 - Have access to a DNS server where you can add a new `A` or `CNAME` entry for your cluster.
+- Ryax installs the `rabbitmqclusters.rabbitmq.com` CRD and runs the [RabbitMQ Cluster Operator](https://www.rabbitmq.com/kubernetes/operator/operator-overview) in its own namespace, for its message broker. If your cluster already runs that operator and it watches the Ryax namespace, add `rabbitmq.operator.enabled: false` to your values.
 
 ### Enable TLS
 
@@ -290,34 +291,10 @@ Run the upgrade with:
 helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns -f values.yaml
 ```
 
+!!! note
+    Helm installs the chart's CRDs on the first install only, and never updates them. When a release adds or changes one, its release notes give the `kubectl apply` to run before the upgrade. 26.10.0 is one: it moves the broker to the RabbitMQ Cluster Operator.
+
 ## Troubleshooting
-
-### Cannot upgrade, Bitnami charts password error
-
-When trying to change configuration you might experience rabbitmq, or postgresql errors like below.
-
-```shell
-COMBINED OUTPUT:
-  Error: Failed to render chart: exit status 1: Error: execution error at (rabbitmq/templates/secrets.yaml:4:17):
-  PASSWORDS ERROR: You must provide your current passwords when upgrading the release.
-                   Note that even after reinstallation, old credentials may be needed as they may be kept in persistent volume claims.
-                   Further information can be obtained at https://docs.bitnami.com/general/how-to/troubleshoot-helm-chart-issues/#credential-errors-while-upgrading-chart-releases
-      'auth.password' must not be empty, please add '--set auth.password=$RABBITMQ_PASSWORD' to the command. To get the current value:
-          export RABBITMQ_PASSWORD=$(kubectl get secret --namespace "ryaxns" ryax-broker-secret -o jsonpath="{.data.rabbitmq-password}" | base64 -d)
-  Use --debug flag to render out invalid YAML
-```
-
-You can find the correct password with:
-```shell
-kubectl get secret --namespace ryaxns ryax-broker-secret -o jsonpath="{.data.rabbitmq-password}" | base64 -d
-```
-
-To avoid this step on every update, you can add the password in the helm values like below:
-```yaml
-rabbitmq:
-  auth:
-    password: <MY SECRET>
-```
 
 ### All actions' pods on ryaxns-execs are in imagePullBackOff
 
