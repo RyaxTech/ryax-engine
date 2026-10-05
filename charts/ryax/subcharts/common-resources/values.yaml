@@ -48,9 +48,9 @@ brokerService: ryax-broker
 brokerUser: "ryaxmq"
 brokerName: "broker"
 brokerPort: "5672"
-brokerCookieName: "ryax-broker-cookie"
 # -- Create the secret above. Set to false to provide it yourself; it must then
-# carry the key(s): broker, broker-user and rabbitmq-password in `brokerSecret` (in both namespaces), rabbitmq-erlang-cookie in `brokerCookieName`.
+# carry the key(s): broker, broker-user and rabbitmq-password in `brokerSecret` (in both namespaces).
+# The broker's default user is seeded from broker-user and rabbitmq-password.
 brokerSecretCreate: true
 
 

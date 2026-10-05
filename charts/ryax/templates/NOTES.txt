@@ -2,7 +2,7 @@
 
 {{- if .Values.global.tls.enabled }}
 Your cluster is available at :
-{{ .Values.global.tls.hostname | required "Please set the cluster hostname using `--set global.tls.hostname=ryax.example.com`"}} 
+{{ .Values.global.tls.hostname | default (first (.Values.global.ingress.hosts | default (list ""))) | required "Please set the cluster hostname using `--set global.tls.hostname=ryax.example.com`"}} 
 {{- else }}
 For production with environment please set global.tls.enabled=true
 {{- end }}

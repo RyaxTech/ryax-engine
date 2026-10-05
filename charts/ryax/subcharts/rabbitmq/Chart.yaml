@@ -1,0 +1,21 @@
+apiVersion: v2
+name: rabbitmq
+description: Ryax message broker, a RabbitmqCluster run by the RabbitMQ Cluster Operator
+type: application
+version: "26.9.0"
+appVersion: "26.9.0"
+# The operator is vendored from its upstream release rather than pulled as a
+# chart dependency: upstream publishes plain manifests only, and the one
+# well-known Helm chart for it is Bitnami's.
+#
+#   crds/       the CRD, verbatim from the release's cluster-operator.yml
+#   templates/  the operator Deployment and its RBAC, adapted: watching the
+#               release namespace only, with Roles instead of ClusterRoles, and
+#               without the admission webhooks (and so without cert-manager)
+#
+# To move to a new operator release, read its release notes, then run
+# `./update-operator.sh <version>` from this directory: it replaces the CRD and
+# bumps operator.image. Diff the operator Deployment and ClusterRole of the new
+# manifest against templates/operator.yaml by hand. An existing installation
+# does not pick up a CRD change by itself (Helm installs crds/ but never
+# upgrades them): say so in the upgrade section of RELEASE.md.

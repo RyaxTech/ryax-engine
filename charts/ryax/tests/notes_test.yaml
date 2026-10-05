@@ -1,0 +1,44 @@
+suite: NOTES cluster address from the primary name (roadmap#1448)
+# With TLS on, the NOTES give the cluster address as the primary name:
+# global.tls.hostname, or the first of global.ingress.hosts when it is unset.
+templates:
+  - templates/NOTES.txt
+tests:
+  - it: gives no address with TLS off
+    set:
+      global.tls.hostname: n.example.com
+    asserts:
+      - matchRegexRaw:
+          pattern: please set global.tls.enabled=true
+      - notMatchRegexRaw:
+          pattern: n\.example\.com
+  - it: gives tls.hostname with TLS on
+    set:
+      global.tls.enabled: true
+      global.tls.hostname: n.example.com
+    asserts:
+      - matchRegexRaw:
+          pattern: "Your cluster is available at :\\s+n\\.example\\.com"
+  - it: falls back to the first listed host without tls.hostname
+    set:
+      global.tls.enabled: true
+      global.ingress.hosts: [a.example.com, b.example.com]
+    asserts:
+      - matchRegexRaw:
+          pattern: "Your cluster is available at :\\s+a\\.example\\.com"
+      - notMatchRegexRaw:
+          pattern: b\.example\.com
+  - it: prefers tls.hostname over the first listed host
+    set:
+      global.tls.enabled: true
+      global.ingress.hosts: [a.example.com, b.example.com]
+      global.tls.hostname: b.example.com
+    asserts:
+      - matchRegexRaw:
+          pattern: "Your cluster is available at :\\s+b\\.example\\.com"
+  - it: refuses TLS with no address to give
+    set:
+      global.tls.enabled: true
+    asserts:
+      - failedTemplate:
+          errorPattern: Please set the cluster hostname

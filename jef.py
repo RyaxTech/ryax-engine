@@ -75,7 +75,6 @@ HELM_DEP_CHANGELOGS = {
     "traefik": "https://github.com/traefik/traefik-helm-chart/blob/master/traefik/Changelog.md",
     "kube-prometheus-stack": "https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/UPGRADE.md",
     "minio": "https://github.com/bitnami/charts/tree/main/bitnami/minio#upgrading",
-    "rabbitmq": "https://github.com/bitnami/charts/tree/main/bitnami/rabbitmq#upgrading",
     "postgresql": "https://github.com/bitnami/charts/tree/main/bitnami/postgresql#upgrading",
     "tempo": "https://github.com/grafana/helm-charts/tree/main/charts/tempo",
     "loki": "https://github.com/grafana/loki/blob/main/production/helm/loki/CHANGELOG.md",

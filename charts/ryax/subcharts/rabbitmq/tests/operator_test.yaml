@@ -1,0 +1,66 @@
+suite: The RabbitMQ Cluster Operator
+# Deployed in the release namespace, watching it only, with namespaced RBAC and
+# without the admission webhooks upstream serves through cert-manager.
+templates:
+  - templates/operator.yaml
+release:
+  name: ryax
+  namespace: ryaxns
+tests:
+  - it: renders
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 4
+
+  - it: grants nothing cluster-wide
+    documentSelector:
+      path: kind
+      value: RoleBinding
+    asserts:
+      - equal:
+          path: roleRef
+          value:
+            apiGroup: rbac.authorization.k8s.io
+            kind: Role
+            name: ryax-broker-operator
+      - equal:
+          path: subjects
+          value:
+            - {kind: ServiceAccount, name: ryax-broker-operator, namespace: ryaxns}
+  - it: renders no cluster-scoped kind
+    asserts:
+      - notEqual:
+          path: kind
+          value: ClusterRole
+      - notEqual:
+          path: kind
+          value: ClusterRoleBinding
+
+  - it: watches the release namespace only, without webhooks
+    documentSelector: &deployment
+      path: kind
+      value: Deployment
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OPERATOR_SCOPE_NAMESPACE
+            valueFrom:
+              fieldRef: {fieldPath: metadata.namespace}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: ENABLE_WEBHOOKS, value: "false"}
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/rabbitmq/cluster-operator:2.23.0
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: ryax-broker-operator
+
+  - it: is left out when the cluster runs its own operator
+    set:
+      operator.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

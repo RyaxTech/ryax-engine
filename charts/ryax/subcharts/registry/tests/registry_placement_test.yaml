@@ -1,0 +1,68 @@
+suite: Registry pods placed apart from global.affinity and global.tolerations
+# Two registry pods do not follow the shared placement suite, on purpose:
+# - the garbage-collect CronJob takes the global tolerations and nodeSelector,
+#   but its affinity binds it to the registry pod's node, where the volume is;
+# - the cert-setup DaemonSet writes the registry certificate on every node, so
+#   it tolerates every NoSchedule taint, whatever the global tolerations.
+templates:
+  - templates/cronJobs.yaml
+  - templates/daemonsets.yaml
+set:
+  global.tolerations:
+    - {key: example.com/dedicated, operator: Exists, effect: NoSchedule}
+  global.nodeSelector:
+    example.com/pool: ryax
+  global.affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - {key: example.com/zone, operator: In, values: [a]}
+tests:
+  - template: templates/cronJobs.yaml
+    it: puts the garbage collection on the global tolerations and nodeSelector
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.tolerations
+          value:
+            - {key: example.com/dedicated, operator: Exists, effect: NoSchedule}
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.nodeSelector
+          value:
+            example.com/pool: ryax
+  - template: templates/cronJobs.yaml
+    it: lets the chart's own tolerations and nodeSelector replace the global ones
+    set:
+      tolerations:
+        - {key: example.com/own, operator: Exists}
+      nodeSelector:
+        example.com/own-pool: "true"
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.tolerations
+          value:
+            - {key: example.com/own, operator: Exists}
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.nodeSelector
+          value:
+            example.com/own-pool: "true"
+  - template: templates/cronJobs.yaml
+    it: keeps the garbage collection on the registry pod's node
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[0].labelSelector.matchExpressions[0]
+          value: {key: registrySetup, operator: In, values: ["0"]}
+      - notExists:
+          path: spec.jobTemplate.spec.template.spec.affinity.nodeAffinity
+
+  - template: templates/daemonsets.yaml
+    it: sets up the certificate on every node, whatever the global placement
+    asserts:
+      - equal:
+          path: spec.template.spec.tolerations
+          value:
+            - {effect: NoSchedule, operator: Exists}
+      - notExists:
+          path: spec.template.spec.nodeSelector
+      - notExists:
+          path: spec.template.spec.affinity

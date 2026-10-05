@@ -90,6 +90,45 @@ helm install ryax oci://registry.ryax.org/release-charts/ryax-engine \
 Otherwise follow the README: `docker-compose up -d`, then
 `export KUBECONFIG=$PWD/kubeconfig.yaml`.
 
+If `helm list -A` already shows `ryax` and `ryax-worker-k8s`, an earlier session
+installed them: reuse them rather than reinstalling. Read what that session left
+behind before trusting it:
+
+```sh
+helm get values ryax -n ryaxns            # image.tag overrides, e.g. runner fix1463, studio fix1468
+helm get values ryax-worker-k8s -n ryaxns
+helm list -n ryaxns                       # REVISION: the one to roll back to
+```
+
+`global.ryax.userNamespace` decides where action pods, Services and Ingresses
+land (`ryax1463-execs` on one install, for instance), not `ryaxns-execs`. An
+empty `kubectl get pods -n ryaxns-execs` there proves nothing.
+
+### Testing a branch image
+
+No registry needed: build the image to a tarball, import it into the k3s node's
+containerd, and point the release at the tag. The chart's `imagePullPolicy` is
+`IfNotPresent`, so the imported tag is used as is.
+
+```sh
+# from the service's repo, on a committed tree: the flake builds from git
+nix run .#image.copyTo -- docker-archive:/tmp/studio.tar:docker.io/ryaxtech/studio:fix1464
+docker cp /tmp/studio.tar core-k3s-server-1:/tmp/studio.tar
+docker exec core-k3s-server-1 ctr -n k8s.io images import /tmp/studio.tar
+
+helm get values ryax -n ryaxns -o yaml > values.yaml
+helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine --version 26.9.0 \
+  -n ryaxns -f values.yaml --set studio.image.tag=fix1464 --wait --timeout 10m
+kubectl get deploy ryax-studio -n ryaxns \
+  -o jsonpath='{.spec.template.spec.containers[0].image} {.status.readyReplicas}/{.status.replicas}'
+```
+
+The flake attribute differs per repo: studio has `.#image`, core has
+`.#runner.image` and `.#worker-k8s.image`. Undo with `helm rollback ryax <revision> -n ryaxns`.
+
+A before/after on the **same** workflow is the strongest evidence. Reproduce on
+the image already running, then swap the tag and repeat.
+
 Register the site and node pool and install the worker exactly as `ryax-gitlab-flow`
 describes — an engine with no worker accepts a deployment and hangs in *Deploying* forever.
 
@@ -123,7 +162,7 @@ healthy build queue looks like a stalled one. Before concluding "nothing is happ
 
 ```sh
 kubectl exec -n ryaxns deploy/ryax-action-builder -c ryax-action-builder -- ps aux | grep nix
-kubectl exec -n ryaxns ryax-broker-0 -- rabbitmqctl list_queues name messages consumers
+kubectl exec -n ryaxns ryax-broker-server-0 -- rabbitmqctl list_queues name messages consumers  # ryax-broker-0 before 26.10.0
 kubectl set env -n ryaxns deploy/ryax-repository RYAX_LOG_LEVEL=debug   # then re-trigger
 ```
 
@@ -151,6 +190,7 @@ Useful actions and what they give you:
 | `Echo inputs into outputs` | every type, in and out, all **optional** — the optional side of IO tests |
 | `Cat content of a file` | a **required** `file` input |
 | `Archive a directory` | directory input, file output you can download and inspect |
+| `Web hosting for static content` (`web-hosting-static-dir`) | an `http_service` trigger that serves a zip: the shortest path to a real Ingress |
 
 ### Building a workflow over the API
 
@@ -189,6 +229,19 @@ Gotchas:
   `POST /api/studio/workflows/{wf}/stop?graceful=false`.
 - Always stop or delete what you deployed — a trigger left running keeps firing.
 
+Studio routes the snippet above does not show:
+
+| Need | Route |
+|---|---|
+| Actions, and one action's `addons` | `GET /api/studio/modules`, `GET /api/studio/modules/{id}` |
+| A workflow action's **addon inputs** | only in `GET /api/studio/v2/workflows/{wf}`: v1 and `…/modules/{m}/inputs` leave them out. v2 shows `endpoint: null` and nulls `addon_name`/`editable`; v1 has the real `endpoint` |
+| Set an addon input | `PUT /api/studio/v2/workflows/{wf}/modules/{m}` with `{"addons_inputs":[{"id":…,"static_value":…}]}` |
+| A file or directory input | `POST /api/studio/workflows/{wf}/modules/{m}/inputs/{input}/file`, multipart `-F file=@site.zip` |
+| Export / import | `GET /api/studio/workflows/{wf}/export` (a zip holding `workflow.yaml`) / `POST /api/studio/workflows/import`, multipart `-F file=@export.zip` |
+| Delete | `DELETE /api/studio/workflows/{wf}`, once stopped |
+
+`unzip -p export.zip workflow.yaml` shows what an export really carries.
+
 ### Reading results
 
 ```sh
@@ -209,6 +262,34 @@ Downloading the artefact and checking its bytes is the strongest evidence availa
 proved `#1245` by showing the directory round-tripped with its nesting intact. Prefer it
 over "the run said Success".
 
+**"Deployed" proves nothing about a trigger** (roadmap#1466). A trigger that
+crashes at start leaves studio at *Deployed*, with no pod and nothing in
+`workflow_runs`. The error is only in the runner's database:
+
+```sh
+kubectl exec -n ryaxns deploy/ryax-datastore -- psql -U ryax -d runner -x -c \
+  "select state, error_type, error_message from execution order by submitted_at desc limit 3"
+kubectl exec -n ryaxns deploy/ryax-datastore -- psql -U ryax -d runner -x -c \
+  "select id, state from workflow_deployment where workflow_definition_id='<studio wf id>'"
+```
+
+The user is `ryax`, the value of `POSTGRES_USER` (there is no `postgres` role).
+Pass it literally: some sandboxes refuse a `sh -c` that expands it.
+
+For an **HTTP service**, check the route end to end. The Ingress, its Service
+and the pod land in the user namespace, and the path is
+`/user-api/<project_id>/<endpoint_prefix>`:
+
+```sh
+kubectl get pods,svc,ingress -n <userNamespace>
+kubectl get ingress <name> -n <userNamespace> \
+  -o jsonpath='{range .spec.rules[*].http.paths[*]}{.path} -> {.backend.service.name}{"\n"}{end}'
+curl -s -w '\nHTTP %{http_code}\n' http://localhost/user-api/<project_id>/<prefix>/index.html
+```
+
+A 200 with the page you uploaded is the proof. "Deployed" and a Running pod are
+not.
+
 ## Known traps, with their issues
 
 Things that will otherwise look like a bug in your setup:
@@ -220,6 +301,8 @@ Things that will otherwise look like a bug in your setup:
 | `/app/studio/new` saves nothing, POSTs to `…/workflows//modules` → 405 | roadmap#1456 — create via the dashboard button |
 | A validation error arriving as 404 from a per-input endpoint | roadmap#1455 — the v2 batched route returns the correct 400 |
 | `Bearer` rejected by authorization and repository | roadmap#1453 |
+| Studio says *Deployed*, but there is no pod and no run | roadmap#1466: the trigger died at start; read `execution.error_message` in the runner DB |
+| `zsh: no matches found` on a `kubectl … -o custom-columns=…[0]…` | zsh globbing `[ ]`: quote the argument, or use `-o jsonpath='…'` |
 
 And one that is **not** a bug: a single transient execution failure right after the worker
 is installed. A 58MB file through Echo failed once with an opaque
