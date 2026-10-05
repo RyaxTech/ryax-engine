@@ -291,6 +291,7 @@ It is a Minio file storage service that exposes an S3-compatible API. It stores 
 
 **Description:**
 This is a RabbitMQ message broker. It enables internal communication between all services using messages serialized in Protobuf.
+It runs as a `RabbitmqCluster` named `ryax-broker`, managed by the [RabbitMQ Cluster Operator](https://www.rabbitmq.com/kubernetes/operator/operator-overview) that the chart deploys in the Ryax namespace.
 
 **Responsibilities**:
 

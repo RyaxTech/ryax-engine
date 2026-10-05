@@ -201,6 +201,12 @@ To trigger an update of Ryax in an offline environment, you can reuse the instal
 sudo k3s ctr images import ./ryax-airgap-images-amd64.tar.gz
 helm upgrade --install ryax ./ryax-engine-*.tgz -n ryaxns --reuse-values
 ```
+
+Helm never updates the chart's CRDs on an upgrade. When the release notes ask you to apply one, take it from the chart package rather than from the URL they give. For the RabbitMQ CRD that 26.10.0 introduces, before the `helm upgrade`:
+```sh
+tar -xzOf ./ryax-engine-*.tgz ryax-engine/charts/rabbitmq/crds/rabbitmqclusters.rabbitmq.com.yaml \
+  | kubectl apply --server-side -f -
+```
 Don't forget to update Nix build dependencies with the process defined in the configuration.
 
 <!-- ### With a private registry

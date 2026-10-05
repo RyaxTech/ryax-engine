@@ -34,7 +34,7 @@ spec:
             create: false
 
           # Injected into every Ryax pod. Upstream subcharts (kube-prometheus-stack,
-          # minio, rabbitmq, loki, tempo, alloy, traefik) do not read this: set
+          # minio, loki, tempo, alloy, traefik) do not read this: set
           # their own placement values, see the how-to.
           tolerations: []
           # nodeSelector: {}
@@ -84,7 +84,8 @@ spec:
     syncOptions:
       - CreateNamespace=true
       # The chart's PriorityClasses are cluster-scoped and shared with anything
-      # else in the cluster that references them.
+      # else in the cluster that references them, and the RabbitMQ CRD is too
+      # large for the annotation a client-side apply records.
       - ServerSideApply=true
 
   # Only needed when `global.secrets.create` is left at `true`: the chart then
