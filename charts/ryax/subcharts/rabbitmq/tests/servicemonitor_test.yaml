@@ -1,0 +1,41 @@
+suite: The broker ServiceMonitor
+# RabbitMQ serves its metrics on the `prometheus` port of the Service the
+# operator creates; the ServiceMonitor CRD is only there with monitoring on.
+templates:
+  - templates/serviceMonitor.yaml
+release:
+  name: ryax
+  namespace: ryaxns
+tests:
+  - it: renders
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+
+  - it: scrapes the prometheus port of the broker Service
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels
+          value:
+            app.kubernetes.io/name: ryax-broker
+            app.kubernetes.io/component: rabbitmq
+      - equal:
+          path: spec.endpoints[0].port
+          value: prometheus
+      - equal:
+          path: spec.namespaceSelector.matchNames
+          value: [ryaxns]
+
+  - it: is left out with monitoring off
+    set:
+      global.monitoring.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+  - it: is left out with the broker metrics off
+    set:
+      metrics.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

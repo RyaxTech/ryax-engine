@@ -27,6 +27,14 @@ We are proud to announce the release of:
 
 - **An install reached through a proxy or by IP answers again.**
   ([roadmap#1448](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1448))
+- **The broker no longer runs on a Bitnami image.** It ran on `bitnamilegacy/rabbitmq`,
+  which Bitnami no longer updates. It is now a `RabbitmqCluster` run by the official
+  [RabbitMQ Cluster Operator](https://www.rabbitmq.com/kubernetes/operator/operator-overview)
+  (2.23.0) on the official `rabbitmq:4.3.6-management` image. The chart deploys the
+  operator in the Ryax namespace, watching that namespace only, and it needs neither
+  cluster-wide rights nor cert-manager. The services reach the broker at the same
+  address with the same credentials.
+  ([roadmap#1320](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1320))
 
 ## Upgrade to this version
 
@@ -56,6 +64,74 @@ Admins should take care of the following elements when upgrading to this version
   Without it the authorization pod stops with `No initial admin password configured`.
   An **existing** installation needs nothing — it never seeds again, and both
   `secretKeyRef`s are `optional`.
+
+- **⚠️ Apply the RabbitMQ CRD before upgrading.** The broker moves to the RabbitMQ
+  Cluster Operator, whose `RabbitmqCluster` CRD ships in the chart, and Helm never
+  installs a CRD on an upgrade. Without it the upgrade stops before changing anything,
+  and prints this command:
+  ```sh
+  kubectl apply --server-side -f https://gitlab.com/ryax-tech/ryax/ryax-engine/-/raw/26.10.0/charts/ryax/subcharts/rabbitmq/crds/rabbitmqclusters.rabbitmq.com.yaml
+  ```
+  Offline, take it from the chart package instead:
+  ```sh
+  tar -xzOf ryax-engine-26.10.0.tgz ryax-engine/charts/rabbitmq/crds/rabbitmqclusters.rabbitmq.com.yaml \
+    | kubectl apply --server-side -f -
+  ```
+  `--server-side` is required: the CRD is too large for a client-side apply. ArgoCD
+  applies the CRD itself, with the `ServerSideApply=true` the reference Application
+  already sets.
+
+- **The broker is replaced, not upgraded, and starts empty.** Helm removes the Bitnami
+  StatefulSet and the operator starts `ryax-broker-server-0` in its place, about a minute
+  later. The services keep the same address (`ryax-broker:5672`) and the same
+  credentials (`ryax-broker-secret`), and reconnect by themselves. There is nothing to
+  migrate: Ryax publishes its messages as transient, so a broker restart has always
+  dropped whatever was still queued. As for any upgrade, run it while no workflow is
+  running. The services retry on their own during the switch, which took about a minute
+  on a test cluster. Once Ryax is back, delete the old broker volume, if there is one
+  (there is none with `rabbitmq.persistence.enabled: false`, as in `minimal.yaml`):
+  ```sh
+  kubectl -n ryaxns delete pvc data-ryax-broker-0
+  ```
+
+- **The `rabbitmq:` values now configure the new broker.** `persistence.*`,
+  `resources`, `tolerations`, `nodeSelector`, `affinity`, `priorityClassName` and
+  `metrics.enabled` keep their meaning. Every other Bitnami key (`auth.*`, `image.*`,
+  `clustering`, `plugins`, ...) is ignored: remove them. A `rabbitmq.image.repository`
+  still naming a Bitnami image stops the render. The broker password is always the one
+  in `ryax-broker-secret`, so a `rabbitmq.auth.password` set by the old troubleshooting
+  guide does nothing. The broker also follows `global.tolerations`, `nodeSelector` and
+  `affinity` now.
+
+- **Uninstalling now takes one more step.** `helm uninstall` removes the operator at
+  the same time as the broker, so nothing clears the `RabbitmqCluster` finalizer: the
+  broker pod keeps running, and `helm uninstall --wait` times out. Delete the broker
+  first, while the operator still runs:
+  ```sh
+  kubectl -n ryaxns delete rabbitmqcluster ryax-broker
+  helm uninstall ryax -n ryaxns
+  ```
+  If an uninstall is already stuck, clear the finalizer:
+  `kubectl -n ryaxns patch rabbitmqcluster ryax-broker --type merge -p '{"metadata":{"finalizers":[]}}'`.
+
+- **If the cluster already runs a RabbitMQ Cluster Operator** that watches the Ryax
+  namespace, set `rabbitmq.operator.enabled: false`. Two operators would reconcile the
+  same broker.
+
+- **Multi-site with Skupper:** the `ryax-broker-ext` connector copied the old broker's
+  pod selector when it was created, so it matches no pod after the upgrade. Recreate it
+  on the main site:
+  ```sh
+  skupper -n ryaxns connector delete ryax-broker-ext
+  skupper -n ryaxns connector create ryax-broker-ext 5672 --workload service/ryax-broker
+  ```
+
+- **GitOps (`global.secrets.create=false`):** `ryax-broker-cookie` is no longer read,
+  delete it whenever you like. `ryax-broker-secret` keeps its keys; its `broker-user`
+  and `rabbitmq-password` now seed the broker's user, so they must match the `broker`
+  URL as before. With automated pruning off, prune the old broker resources in the same
+  sync: the operator cannot create its `ryax-broker` Service while the Bitnami one is
+  still there.
 
 Then run the upgrade:
 ```sh

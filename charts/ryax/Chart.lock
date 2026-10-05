@@ -29,15 +29,15 @@ dependencies:
 - name: datastore
   repository: file://subcharts/datastore
   version: 26.9.0
+- name: rabbitmq
+  repository: file://subcharts/rabbitmq
+  version: 26.9.0
 - name: minio
   repository: oci://registry-1.docker.io/bitnamicharts
   version: 17.0.21
 - name: traefik
   repository: https://helm.traefik.io/traefik
   version: 41.6.1
-- name: rabbitmq
-  repository: oci://registry-1.docker.io/bitnamicharts
-  version: 16.0.14
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
   version: 89.2.4
@@ -50,5 +50,5 @@ dependencies:
 - name: alloy
   repository: https://grafana.github.io/helm-charts
   version: 1.13.0
-digest: sha256:e42e679fd2ffaa4bdd9597473dbdb1cc6927c96fee53e5cf597fc7b07b7c31f3
+digest: sha256:acc0ec283e5cfdb4806c5be23f3aa6f1cd2f9624e49fb51896e096c54773c28d
 generated: "2026-10-05T09:32:33.680956839+02:00"

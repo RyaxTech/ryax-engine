@@ -309,6 +309,7 @@ verify_helm_charts:
       charts/ryax/subcharts/datastore
       charts/ryax/subcharts/front
       charts/ryax/subcharts/intelliscale
+      charts/ryax/subcharts/rabbitmq
       charts/ryax/subcharts/registry
       charts/ryax/subcharts/repository
       charts/ryax/subcharts/runner

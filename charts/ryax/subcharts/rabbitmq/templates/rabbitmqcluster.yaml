@@ -1,0 +1,96 @@
+{{- /*
+Helm installs crds/ on `helm install` only, never on `helm upgrade`. An
+installation older than this chart has no RabbitmqCluster CRD, and its upgrade
+would otherwise stop on "no matches for kind RabbitmqCluster", which does not
+say what to do. A GitOps engine renders with `helm template`, where IsUpgrade
+is never set, and applies the CRD itself.
+*/}}
+{{- if and .Release.IsUpgrade (not (.Capabilities.APIVersions.Has "rabbitmq.com/v1beta1/RabbitmqCluster")) }}
+{{- fail (printf "The RabbitmqCluster CRD is missing, apply it before upgrading:\n  kubectl apply --server-side -f https://gitlab.com/ryax-tech/ryax/ryax-engine/-/raw/%s/charts/ryax/subcharts/rabbitmq/crds/rabbitmqclusters.rabbitmq.com.yaml\nSee the upgrade section of the release notes." .Chart.Version) }}
+{{- end }}
+{{- if contains "bitnami" .Values.image.repository }}
+{{- fail (printf "rabbitmq.image.repository is %q: the broker now runs on the official RabbitMQ image, drop that override from your values" .Values.image.repository) }}
+{{- end }}
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: {{ include "rabbitmq.fullname" . }}
+  labels:
+    {{- include "rabbitmq.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag }}
+  {{- with .Values.global.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  # The upstream defaults suit a three-node cluster: a 30 s start delay so that
+  # the nodes form one cluster, and a week of grace for queue migration on stop.
+  delayStartSeconds: 0
+  terminationGracePeriodSeconds: 60
+  service:
+    type: ClusterIP
+  persistence:
+    {{- if .Values.persistence.enabled }}
+    storage: {{ .Values.persistence.size }}
+    {{- with .Values.persistence.storageClass | default .Values.global.defaultStorageClass }}
+    storageClassName: {{ . }}
+    {{- end }}
+    {{- else }}
+    # 0 is the operator's switch to an emptyDir
+    storage: "0"
+    {{- end }}
+  resources:
+    {{- toYaml .Values.resources | nindent 4 }}
+  {{- with .Values.tolerations | default .Values.global.tolerations }}
+  tolerations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.affinity | default .Values.global.affinity }}
+  affinity:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rabbitmq:
+    {{- with .Values.additionalPlugins }}
+    additionalPlugins:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    # The default user is the one in the broker Secret, which the Ryax services
+    # connect with, so that the Secret stays the single source of the
+    # credentials whoever creates it (this chart, or the operator of a GitOps
+    # install). RabbitMQ expands $(VAR) in its configuration files from the
+    # environment, which the override below fills from that Secret. The operator
+    # writes these lines unexpanded into its own <name>-default-user Secret,
+    # which therefore does not hold usable credentials: read them from the
+    # broker Secret.
+    additionalConfig: |
+      default_user = $(RYAX_BROKER_USER)
+      default_pass = $(RYAX_BROKER_PASSWORD)
+      {{- with .Values.additionalConfig }}
+      {{- . | nindent 6 }}
+      {{- end }}
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            {{- with .Values.priorityClassName }}
+            priorityClassName: {{ . }}
+            {{- end }}
+            {{- with .Values.nodeSelector | default .Values.global.nodeSelector }}
+            nodeSelector:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
+            containers:
+              - name: rabbitmq
+                env:
+                  - name: RYAX_BROKER_USER
+                    valueFrom:
+                      secretKeyRef:
+                        name: {{ .Values.brokerSecret }}
+                        key: broker-user
+                  - name: RYAX_BROKER_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: {{ .Values.brokerSecret }}
+                        key: rabbitmq-password

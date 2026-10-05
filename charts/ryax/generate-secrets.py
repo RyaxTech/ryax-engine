@@ -28,7 +28,6 @@ if __name__ == "__main__":
     repository_frenet_key = frenet_key()
     studio_frenet_key = frenet_key()
     worker_pg_pass = password()
-    rabbitmq_pg_pass = password()
     admin_pass = password()
 
     print(
@@ -48,9 +47,6 @@ worker:
   postgresql:
     auth:
       password: {worker_pg_pass}
-rabbitmq:
-  auth:
-    password: {rabbitmq_pg_pass}
 registry:
   credentials:
     password: "{registry_pass}"

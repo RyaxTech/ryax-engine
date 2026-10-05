@@ -1,0 +1,23 @@
+{{- if and .Values.global.monitoring.enabled .Values.metrics.enabled .Values.metrics.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "rabbitmq.fullname" . }}
+  labels:
+    {{- include "rabbitmq.labels" . | nindent 4 }}
+spec:
+  jobLabel: {{ include "rabbitmq.fullname" . }}
+  # The operator puts these labels on both of its Services; only the client
+  # one, named after the RabbitmqCluster, has the prometheus port.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "rabbitmq.fullname" . }}
+      app.kubernetes.io/component: rabbitmq
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: prometheus
+      path: /metrics
+      interval: 30s
+{{- end }}
