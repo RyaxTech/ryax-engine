@@ -87,7 +87,9 @@ Admins should take care of the following elements when upgrading to this version
   credentials (`ryax-broker-secret`), and reconnect by themselves. There is nothing to
   migrate: Ryax publishes its messages as transient, so a broker restart has always
   dropped whatever was still queued. As for any upgrade, run it while no workflow is
-  running. Once Ryax is back, delete the old broker volume:
+  running. The services retry on their own during the switch, which took about a minute
+  on a test cluster. Once Ryax is back, delete the old broker volume, if there is one
+  (there is none with `rabbitmq.persistence.enabled: false`, as in `minimal.yaml`):
   ```sh
   kubectl -n ryaxns delete pvc data-ryax-broker-0
   ```
@@ -100,6 +102,17 @@ Admins should take care of the following elements when upgrading to this version
   in `ryax-broker-secret`, so a `rabbitmq.auth.password` set by the old troubleshooting
   guide does nothing. The broker also follows `global.tolerations`, `nodeSelector` and
   `affinity` now.
+
+- **Uninstalling now takes one more step.** `helm uninstall` removes the operator at
+  the same time as the broker, so nothing clears the `RabbitmqCluster` finalizer: the
+  broker pod keeps running, and `helm uninstall --wait` times out. Delete the broker
+  first, while the operator still runs:
+  ```sh
+  kubectl -n ryaxns delete rabbitmqcluster ryax-broker
+  helm uninstall ryax -n ryaxns
+  ```
+  If an uninstall is already stuck, clear the finalizer:
+  `kubectl -n ryaxns patch rabbitmqcluster ryax-broker --type merge -p '{"metadata":{"finalizers":[]}}'`.
 
 - **If the cluster already runs a RabbitMQ Cluster Operator** that watches the Ryax
   namespace, set `rabbitmq.operator.enabled: false`. Two operators would reconcile the
