@@ -4,61 +4,98 @@
 
 **The AI-empowered resource management optimizations within Ryax are brought through Ryax IntelliScale**
 
-Ryax IntelliScale is a *Resilient Vertical Pod Autoscaler* designed for an optimal resource management of the actions of workflows in Ryax. 
-For each workflow, Ryax IntelliScale dynamically gives container size recommendation for each resource type of each action, 
-based on its automatically collected utilization metrics of these containers. The proposed recommendation tries to be as close as possible to 
-the past utilization in order to avoid wasting of resources and fit more pods on the same nodes. Ryax IntelliScale tracks down Out-Of-Memory errors 
-and automatically restarts the pod after increasing the memory, hence providing a resilient feature. 
+Ryax IntelliScale recommends the size of the container of each action of a
+workflow: CPU request and limit, memory, and a slice of a GPU. It learns from the
+utilization metrics of past executions and recommends a size as close as
+possible to what the action actually used, to avoid wasting resources and to fit
+more executions on the same nodes.
 
-Ryax IntelliScale has been implemented in such a way to simply enable different recommendation algorithms. Currently, the following choices are available:
+IntelliScale is a Python service built like the Runner and the Worker (domain,
+application and infrastructure layers, driven by an internal message bus). It
+keeps its state in memory and is reached only over the message broker.
 
-- *Rule-based algorithm* : where the recommendation is done by a pre-defined statistics based on historical consumption. This algorithm is lightweight and currently more adapted for serverless-based actions.
-- *ML-driven algorithm* : where the recommendation is done by machine learning based on historical resource consumption. This algorithm gives more suitable and adaptive recommendation for long-running services, but is heavier than rule-based.
+Three algorithms live in `ryax/intelliscale/domain/algorithms/`, and two are
+active:
 
-Only one algorithm from the above can be configured as the global recommendation method, at the start of Ryax IntelliScale service. The default version is the Rule-based algorithm.
+- `vpa_pilot_rule` : rule-based recommendation of **CPU request, CPU limit and
+  memory**, computed from statistics of the historical utilization.
+- `simple_mig_recommender` : recommends the **GPU memory and the share of a
+  card** an action needs.
+- `vpa_pilot_ml` : an ML-driven variant. Only its state class exists in the
+  tree and it is not wired into the service, so it cannot be selected.
 
-## How to install and configure Ryax IntelliScale
-Ryax IntelliScale is a deployment with 1 pod running in ryaxns namespace. 
-The installation of the service is done through Helm and configured as part of the Worker installation. More details on the installation and configuration of worker can be found here [Worker installation Howto](../howto/worker-install.md)
+There is no algorithm selector: the rule-based and the GPU recommenders both run.
 
+## Install and configure
 
+IntelliScale is a deployment with one pod, installed by the `intelliscale`
+subchart of the Ryax Helm chart. It takes no command line flag: the process
+does not parse any. It is configured by a YAML file and by two environment
+variables set by the chart.
 
-### Common args:
+| Variable | Set from | Role |
+|---|---|---|
+| `RYAX_CONFIG_APP` | the chart, `/intelliscale-config/config.yaml` | Path of the YAML configuration file |
+| `RYAX_BROKER` | the secret named by `brokerSecret` (key `broker`) | RabbitMQ URL. **Required**, IntelliScale refuses to start without it |
+| `RYAX_OTLP_ENDPOINT` | `global.monitoring.otlpEndpoint` | OpenTelemetry collector endpoint |
 
-First are the global config for the program.
+### The `config:` values
 
-Format is  Args name (default value) : Description
+The `config:` block of `charts/ryax/subcharts/intelliscale/values.yaml` is
+rendered into a ConfigMap and mounted as the **whole** configuration file.
 
-```plaintext
--v, --v Level (0): Log level verbosity
+!!! warning "A key you remove does not fall back to a default"
+    The file is not merged with any default: a key you leave out of `config:`
+    reaches the service as `None`, not as the value the code would otherwise
+    use. A setting only has a usable default if the code handles `None`
+    explicitly, as `ComputeShareLadder.__init__`
+    (`domain/algorithms/simple_mig_recommender/mig_profile.py`) does for
+    `total_compute_slices` and `compute_buckets`. For everything else, keep the
+    chart's keys and change their values rather than deleting them.
 
---kube-api-burst float (10): QPS burst limit when making requests to Kubernetes apiserver (use default unless not work)
-
---kube-api-qps float (5): QPS limit when making requests to Kubernetes apiserver (use default unless not work)
-
---kubeconfig string (""): Path to a kubeconfig. Only required if out-of-cluster (use default unless not work)
-
---namespace-consider string (""): Namespace where the scaled actions locates ("" for considering all namespaces). DONT EDIT DIRECTLY. THIS SHOULD BE SET BY HELM CHART values.yaml:  .Values.ryax.worker.actionNamespace
-
---enable-monitoring (false): Enable VPA to export Prometheus metrics. After enable this, Prometheus server can fetch metrics from port 8080. NOTICE: spec.template.spec.containers[0].ports.containerPort:8080 needed in yaml if enabled monitoring
-
---vpa-instance-expire-duration duration (48h0m0s): Expiration duration for unused VPA instance (1 per action). If for an action no new active pods after this duration, the VPA instance is deleted to save memory
-
---recommend-interval duration (5m0s): Interval of aggregation and recommendation
-
---record-interval duration (1s): Interval of fetching metrics, targets and OOMs
-
---ap-coldstart-n int (0): Cold start, No recommendation before this amount of aggregations (time is N*5min)
-
---ryax-worker-grpc-host string ("ryax-worker.ryaxns") : GRPC host of ryax worker. DO NOT MODIFY HERE. CONFIG IN HELM CHART values.yaml: .Values.ryax.worker.serviceName
-
---ryax-worker-grpc-port string ("8326") : GRPC port of ryax worker 
-
---ryax-worker-grpc-timeout duration (1s) : GRPC timeout to send recommendations to ryax worker
-
+```yaml
+config:
+  algorithm_configs:
+    vpa_pilot_rule:
+      cpu_request:   # same keys for cpu_limit and memory
+        data_source: sp_95
+        policy: weighted_avg
+        max_range_samples: 10
+        weighted_avg_decay_half_life_in_seconds: 43200
+        fluctuation_reducer_duration_in_seconds: 3600
+        safety_margin_lower: 0.1
+        safety_margin_upper: 0.15
+    simple_mig_recommender:
+      total_compute_slices: 7
+  server_ports:
+    metrics_server_port: 8090
+  message_bus:
+    keep_event_history: false
 ```
 
-Then we need to select what resources we want to autoscale among CPU, Memory and GPU MIG instance. If some resource is enabled (e.g. GPU) but there's actually no this resource in the cluster, or the workload doesn't use this resource, it will simply be ignored.
+| Key | Default | Description |
+|---|---|---|
+| `algorithm_configs.vpa_pilot_rule.cpu_request`, `.cpu_limit`, `.memory` | see the chart | One independent rule-based estimator per quantity, each with the keys below |
+| `...data_source` | `sp_95` (request), `max` (limit), `sp_98` (memory) | Utilization statistic of an execution that feeds the estimator: `sp_90`, `sp_95`, `sp_98` (percentiles), `avg` or `max` |
+| `...policy` | `weighted_avg` (request), `max` (limit and memory) | How samples are combined: `max` or `weighted_avg`. Any other value is rejected |
+| `...max_range_samples` | `10` | Size of the sample window of the estimator |
+| `...weighted_avg_decay_half_life_in_seconds` | `43200` | Time for a sample to lose half its weight (used by `weighted_avg`) |
+| `...fluctuation_reducer_duration_in_seconds` | `3600` | Duration of the fluctuation reducer window |
+| `...safety_margin_lower`, `...safety_margin_upper` | `0.1`/`0.15` (request, memory), `0.2`/`0.3` (limit) | Margins applied around the estimate |
+| `algorithm_configs.simple_mig_recommender.total_compute_slices` | `7` | Fallback used to read the MIG profile of an execution as a share of a card, see the note below. Optional |
+| `algorithm_configs.simple_mig_recommender.compute_buckets` | `20` | Number of candidate shares of a card. Optional, not in the chart, and there is no reason to change it |
+| `server_ports.metrics_server_port` | `8090` | Port of the Prometheus metrics endpoint, also used by the probes |
+| `message_bus.keep_event_history` | `false` | Keep the history of the internal bus events in memory (debugging) |
+
+!!! warning "Chart keys the service does not read"
+    `server_ports.api_grpc_server_port` and
+    `algorithm_configs.memory_oom_processor.bump_up_ratio` are present in the
+    chart values, but the Python service reads neither. IntelliScale no longer
+    runs a gRPC server (the port only names the port of the Kubernetes Service)
+    and OOM bump-up is done by the Runner on retry, so changing them has no
+    effect on the recommendations. Likewise the `otlp_endpoint` key of the file
+    is ignored: the endpoint comes from `RYAX_OTLP_ENDPOINT`, that is from
+    `global.monitoring.otlpEndpoint`.
 
 !!! note
     To recommend GPU MIG instances, the GPU nodes must be pre-partitioned into
@@ -66,28 +103,6 @@ Then we need to select what resources we want to autoscale among CPU, Memory and
     [GPU node pools and MIG](../howto/gpu_node_pools.md) for how to label your
     GPU nodes with `nvidia.com/mig.config` and how to keep actions off a GPU
     node until its MIG geometry is in place.
-
-```plaintext
---scaled-resource-types string (default "cpu,memory") : Comma separated list of scaled resource types, choose from cpu, memory and gpu_mig_instance.
-```
-
-After setting scaled resources, we can configure some resource-specific args. We can choose only selected resource types among the args below.
-
-```plaintext
---bumpup-ratio float (1.2): [For Memory] recommendation value bump-up ratio when OOM happens
-
---bumpup-timeout duration (10m0s): [For Memory] Timeout for finishing OOM bump-up. If no other OOM happens in this duration, the memory recommendation will recover to raw recommendation
-
---ap-cpu-histogram-bucket-num int (400): [For CPU] Num of buckets in linear histogram of CPU
-
---ap-memory-histogram-bucket-num int (800): [For Memory] Num of buckets in linear histogram of memory
-
---gpu-bumpup-timeout duration (15m0s): [For GPU MIG instance] Timeout for finishing gpu OOM bump-up. If no other GPU OOM happens in this duration, the MIG instance recommendation will recover to raw recommendation.
-
---gpu-mig-instances-support string ("1g.10gb,3g.40gb,7g.80gb") : [For GPU MIG instance] Comma separated list of all GPU MIG instances that we want to support. This should be the subset of all supported MIG profiles by the GPU.
-
---gpu-oom-error-code int (26) : [For GPU MIG instance] When the user program inside container encounters an GPU OOM kill, it should return with this error code to let VPA know the occurrence of the GPU OOM. Because GPU OOM is only handled by user program not the linux. The VPA cannot know from Kubernetes unless the user raises this code by themselves. Code number range should be 1 to 255.
-```
 
 !!! note "IntelliScale recommends a size, not a profile"
     A GPU recommendation is an amount of **GPU memory in GB** and a **share of
@@ -132,143 +147,67 @@ After setting scaled resources, we can configure some resource-specific args. We
     number on each candidate pool, and runs with the one belonging to the pool
     it lands on.
 
-```plaintext
---vpa-algorithm string ("rule"): Recommendation algorithm: 'rule' for Rule-based, 'ml' for ML-driven
-```
-
-If we choose to use the Rule-based algorithm (`--vpa-algorithm=rule`), then we also need
-
-### Specific args to config this rule-based algorithm: (These should be appened to the common args)
-
-We can only consider those corresponding to selected resources. If there is "cpu" in thr arg name. it's for CPU resource. And "memory" for Memory. "gpumemory" for GPU MIG Instance.
-
-```plaintext
---ap-cpu-histogram-decay-half-life duration (48h0m0s): Time for a historical CPU sample to lose half its weight
-
---ap-memory-histogram-decay-half-life duration (24h0m0s): Time for a historical memory sample to lose half its weight
-
---ap-cpu-lastsample-n int (5): Sliding window length N for CPU (for calculate maximum and decaying). See Autopilot Paper
-
---ap-memory-lastsample-n int (5): Sliding window length N for CPU (for calculate maximum and decaying). See Autopilot Paper
-
---ap-cpu-recommend-policy string ("sp_90"): CPU recommendation policy (see Autopilot Paper): 'avg', 'max', 'sp_xx', or 'spike'
-
---ap-memory-recommend-policy string ("sp_98"): Memory recommendation policy (see Autopilot Paper): 'avg', 'max', 'sp_xx', or 'spike'
-
---ap-fluctuation-reducer-duration duration (1h0m0s): Sliding window length of fluctuation reducer. See Autopilot Paper
-
---ap-gpumemory-histogram-decay-half-life duration (default 48h0m0s) : The amount of time it takes a historical GPU Memory usage sample to lose half of its weight.
-
---ap-gpumemory-lastsample-n int (default 5) :  N last GPU Memory samples in Autopilot paper 
-
---ap-gpumemory-recommend-policy string (default "sp_98") : choice among`: 'avg', 'max', 'sp_xx' where xx is the percentile, 'spike' which is max(sp_60 , 0.5*max)
-
---gpumemory-histogram-bucket-num-per-gcd-rule int (100) : For GPU memory resource histogram in rule-based algorithm, the number of buckets per gcd (the greatest common divisor of all gpu-mig-instance-support list). The larger this value, the more fine-grained raw recommendation, but with more memory consumption.
-
---ap-gpumemory-histogram-decay-half-life duration (default 48h0m0s) : The amount of time it takes a historical GPU Memory usage sample to lose half of its weight.
-
---ap-gpumemory-lastsample-n int (default 5) :  N last GPU Memory samples in Autopilot paper
-
---ap-gpumemory-recommend-policy string (default "sp_98") : choice among`: 'avg', 'max', 'sp_xx' where xx is the percentile, 'spike' which is max(sp_60 , 0.5*max)
-```
-
-If we choose to use the ML-driven algorithm (`--vpa-algorithm=ml`), then we also need
-
-### Specific args to config ML algorithm: (These should be appened to the common args)
-
-We can only consider those corresponding to selected resources. If there is "cpu" in thr arg name. it's for CPU resource. And "memory" for Memory. "gpumemory" for GPU MIG Instance.
-
-```plaintext
---hparam-cpu-d float (0.5): Hyper-parameter d of the ML model for CPU
-
---hparam-cpu-wdl float (0.5): Hyper-parameter wdeltal of the ML model for CPU
-
---hparam-cpu-wdm float (0.5): Hyper-parameter wdeltam of the ML model for CPU
-
---hparam-cpu-wo float (0.5): Hyper-parameter wo of the ML model for CPU
-
---hparam-cpu-wu float (0.5): Hyper-parameter wu of the ML model for CPU
-
---hparam-memory-d float (0.5): Hyper-parameter d of the ML model for memory
-
---hparam-memory-wdl float (0.5): Hyper-parameter wdeltal of the ML model for memory
-
---hparam-memory-wdm float (0.5): Hyper-parameter wdeltam of the ML model for memory
-
---hparam-memory-wo float (0.5): Hyper-parameter wo of the ML model for memory
-
---hparam-memory-wu float (0.5): Hyper-parameter wu of the ML model for memory
-
---hparam-gpumemory-d float (0.5) : hyper-parameter d for Refined Autopilot ML GPU Memory
-
---hparam-gpumemory-wdl float (0.5) : hyper-parameter wdeltal for Refined Autopilot ML GPU Memory
-
---hparam-gpumemory-wdm float (0.5) : hyper-parameter wdeltam for Refined Autopilot ML GPU Memory
-
---hparam-gpumemory-wo float (0.5) : hyper-parameter wo for Refined Autopilot ML GPU Memory
-
---hparam-gpumemory-wu float (0.5) : hyper-parameter wu for Refined Autopilot ML GPU Memory
-
---ml-cpu-num-dm int (50): Number of different d_m values in models for CPU. Total number of models = dm * mm. See Yuqiang master report.
-
---ml-cpu-num-mm int (400): Number of different m_m values in models for CPU. Total number of models = dm * mm. See Yuqiang master report.
-
---ml-cpu-size-buckets-mm int (1): 1 safety margin value aligned to how many bucket sizes. Usually 1. See Yuqiang master report.
-
---ml-memory-num-dm int (50): Number of different d_m values in models for Memory. Total number of models = dm * mm.
-
---ml-memory-num-mm int (400): Number of different m_m values in models for CPU. Total number of models = dm * mm.
-
---ml-memory-size-buckets-mm int (1): 1 safety margin value aligned to how many bucket sizes. Usually 1.
-
---gpumemory-histogram-bucket-num-per-gcd-ml int (100) : For GPU memory resource histogram in ML algorithm, the number of buckets per gcd (the greatest common divisor of all gpu-mig-instance-support list). The larger this value, the more fine-grained raw recommendation, but with more memory consumption. 
-
---ml-gpumemory-num-dm int (default 50) : Number of different models = num-dm * num-mm 
-```
-
-### Example args setting:
-
-There are some example args that works very well in the directory **charts/values.yaml**. The one not commented in **vpaArgs** entry is a good example for rule-based algorithm on CPU RAM and GPU resources.
-
 ## API
 
-The input of Ryax IntelliScale comes from the annotations of the target *workload deployment* of actions:
+IntelliScale has no REST or gRPC API and reads no annotation of the
+deployments. It communicates over the RabbitMQ broker with the messages defined
+in
+`ryax/intelliscale/infrastructure/messaging/messages/intelliscale_messaging.proto`
+(package `intelliscale_messaging`) in the IntelliScale repository.
 
-To let a deployment being auto-scaled, we (or Ryax worker) should set these 2 annotations in deployment. VPA will automatically detect the ones with these 2 annotation:
+| Message | Direction | Routing prefix | Producer |
+|---|---|---|---|
+| `ExecutionMetricsUpdated` | inbound | `Worker` | the Worker of every site. Carries the `execution_id` and a `metrics` Struct (utilization, allocation, site, node pool) |
+| `CompleteExecutionMetric` | inbound | `Runner` | the Runner, when an execution ends. Carries the image, final state, resources and timing |
+| `Recommendation` | outbound | `Intelliscale` | IntelliScale, consumed by the Runner |
 
-```yaml
-# The unique key for an action. Inside VPA, all deployments(pods) with the same recommender_input are autoscaled together, giving the same recommendation values.
-ryax.tech/recommender_input: 'sample_key'
-# The initial amount of resources that users set. This value worked as container size of VPA is under cold-start, or VPA has temporary error to recommend a value.
-ryax.tech/user_resources_request: '{"cpu": 0.1, "memory": 2147483648}'
+Both inbound messages are read from the queue `IntelliscaleQ`. On each of them
+IntelliScale publishes the recommendation for the action; on
+`ExecutionMetricsUpdated` it first feeds the metrics to its estimators
+(`CompleteExecutionMetric` carries no utilization and only triggers a
+recommendation). A `Recommendation` contains:
+
+- `site_id` and `action_container_image`, which identify the action;
+- `cpu_request_m`, `cpu_limit_m` and `memory`, all optional;
+- `gpu_memory_gb` and `gpu_compute_fraction`, optional, the GPU size needed;
+- `gpu_model` and `instance_type`, optional, the hardware it was measured on and
+  is valid for. Both are absent when the hardware is unknown.
+
+Field 6 (`gpu_mig_instance`) is reserved. The recommendation is the raw one:
+IntelliScale never applies it and does not bump it up after an OOM. The Runner
+reads it, resolves it against the node pool an execution is placed on and
+owns the OOM bump-up.
+
+!!! warning "The Runner keeps a copy of the `.proto`"
+    `Recommendation` is consumed by the Runner, which keeps its own copy of the
+    file at `ryax/common/messaging/messages/intelliscale_messages.proto` in the
+    Runner repository. The two must stay wire-compatible: same field numbers,
+    same types. Regenerate both with the same toolchain, or the generated
+    headers disagree on the protobuf runtime version.
+
+## Behaviour and architecture
+
+```text
+  Worker (each site)  --ExecutionMetricsUpdated-->  +----------------------+
+  Runner              --CompleteExecutionMetric-->  |    IntelliScale      |
+                                                    |  vpa_pilot_rule      |
+  Runner  <-----------------Recommendation--------  |  simple_mig_recommender
+                                                    +----------------------+
+                                                       state kept in memory
 ```
 
-The output of Ryax IntelliScale (the recommendations) is directly sent to Ryax Worker by GRPC protocol every 5 minutes. Need to correctly configure the GRPC server address of Ryax Worker.
+The service follows the layout of the Runner and the Worker:
 
-Ryax IntelliScale component does not apply the recommendation to the pods. This will be done by Ryax Runner and Worker component to read recommendation and schedule coming executions.
+- `domain/` : entities, the algorithms (`domain/algorithms/<name>/`), their
+  volatile states and the commands and events of the internal bus.
+- `application/` : the handlers and services that run the algorithms
+  (`application/algorithms/<name>/`) and the internal message bus.
+- `infrastructure/` : RabbitMQ consumer and publisher, the protobuf messages,
+  the in-memory repositories, the Prometheus metrics server and the
+  OpenTelemetry tracer.
+- `container.py` : the dependency injection container, which is where the
+  configuration above is bound to the algorithms.
 
-## Ryax IntelliScale behaviour and architecture
-
-After Ryax IntelliScale is deployed, we can directly apply the deployments of the to-be-scaled workload, with the annotations as given above. They can be automatically detected and processed as:
-
-- **Every 1 second**, Ryax IntelliScale fetches current existing workload instances and their resource consumption data. 
-- **Every 5 minutes since Ryax IntelliScale started**, (either Rule or ML algorithm,) the recommendation is calculated and sent to Ryax Worker. So when a workload to be scaled is deployed, we should wait *at most 5 minutes* to get the first recommendation.
-
-More detailed architectures and implementations are shown in the figure and described below. The intervals above can all be configured (but not recommended).
-
-![Architecture diagram](../_static/vpa/vpa-arch.jpg "Ryax internal architecture")
-
-### Temporal description of the architecture
-Every 1 second: to collect scaled targets, metrics, and OOMs from Kubernetes API and NVIDIA components (can be configured by `--record-interval`). 
-
-Every 5 minutes: (can be configured by `--recommend-interval`), the algorithm aggregates the histograms in the past 5min interval, run the algorithm and send recommendation of all workloads to the GRPC server. 
-
-### Spatial description of the architecture
-
-The **dataio** module is used for the input and output interactions with outside (Kubernetes API, DCGM Exporter and GRPC server).
-
-The **vpainstance** module is the logical model of an auto-scaled unit. 1 *vpainstance* serves 1 action, identified by the annotated key on deployment. A *vpainstance* holds an *algorithm instances* for autoscaling each resource type. All of these *algorithm instances* can be configured as Rule-based or ML.
-
-As downstream of recommendation (either by Rule-based or ML), there is **Memory Postprocessor** for memory resource and **GPU Postprocessor** for GPU MIG instance. **Memory Postprocessor** takes the OOM event and last pod size, bumps it up temporarily as new recommendation value. After `bumpup-timeout`, the bumped-up value will expire, and recovers the memory recommendation as the raw output of the algorithm. **GPU Postprocessor** receives the recommended GPU Memory size, then capping this value with the smallest possible MIG instance. When GPU OOM happens, this postprocessor does a similar bump up behaviour as the Memory post processor.
-
-The **vpainstance pool** holds all the **vpainstances**, manages the pools (allocation, garbage collection) and the map between Kubernetes objects, Ryax executions and VPA instances.
+A recommendation is computed and published every time an inbound message is
+received. Nothing is polled, nothing is persisted: the learned state is lost
+when the pod restarts, and the estimators start again from the next executions.
