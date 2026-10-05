@@ -162,7 +162,7 @@ healthy build queue looks like a stalled one. Before concluding "nothing is happ
 
 ```sh
 kubectl exec -n ryaxns deploy/ryax-action-builder -c ryax-action-builder -- ps aux | grep nix
-kubectl exec -n ryaxns ryax-broker-0 -- rabbitmqctl list_queues name messages consumers
+kubectl exec -n ryaxns ryax-broker-server-0 -- rabbitmqctl list_queues name messages consumers  # ryax-broker-0 before 26.10.0
 kubectl set env -n ryaxns deploy/ryax-repository RYAX_LOG_LEVEL=debug   # then re-trigger
 ```
 

@@ -1,0 +1,137 @@
+suite: Placement of the broker and of its operator
+# The shared placement suite reads the chart's own `tolerations`, which here
+# place the broker; the operator has its own under `operator`. And the broker
+# pod is not a Deployment of this chart but the operator's StatefulSet, placed
+# through the RabbitmqCluster: tolerations and affinity in its spec, the
+# nodeSelector and the priority class through the StatefulSet override.
+templates:
+  - templates/operator.yaml
+  - templates/rabbitmqcluster.yaml
+release:
+  name: ryax
+  namespace: ryaxns
+tests:
+  - it: renders every template
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: sets no broker placement by default
+    template: templates/rabbitmqcluster.yaml
+    asserts:
+      - notExists:
+          path: spec.tolerations
+      - notExists:
+          path: spec.affinity
+      - notExists:
+          path: spec.override.statefulSet.spec.template.spec.nodeSelector
+      - equal:
+          path: spec.override.statefulSet.spec.template.spec.priorityClassName
+          value: backbone
+  - it: sets no operator placement by default
+    template: templates/operator.yaml
+    documentSelector: &deployment
+      path: kind
+      value: Deployment
+    asserts:
+      - notExists:
+          path: spec.template.spec.tolerations
+      - notExists:
+          path: spec.template.spec.nodeSelector
+      - notExists:
+          path: spec.template.spec.affinity
+
+  - it: places the broker from the global values
+    template: templates/rabbitmqcluster.yaml
+    set: &global
+      global.tolerations:
+        - {key: example.com/dedicated, operator: Exists, effect: NoSchedule}
+      global.nodeSelector:
+        example.com/pool: ryax
+      global.affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - {key: example.com/zone, operator: In, values: [a]}
+    asserts:
+      - equal:
+          path: spec.tolerations
+          value:
+            - {key: example.com/dedicated, operator: Exists, effect: NoSchedule}
+      - equal:
+          path: spec.override.statefulSet.spec.template.spec.nodeSelector
+          value:
+            example.com/pool: ryax
+      - equal:
+          path: spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].values
+          value: [a]
+  - it: places the operator from the global values
+    template: templates/operator.yaml
+    documentSelector: *deployment
+    set: *global
+    asserts:
+      - equal:
+          path: spec.template.spec.tolerations
+          value:
+            - {key: example.com/dedicated, operator: Exists, effect: NoSchedule}
+      - equal:
+          path: spec.template.spec.nodeSelector
+          value:
+            example.com/pool: ryax
+      - equal:
+          path: spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].values
+          value: [a]
+
+  - it: lets the broker's own placement replace the global one
+    template: templates/rabbitmqcluster.yaml
+    set:
+      <<: *global
+      tolerations:
+        - {key: example.com/broker, operator: Exists, effect: NoSchedule}
+      nodeSelector:
+        example.com/pool: broker
+      priorityClassName: ""
+    asserts:
+      - equal:
+          path: spec.tolerations
+          value:
+            - {key: example.com/broker, operator: Exists, effect: NoSchedule}
+      - equal:
+          path: spec.override.statefulSet.spec.template.spec.nodeSelector
+          value:
+            example.com/pool: broker
+      - notExists:
+          path: spec.override.statefulSet.spec.template.spec.priorityClassName
+  - it: lets the operator's own placement replace the global one
+    template: templates/operator.yaml
+    documentSelector: *deployment
+    set:
+      <<: *global
+      operator.tolerations:
+        - {key: example.com/ops, operator: Exists, effect: NoSchedule}
+      operator.nodeSelector:
+        example.com/pool: ops
+    asserts:
+      - equal:
+          path: spec.template.spec.tolerations
+          value:
+            - {key: example.com/ops, operator: Exists, effect: NoSchedule}
+      - equal:
+          path: spec.template.spec.nodeSelector
+          value:
+            example.com/pool: ops
+
+  - it: passes the image pull secrets to both
+    set:
+      global.imagePullSecrets:
+        - name: mirror
+    asserts:
+      - equal:
+          path: spec.imagePullSecrets
+          value: [{name: mirror}]
+        template: templates/rabbitmqcluster.yaml
+      - equal:
+          path: spec.template.spec.imagePullSecrets
+          value: [{name: mirror}]
+        template: templates/operator.yaml
+        documentSelector: *deployment

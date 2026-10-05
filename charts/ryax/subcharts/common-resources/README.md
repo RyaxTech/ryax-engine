@@ -18,11 +18,10 @@ Common secrets and configuration for the Ryax platform
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| brokerCookieName | string | `"ryax-broker-cookie"` |  |
 | brokerName | string | `"broker"` |  |
 | brokerPort | string | `"5672"` |  |
 | brokerSecret | string | `"ryax-broker-secret"` | Create a broker secrets for credentials |
-| brokerSecretCreate | bool | `true` | Create the secret above. Set to false to provide it yourself; it must then carry the key(s): broker, broker-user and rabbitmq-password in `brokerSecret` (in both namespaces), rabbitmq-erlang-cookie in `brokerCookieName`. |
+| brokerSecretCreate | bool | `true` | Create the secret above. Set to false to provide it yourself; it must then carry the key(s): broker, broker-user and rabbitmq-password in `brokerSecret` (in both namespaces). The broker's default user is seeded from broker-user and rabbitmq-password. |
 | brokerService | string | `"ryax-broker"` |  |
 | brokerUser | string | `"ryaxmq"` |  |
 | certManager | object | `{"enabled":null}` | If set, override the global.tls.enabled value to create a cert manager issuers |

@@ -1,0 +1,106 @@
+global:
+  # -- Global container registry secret names as an array
+  # Example:
+  #   - name: myPullSercret
+  # @section -- Global
+  imagePullSecrets: []
+  # -- Leave empty to use the default storage class
+  # @section -- Global
+  defaultStorageClass: ""
+  monitoring:
+    # -- Enables service monitoring
+    # @section -- Global
+    enabled: true
+  # -- Tolerations injected as-is into every Ryax pod
+  # (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+  # Override with this chart's own `tolerations`.
+  # @section -- Global
+  tolerations: []
+  # -- Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # @section -- Global
+  nodeSelector: {}
+  # -- Affinity injected as-is into every Ryax pod. Override with this chart's
+  # own `affinity`.
+  # @section -- Global
+  affinity: {}
+
+# -- Name of the RabbitmqCluster. The operator names the AMQP Service after it,
+# so it is the broker host every Ryax service connects to, and must match
+# `common-resources.brokerService`.
+fullnameOverride: ryax-broker
+
+# -- RabbitMQ server image. The official image from Docker Hub, not a Bitnami
+# one: the operator lays the container out itself.
+image:
+  repository: docker.io/rabbitmq
+  tag: "4.3.6-management"
+
+# -- Number of RabbitMQ nodes. Ryax declares classic queues, which RabbitMQ 4
+# does not replicate, so more nodes add no redundancy.
+replicas: 1
+
+# -- Secret holding the broker credentials, shared with the Ryax services. The
+# RabbitMQ default user is seeded from its `broker-user` and `rabbitmq-password`
+# keys on the first boot of an empty broker. Created by the common-resources
+# subchart unless `global.secrets.create` is false.
+brokerSecret: "ryax-broker-secret"
+
+persistence:
+  # -- Keep the broker state on a PersistentVolumeClaim. Off, it lives in an
+  # emptyDir and is lost with the pod.
+  enabled: true
+  size: 1Gi
+  # -- Storage class of the PVC. Defaults to `global.defaultStorageClass`, then
+  # to the cluster default.
+  storageClass: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 500Mi
+  limits:
+    memory: 1000Mi
+
+priorityClassName: backbone
+# -- Tolerations injected as-is, overriding `global.tolerations` when set
+tolerations: []
+# -- nodeSelector injected as-is, overriding `global.nodeSelector` when set
+nodeSelector: {}
+# -- Affinity injected as-is, overriding `global.affinity` when set
+affinity: {}
+
+# -- Extra RabbitMQ plugins on top of the operator's own (rabbitmq_management,
+# rabbitmq_prometheus and rabbitmq_peer_discovery_k8s).
+additionalPlugins: []
+# -- Extra rabbitmq.conf lines, appended after the default user settings.
+additionalConfig: ""
+
+metrics:
+  # -- Scrape the broker with a ServiceMonitor (needs `global.monitoring.enabled`
+  # for the CRD). RabbitMQ serves the metrics itself, on the `prometheus` port.
+  enabled: true
+  serviceMonitor:
+    enabled: true
+
+# -- The RabbitMQ Cluster Operator, deployed in the release namespace and
+# watching that namespace only.
+operator:
+  # -- Deploy the operator with Ryax. Turn it off when the cluster already runs
+  # one that watches this namespace: two operators reconciling the same
+  # RabbitmqCluster fight over it. The CRD then comes from that installation.
+  enabled: true
+  image: ghcr.io/rabbitmq/cluster-operator:2.23.0
+  imagePullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 500Mi
+  priorityClassName: backbone
+  # -- Tolerations injected as-is, overriding `global.tolerations` when set
+  tolerations: []
+  # -- nodeSelector injected as-is, overriding `global.nodeSelector` when set
+  nodeSelector: {}
+  # -- Affinity injected as-is, overriding `global.affinity` when set
+  affinity: {}
