@@ -69,7 +69,7 @@ dependencies:
   # Observability
   # Prometheus stack with grafana
   - name: kube-prometheus-stack
-    version: 88.x.x
+    version: 89.x.x
     repository: 'https://prometheus-community.github.io/helm-charts'
     condition: kube-prometheus-stack.enabled
   # Tracing
@@ -83,6 +83,6 @@ dependencies:
     repository: "https://grafana.github.io/helm-charts"
     condition: loki.enabled
   - name: alloy
-    version: ~1.12.1
+    version: ~1.13.0
     repository: "https://grafana.github.io/helm-charts"
     condition: loki.enabled
