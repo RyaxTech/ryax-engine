@@ -1,0 +1,184 @@
+{{- /*
+The RabbitMQ Cluster Operator, adapted from the upstream release manifest (see
+Chart.yaml for the version and how to refresh it). Three departures:
+
+- It watches the release namespace only (OPERATOR_SCOPE_NAMESPACE), so the
+  upstream ClusterRole and ClusterRoleBinding become a Role and a RoleBinding
+  there, merged with the leader-election ones. Nothing it reconciles is
+  cluster-scoped.
+- No admission webhooks (ENABLE_WEBHOOKS=false). Upstream serves them with a
+  cert-manager certificate, which Ryax does not otherwise require, and they
+  fail closed: the RabbitmqCluster below could not be created until the
+  operator pod is up and its certificate injected, which a single `helm
+  install` does not wait for. The mutating one only defaults spec.image and
+  spec.imagePullSecrets, which the RabbitmqCluster sets itself. The validating
+  one rejects privileged pod overrides from whoever may create a
+  RabbitmqCluster; here that is only this chart.
+- No metrics Service: nothing scrapes the operator.
+*/}}
+{{- if .Values.operator.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "rabbitmq.operatorName" . }}
+  labels:
+    {{- include "rabbitmq.labels" . | nindent 4 }}
+    {{- include "rabbitmq.operatorSelectorLabels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "rabbitmq.operatorName" . }}
+  labels:
+    {{- include "rabbitmq.labels" . | nindent 4 }}
+    {{- include "rabbitmq.operatorSelectorLabels" . | nindent 4 }}
+rules:
+  # rabbitmq-cluster-operator-role
+  - apiGroups: [""]
+    resources: [configmaps, persistentvolumeclaims, secrets, serviceaccounts, services]
+    verbs: [create, get, list, update, watch]
+  - apiGroups: [""]
+    resources: [endpoints]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create, get, patch]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, update, watch]
+  - apiGroups: [""]
+    resources: [pods/exec]
+    verbs: [create]
+  - apiGroups: [apps]
+    resources: [statefulsets]
+    verbs: [create, delete, get, list, update, watch]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    verbs: [get, list, watch]
+  - apiGroups: [rabbitmq.com]
+    resources: [rabbitmqclusters]
+    verbs: [create, get, list, update, watch]
+  - apiGroups: [rabbitmq.com]
+    resources: [rabbitmqclusters/finalizers]
+    verbs: [update]
+  - apiGroups: [rabbitmq.com]
+    resources: [rabbitmqclusters/status]
+    verbs: [get, patch, update]
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [rolebindings, roles]
+    verbs: [create, delete, get, list, update, watch]
+  # rabbitmq-cluster-leader-election-role
+  - apiGroups: [""]
+    resources: [configmaps]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    verbs: [get, list, watch, create, update, patch, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "rabbitmq.operatorName" . }}
+  labels:
+    {{- include "rabbitmq.labels" . | nindent 4 }}
+    {{- include "rabbitmq.operatorSelectorLabels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "rabbitmq.operatorName" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "rabbitmq.operatorName" . }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rabbitmq.operatorName" . }}
+  labels:
+    {{- include "rabbitmq.labels" . | nindent 4 }}
+    {{- include "rabbitmq.operatorSelectorLabels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "rabbitmq.operatorSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "rabbitmq.labels" . | nindent 8 }}
+        {{- include "rabbitmq.operatorSelectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "rabbitmq.operatorName" . }}
+      terminationGracePeriodSeconds: 10
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.operator.tolerations | default .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.operator.nodeSelector | default .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.operator.affinity | default .Values.global.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.operator.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: operator
+          image: {{ .Values.operator.image }}
+          imagePullPolicy: {{ .Values.operator.imagePullPolicy }}
+          command: [/manager]
+          args: [--health-probe-bind-address=:8081]
+          env:
+            - name: OPERATOR_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OPERATOR_SCOPE_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: ENABLE_WEBHOOKS
+              value: "false"
+            # The check reads the operator's default-user Secret, which does not
+            # hold the broker credentials here (see rabbitmqcluster.yaml), and
+            # would log an authentication failure every five minutes.
+            - name: DISABLE_DEPRECATED_FEATURES_CHECK
+              value: "true"
+          ports:
+            - containerPort: 8080
+              name: metrics
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.operator.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+{{- end }}
