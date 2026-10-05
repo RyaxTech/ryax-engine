@@ -1,0 +1,136 @@
+suite: The optional pre-copy, rendered for kubectl ahead of the upgrade
+# `helm template --show-only charts/filestore/templates/precopy.yaml` with
+# migration.precopy.enabled renders the filestore PVC, adoptable by the
+# upgrade, and a Job that fills it from the MinIO of Ryax 26.9 while it runs.
+templates:
+  - templates/precopy.yaml
+release:
+  name: ryax
+  namespace: ryaxns
+tests:
+  - it: renders nothing by default
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+
+  - it: renders the volume and the Job
+    set: &on
+      migration.precopy.enabled: true
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 2
+      - isKind:
+          of: PersistentVolumeClaim
+        documentIndex: 0
+      - isKind:
+          of: Job
+        documentIndex: 1
+
+  # Without these, `helm upgrade` refuses a PVC it did not create.
+  - it: creates the volume the upgrade will adopt
+    set:
+      migration.precopy.enabled: true
+      persistence.size: 37Gi
+    asserts:
+      - documentIndex: 0
+        equal:
+          path: metadata.name
+          value: ryax-filestore
+      - documentIndex: 0
+        equal:
+          path: metadata.namespace
+          value: ryaxns
+      - documentIndex: 0
+        equal:
+          path: metadata.labels["app.kubernetes.io/managed-by"]
+          value: Helm
+      - documentIndex: 0
+        equal:
+          path: metadata.annotations
+          value:
+            meta.helm.sh/release-name: ryax
+            meta.helm.sh/release-namespace: ryaxns
+      - documentIndex: 0
+        equal:
+          path: spec.resources.requests.storage
+          value: 37Gi
+
+  - it: copies from the MinIO of 26.9, without marking the migration done
+    set: *on
+    asserts:
+      - documentIndex: 1
+        equal:
+          path: metadata.name
+          value: ryax-filestore-precopy
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.containers[0].image
+          value: docker.io/bitnamilegacy/minio:2025.7.23-debian-12-r3
+      - documentIndex: 1
+        contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: SOURCE_HOST, value: ryax-minio}
+      - documentIndex: 1
+        contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: WAIT_SECONDS, value: "300"}
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: ryax-filestore
+      # It skips an already migrated volume ...
+      - documentIndex: 1
+        matchRegex:
+          path: spec.template.spec.containers[0].args[0]
+          pattern: 'if \[ -f "\$MARKER" \]; then'
+      # ... dates what it copies back, so the upgrade copies again whatever
+      # was written while it ran ...
+      - documentIndex: 1
+        matchRegex:
+          path: spec.template.spec.containers[0].args[0]
+          pattern: 'find "\$DEST" -type f -newermt "@\$stamp" -exec touch -m -d "@\$stamp"'
+      # ... and leaves the marker to the copy at the upgrade.
+      - documentIndex: 1
+        notMatchRegex:
+          path: spec.template.spec.containers[0].args[0]
+          pattern: 'MARKER\.tmp'
+
+  # Its pod is not one the filestore Service selects.
+  - it: is labelled apart from the filestore
+    set: *on
+    asserts:
+      - documentIndex: 1
+        equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: filestore-precopy
+
+  - it: fills an existing claim instead of creating one
+    set:
+      migration.precopy.enabled: true
+      persistence.existingClaim: my-claim
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: my-claim
+
+  - it: is never installed with Helm
+    set: *on
+    kubernetesProvider:
+      scheme:
+        v1/ConfigMap:
+          gvr: {version: v1, resource: configmaps}
+          namespaced: true
+        v1/Namespace:
+          gvr: {version: v1, resource: namespaces}
+          namespaced: false
+      objects:
+        - apiVersion: v1
+          kind: ConfigMap
+          metadata: {name: kube-root-ca.crt, namespace: ryaxns}
+    asserts:
+      - failedTemplate:
+          errorPattern: "use it with `helm template`"

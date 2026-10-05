@@ -152,7 +152,7 @@ MARKER_ENV = "RYAX_RELEASE_INSTALLED"
 # These are matched against the helm.sh/chart label, which carries the chart's
 # `name:` -- the worker charts are named ryax-worker-*, not worker-*, so listing
 # them without the prefix silently classified every worker pod as third-party.
-OURS = ("action-builder", "authorization", "common-resources", "datastore", "front",
+OURS = ("action-builder", "authorization", "common-resources", "datastore", "filestore", "front",
         "intelliscale", "rabbitmq", "registry", "repository", "runner", "studio",
         "ryax-worker-k8s", "ryax-worker-slurm-ssh", "ryax-engine")
 problems, checked, upstream = [], 0, []
@@ -259,7 +259,7 @@ PROBE = "gitops.ryax.tech/probe"
 # placement lives in its own values, and is reported rather than silently skipped.
 # Matched against the helm.sh/chart label, which carries the chart's `name:` --
 # the worker charts are named ryax-worker-*, not worker-*.
-OURS = ("action-builder", "authorization", "common-resources", "datastore", "front",
+OURS = ("action-builder", "authorization", "common-resources", "datastore", "filestore", "front",
         "intelliscale", "rabbitmq", "registry", "repository", "runner", "studio",
         "ryax-worker-k8s", "ryax-worker-slurm-ssh", "ryax-engine")
 POD_PARENT = {

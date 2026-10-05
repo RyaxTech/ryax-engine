@@ -1,0 +1,189 @@
+{{- /*
+The MinIO of Ryax 26.9, kept running on its own volume for as long as
+`migration.enabled` is on, so that the filestore can copy its objects. See
+`filestore.copyScript` and the 26.10.0 upgrade notes in RELEASE.md.
+*/ -}}
+{{- $legacyName := include "filestore.legacyName" . }}
+{{- if include "filestore.online" . }}
+{{- $precopy := lookup "batch/v1" "Job" .Release.Namespace (printf "%s-precopy" (include "filestore.fullname" .)) }}
+{{- if and $precopy (($precopy.status).active) }}
+{{- fail (printf "The pre-copy Job %s is still running. Wait for it to finish (kubectl -n %s wait --for=condition=complete job/%s) before upgrading: both would write to the same volume." $precopy.metadata.name .Release.Namespace $precopy.metadata.name) }}
+{{- end }}
+{{- if not .Values.migration.enabled }}
+{{- $legacyClaim := lookup "v1" "PersistentVolumeClaim" .Release.Namespace $legacyName }}
+{{- if and $legacyClaim (ne (index (($legacyClaim.metadata).annotations | default dict) "helm.sh/resource-policy" | default "") "keep") }}
+{{- fail (printf "filestore.migration.enabled=false would delete the MinIO volume %s before its objects are copied: Helm deletes it with the MinIO chart of Ryax 26.9. Upgrade with the migration on, then turn it off." $legacyName) }}
+{{- end }}
+{{- $legacyDeployment := lookup "apps/v1" "Deployment" .Release.Namespace $legacyName }}
+{{- if and $legacyDeployment (not .Values.migration.allowDecommissionWithoutCopy) }}
+{{- $filestore := lookup "apps/v1" "Deployment" .Release.Namespace (include "filestore.fullname" .) }}
+{{- $copied := false }}
+{{- if $filestore }}
+{{- $inits := list }}
+{{- range (($filestore.spec.template.spec).initContainers | default list) }}
+{{- $inits = append $inits .name }}
+{{- end }}
+{{- $copied = and (has "migrate-from-minio" $inits) (gt (int (($filestore.status).availableReplicas | default 0)) 0) }}
+{{- end }}
+{{- if not $copied }}
+{{- fail (printf "Not removing the old MinIO %s: no filestore pod has finished copying its objects. Check the logs of the migrate-from-minio container of the %s pod. To remove it anyway, and leave its objects out of the filestore, set filestore.migration.allowDecommissionWithoutCopy=true." $legacyName (include "filestore.fullname" .)) }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if include "filestore.migrating" . }}
+{{- $live := lookup "v1" "PersistentVolumeClaim" .Release.Namespace $legacyName }}
+---
+# The PVC of the MinIO chart, taken over as it is: same name and spec, so its
+# data stays where it is. Neither Helm nor ArgoCD deletes it once it leaves the
+# manifests, when the migration is turned off: delete it by hand.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $legacyName }}
+  labels:
+    {{- include "filestore.legacySelectorLabels" . | nindent 4 }}
+    helm.sh/chart: {{ include "filestore.chart" . }}
+  annotations:
+    helm.sh/resource-policy: keep
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  {{- if $live }}
+  accessModes: {{- toYaml $live.spec.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ $live.spec.resources.requests.storage | quote }}
+  {{- with $live.spec.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  {{- else }}
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: {{ .Values.migration.legacy.persistence.size | quote }}
+  {{- with .Values.migration.legacy.persistence.storageClass | default .Values.global.defaultStorageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  {{- end }}
+---
+# MinIO, as the Bitnami chart ran it, read only by the filestore's copy. Same
+# name and pod selector as the Bitnami Deployment, so that Helm updates it in
+# place and the old pod has stopped before this one opens the volume.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $legacyName }}
+  labels:
+    {{- include "filestore.legacySelectorLabels" . | nindent 4 }}
+    helm.sh/chart: {{ include "filestore.chart" . }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {{- include "filestore.legacySelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "filestore.legacySelectorLabels" . | nindent 8 }}
+        ryax.tech/resource-name: minio
+        helm.sh/chart: {{ include "filestore.chart" . }}
+    spec:
+      automountServiceAccountToken: false
+      priorityClassName: {{ .Values.priorityClassName }}
+      # The UID and GID the Bitnami image wrote the data with.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1200
+        runAsGroup: 1001
+        fsGroup: 1200
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      {{- include "filestore.placement" . | nindent 6 }}
+      containers:
+        - name: minio
+          image: {{ include "filestore.migrationImage" . }}
+          imagePullPolicy: {{ .Values.migration.image.pullPolicy }}
+          command:
+            - /opt/bitnami/minio/bin/minio
+            - server
+            - /bitnami/minio/data
+            - --address=:9000
+            - --quiet
+          env:
+            - name: HOME
+              value: /tmp
+            - name: MINIO_BROWSER
+              value: "off"
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: root-user
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: root-password
+          ports:
+            - name: api
+              containerPort: 9000
+          readinessProbe:
+            httpGet: {path: /minio/health/live, port: api}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /minio/health/live, port: api}
+            periodSeconds: 10
+            failureThreshold: 6
+          resources: {{- toYaml .Values.migration.legacy.resources | nindent 12 }}
+          securityContext: {{- include "filestore.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: data, mountPath: /bitnami/minio/data}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ $legacyName }}
+        - name: tmp
+          emptyDir: {}
+---
+# Only the filestore pod, for the copy, may reach the old MinIO. A client still
+# pointed at its pods -- a Skupper connector keeps the pod selector the
+# ryax-minio Service had when the connector was created -- gets a refused
+# connection rather than writing objects the filestore never sees. Named as
+# the Bitnami chart's policy, which it replaces.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $legacyName }}
+  labels:
+    {{- include "filestore.legacySelectorLabels" . | nindent 4 }}
+    helm.sh/chart: {{ include "filestore.chart" . }}
+spec:
+  podSelector:
+    matchLabels: {{- include "filestore.legacySelectorLabels" . | nindent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: {{- include "filestore.selectorLabels" . | nindent 14 }}
+      ports:
+        - port: 9000
+---
+# Only the copy talks to the old MinIO: `ryax-minio` is the filestore now.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $legacyName }}-legacy
+  labels:
+    {{- include "filestore.legacySelectorLabels" . | nindent 4 }}
+    helm.sh/chart: {{ include "filestore.chart" . }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: api
+      port: 9000
+      targetPort: api
+  selector: {{- include "filestore.legacySelectorLabels" . | nindent 4 }}
+{{- end }}

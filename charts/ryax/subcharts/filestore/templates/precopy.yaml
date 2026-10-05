@@ -1,0 +1,60 @@
+{{- /*
+The optional pre-copy, run by hand ahead of the 26.10 upgrade while Ryax 26.9
+still writes to MinIO, to shorten the copy the upgrade itself makes. Rendered
+with `helm template ... --show-only charts/filestore/templates/precopy.yaml`
+and applied with kubectl: it is never part of a release. See RELEASE.md.
+
+It fills the PVC the filestore will use, created here with the ownership
+metadata Helm looks for, so that the upgrade adopts it rather than refusing it.
+Running it again copies only what changed since; the copy at the upgrade makes
+the result exact in any case.
+*/ -}}
+{{- if .Values.migration.precopy.enabled }}
+{{- if include "filestore.online" . }}
+{{- fail "filestore.migration.precopy.enabled renders the pre-copy for kubectl: use it with `helm template`, never with `helm install` or `upgrade`." }}
+{{- end }}
+{{- $pvc := include "filestore.pvc" . | fromYaml }}
+{{- $_ := set $pvc.metadata "annotations" (dict "meta.helm.sh/release-name" .Release.Name "meta.helm.sh/release-namespace" .Release.Namespace) }}
+{{- $_ := set $pvc.metadata "namespace" .Release.Namespace }}
+{{- if not .Values.persistence.existingClaim }}
+{{ toYaml $pvc }}
+{{- end }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "filestore.fullname" . }}-precopy
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "filestore.precopyLabels" . | nindent 4 }}
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels: {{- include "filestore.precopyLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext: {{- include "filestore.podSecurityContext" . | nindent 8 }}
+      {{- include "filestore.placement" . | nindent 6 }}
+      containers:
+        - name: precopy
+          image: {{ include "filestore.migrationImage" . }}
+          imagePullPolicy: {{ .Values.migration.image.pullPolicy }}
+          command: [/bin/sh, -c]
+          args:
+            - |
+              {{- include "filestore.copyScript" (dict "mode" "precopy") | nindent 14 }}
+          env: {{- include "filestore.copyEnv" (dict "root" . "source" .Values.migration.precopy.source "waitSeconds" .Values.migration.precopy.waitSeconds) | nindent 12 }}
+          resources: {{- toYaml .Values.migration.copyResources | nindent 12 }}
+          securityContext: {{- include "filestore.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "filestore.claimName" . }}
+        - name: tmp
+          emptyDir: {}
+{{- end }}

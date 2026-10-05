@@ -1,0 +1,205 @@
+suite: The versitygw filestore and its address
+# The services, the remote workers and GitOps secrets reach the filestore at
+# ryax-minio:9000 with the root-user / root-password of ryax-minio-secret, and
+# expect plain S3 in region us-east-1. That contract, and the two settings the
+# dev1 benchmark found mandatory, are asserted here. Rendered without a
+# cluster, so the migration from MinIO is on (see migration_test.yaml).
+templates:
+  - templates/deployment.yaml
+  - templates/service.yaml
+  - templates/pvc.yaml
+release:
+  name: ryax
+  namespace: ryaxns
+tests:
+  # A render error leaves no document, and every assertion below would then
+  # fail for the wrong reason or, behind a selector, pass without checking.
+  - it: renders
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+        template: templates/deployment.yaml
+      - hasDocuments:
+          count: 1
+        template: templates/service.yaml
+      - hasDocuments:
+          count: 1
+        template: templates/pvc.yaml
+
+  - it: runs a pinned versitygw
+    template: templates/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/versity/versitygw:v1.8.0
+
+  # Without keep-alive versitygw answers every request with `Connection:
+  # close`: HEAD, GET and DELETE then take about twice MinIO's time, and it
+  # fails the latency gate of roadmap#1471.
+  - it: keeps connections alive and logs no line per request
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: VGW_KEEP_ALIVE, value: "true"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: VGW_QUIET, value: "true"}
+
+  - it: serves the s3/ directory of the volume with the POSIX backend
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: VGW_BACKEND, value: posix}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: VGW_BACKEND_ARG, value: /data/s3}
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content: {name: data, mountPath: /data}
+      - equal:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: ryax-filestore
+      # The directory has to exist before the gateway starts, on a fresh
+      # volume too.
+      - equal:
+          path: spec.template.spec.initContainers[-1].name
+          value: prepare
+      - equal:
+          path: spec.template.spec.initContainers[-1].command
+          value: [/bin/sh, -c, mkdir -p /data/s3]
+
+  - it: answers on port 9000 in region us-east-1, for minio-py
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: VGW_PORT, value: ":9000"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: VGW_REGION, value: us-east-1}
+
+  - it: takes the root credentials from the keys MinIO used
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ROOT_ACCESS_KEY_ID
+            valueFrom: {secretKeyRef: {name: ryax-minio-secret, key: root-user}}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ROOT_SECRET_ACCESS_KEY
+            valueFrom: {secretKeyRef: {name: ryax-minio-secret, key: root-password}}
+
+  - it: appends extra environment variables after its own
+    template: templates/deployment.yaml
+    set:
+      extraEnv:
+        - {name: VGW_DEBUG, value: "true"}
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: VGW_DEBUG, value: "true"}
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: VGW_KEEP_ALIVE, value: "true"}
+
+  # The volume is ReadWriteOnce: a rolling update never converges.
+  - it: is replaced, not rolled
+    template: templates/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+      - equal:
+          path: spec.replicas
+          value: 1
+
+  - it: runs as the ryax user on a read-only root filesystem
+    template: templates/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 1200
+      - equal:
+          path: spec.template.spec.securityContext.fsGroup
+          value: 1200
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /health
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: VGW_HEALTH, value: /health}
+
+  - it: is reached at ryax-minio:9000, the address in ryax-minio-secret
+    template: templates/service.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: ryax-minio
+      - equal:
+          path: spec.ports[0].port
+          value: 9000
+      - equal:
+          path: spec.ports[0].targetPort
+          value: s3
+      # The gateway's pods, never the old MinIO's.
+      - equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/name: filestore
+            app.kubernetes.io/instance: ryax
+
+  - it: claims its own volume
+    template: templates/pvc.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: ryax-filestore
+      - equal:
+          path: spec.accessModes
+          value: [ReadWriteOnce]
+      - equal:
+          path: spec.resources.requests.storage
+          value: 20Gi
+      - notExists:
+          path: spec.storageClassName
+  - it: takes its storage class from its own value, else the global one
+    template: templates/pvc.yaml
+    set:
+      global.defaultStorageClass: global-class
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: global-class
+  - it: lets its own storage class and size win
+    template: templates/pvc.yaml
+    set:
+      global.defaultStorageClass: global-class
+      persistence.storageClass: own-class
+      persistence.size: 50Gi
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: own-class
+      - equal:
+          path: spec.resources.requests.storage
+          value: 50Gi
+  - it: uses an existing claim instead of its own
+    set:
+      persistence.existingClaim: my-claim
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/pvc.yaml
+      - equal:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: my-claim
+        template: templates/deployment.yaml

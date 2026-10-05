@@ -35,6 +35,15 @@ We are proud to announce the release of:
   cluster-wide rights nor cert-manager. The services reach the broker at the same
   address with the same credentials.
   ([roadmap#1320](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1320))
+- **The filestore no longer runs MinIO.** MinIO's community edition is no longer
+  maintained, and the chart ran it from the Bitnami `bitnamilegacy/minio` image. The
+  filestore is now [versitygw](https://github.com/versity/versitygw) v1.8.0, a small S3
+  gateway that keeps every object as a plain file on its volume. On a test cluster it
+  answers Ryax's requests faster than MinIO did (about 3x on small writes, 1.3x on small
+  reads) with a tenth of its memory. The services reach it at the same address
+  (`ryax-minio:9000`) with the same credentials (`ryax-minio-secret`), and the upgrade
+  copies the existing objects into it.
+  ([roadmap#1471](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1471))
 
 ## Upgrade to this version
 
@@ -118,12 +127,16 @@ Admins should take care of the following elements when upgrading to this version
   namespace, set `rabbitmq.operator.enabled: false`. Two operators would reconcile the
   same broker.
 
-- **Multi-site with Skupper:** the `ryax-broker-ext` connector copied the old broker's
-  pod selector when it was created, so it matches no pod after the upgrade. Recreate it
-  on the main site:
+- **Multi-site with Skupper:** the `ryax-broker-ext` and `ryax-minio-ext` connectors
+  copied the pod selectors of the old broker and of MinIO when they were created. After
+  the upgrade the first matches no pod, and the second matches the old MinIO, which
+  refuses their connections. Recreate both on the main site right after the upgrade,
+  before running workflows on remote sites:
   ```sh
   skupper -n ryaxns connector delete ryax-broker-ext
   skupper -n ryaxns connector create ryax-broker-ext 5672 --workload service/ryax-broker
+  skupper -n ryaxns connector delete ryax-minio-ext
+  skupper -n ryaxns connector create ryax-minio-ext 9000 --workload service/ryax-minio
   ```
 
 - **GitOps (`global.secrets.create=false`):** `ryax-broker-cookie` is no longer read,
@@ -132,6 +145,100 @@ Admins should take care of the following elements when upgrading to this version
   URL as before. With automated pruning off, prune the old broker resources in the same
   sync: the operator cannot create its `ryax-broker` Service while the Bitnami one is
   still there.
+
+- **⚠️ The filestore moves from MinIO to versitygw, and the upgrade copies its
+  objects.** Helm keeps the old MinIO, `ryax-minio`, running on its volume, and marks
+  that volume so that neither Helm nor ArgoCD ever deletes it. The new filestore,
+  `ryax-filestore`, gets a volume of its own, the size of MinIO's. Before it starts
+  serving, its pod copies every object out of MinIO, checks that both sides list the same
+  objects and sizes, and leaves a marker so that it never copies again. The address and
+  the credentials do not change.
+
+  **Downtime:** the services cannot reach the filestore until the copy is over. Without
+  a pre-copy (below), count the time to read the whole MinIO volume once: on a test
+  cluster, 750 MiB in 3,000 objects took a few seconds, and a large volume on network
+  storage takes minutes. The runner and studio restart while they wait, and their
+  restart back-off can add up to five minutes once the copy is over. They reconnect on
+  their own; to skip the back-off, restart them once the filestore is Ready:
+  ```sh
+  kubectl -n ryaxns rollout status deploy/ryax-filestore --timeout=24h
+  kubectl -n ryaxns rollout restart deploy/ryax-runner deploy/ryax-studio
+  ```
+  Follow the copy with
+  `kubectl -n ryaxns logs -f deploy/ryax-filestore -c migrate-from-minio`. The new
+  volume's storage class must support user extended attributes, as ext4 and xfs do.
+
+  If MinIO ran without persistence (`minio.persistence.enabled: false`), it has no
+  volume to copy from, and its objects go away with it, as they did whenever its pod
+  restarted. The `minio:` values are ignored now: remove them. To give the filestore
+  more room than MinIO had, set `filestore.persistence.size`.
+
+- **Optional: pre-copy the objects to shorten the upgrade.** While 26.9.0 still runs,
+  this copies the objects into the volume the filestore will use, and the upgrade then
+  only copies what changed since. It can run several times, and it can be interrupted:
+  the copy at the upgrade makes the result exact whatever it left. Use the same values
+  file as for the upgrade:
+  ```sh
+  SIZE=$(kubectl -n ryaxns get pvc ryax-minio -o jsonpath='{.spec.resources.requests.storage}')
+  helm template ryax oci://registry.ryax.org/release-charts/ryax-engine --version 26.10.0 \
+    -n ryaxns -f values.yaml \
+    --set filestore.migration.precopy.enabled=true \
+    --set filestore.persistence.size="$SIZE" \
+    --show-only charts/filestore/templates/precopy.yaml > precopy.yaml
+  kubectl -n ryaxns delete job ryax-filestore-precopy --ignore-not-found
+  kubectl -n ryaxns apply -f precopy.yaml
+  kubectl -n ryaxns wait --for=condition=complete job/ryax-filestore-precopy --timeout=24h
+  kubectl -n ryaxns logs job/ryax-filestore-precopy | tail -n 1
+  ```
+  It creates the `ryax-filestore` volume, which the upgrade then takes over, and a Job
+  that reads MinIO while Ryax keeps working. The upgrade refuses to start while that Job
+  runs. Offline, render it from the chart package (`helm template ryax
+  ryax-engine-26.10.0.tgz ...`): it only uses the MinIO image 26.9.0 already ran.
+
+- **Once 26.10.0 runs, decommission the old MinIO.** It only serves the copy, and
+  makes a rollback possible until then. First check that the copy is done:
+  ```sh
+  kubectl -n ryaxns exec deploy/ryax-filestore -c versitygw -- cat /data/.ryax-migrated-from-minio
+  ```
+  It prints the date of the copy. Then remove MinIO, and delete its volume:
+  ```sh
+  helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine:26.10.0 \
+    -n ryaxns --reuse-values --set filestore.migration.enabled=false
+  kubectl -n ryaxns delete pvc ryax-minio
+  ```
+  The chart refuses to remove MinIO while no filestore pod has finished the copy
+  (`filestore.migration.allowDecommissionWithoutCopy=true` forces it), and refuses
+  `filestore.migration.enabled=false` on an upgrade from 26.9.0, which would delete
+  MinIO's volume before the copy. **After the decommission, a rollback to 26.9.0 is no
+  longer possible** without restoring MinIO's volume from a backup.
+
+- **Rolling back to 26.9.0 before the decommission** brings MinIO back on its volume,
+  untouched, and deletes the filestore and its volume. Objects written since the
+  upgrade are lost, unless you copy them back into MinIO first, while 26.10.0 still runs
+  and no workflow runs:
+  ```sh
+  kubectl -n ryaxns exec deploy/ryax-minio -- sh -c 'export HOME=/tmp
+    mc=/opt/bitnami/minio-client/bin/mc
+    $mc alias set new http://ryax-minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null
+    $mc alias set old http://localhost:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null
+    $mc mirror --overwrite new/ryax-filestore old/ryax-filestore'
+  helm rollback ryax <the 26.9.0 revision> -n ryaxns
+  ```
+  Upgrading again later copies MinIO afresh.
+
+- **GitOps (ArgoCD, Flux):** the chart cannot see the cluster, so it always renders
+  the old MinIO and its volume while `filestore.migration.enabled` is on, the default.
+  The upgrade copies as above. If you changed `minio.persistence.size` or
+  `storageClass`, set them as `filestore.migration.legacy.persistence.size` and
+  `storageClass`, or the sync fails on the volume, which cannot shrink. To decommission,
+  check the marker as above, then set `filestore.migration.enabled: false`: ArgoCD
+  removes MinIO but keeps its volume (`Prune=false`), which you delete by hand. **A new
+  GitOps install** has nothing to migrate: set `filestore.migration.enabled: false` from
+  the start.
+
+- **`global.security.allowInsecureImages` is gone.** It only served the Bitnami
+  charts, and the engine chart no longer has any. Remove it from your values; it is
+  ignored.
 
 Then run the upgrade:
 ```sh

@@ -1,0 +1,510 @@
+suite: The move from the MinIO of Ryax 26.9
+# The upgrade from 26.9 keeps the old MinIO on its own volume, and the filestore
+# pod copies its objects once, in an init container, before it serves. The
+# chart decides from the cluster: kubernetesProvider stands for it below. With
+# no provider every lookup is empty, as in `helm template` and ArgoCD.
+templates:
+  - templates/migration.yaml
+  - templates/deployment.yaml
+  - templates/pvc.yaml
+release:
+  name: ryax
+  namespace: ryaxns
+tests:
+  - it: renders
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 4
+        template: templates/migration.yaml
+
+  # ------------------------------------------------------------------------
+  # Without a cluster (GitOps): the migration is on unless turned off.
+  # ------------------------------------------------------------------------
+  - it: keeps the old MinIO volume out of reach of Helm and ArgoCD
+    template: templates/migration.yaml
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: PersistentVolumeClaim
+      - documentIndex: 0
+        equal:
+          path: metadata.name
+          value: ryax-minio
+      - documentIndex: 0
+        equal:
+          path: metadata.annotations
+          value:
+            helm.sh/resource-policy: keep
+            argocd.argoproj.io/sync-options: Prune=false
+      - documentIndex: 0
+        equal:
+          path: spec.resources.requests.storage
+          value: 20Gi
+      - documentIndex: 0
+        notExists:
+          path: spec.storageClassName
+  - it: describes the old volume from the values when it cannot see it
+    template: templates/migration.yaml
+    set:
+      migration.legacy.persistence.size: 100Gi
+      migration.legacy.persistence.storageClass: sbs-default
+    asserts:
+      - documentIndex: 0
+        equal:
+          path: spec.resources.requests.storage
+          value: 100Gi
+      - documentIndex: 0
+        equal:
+          path: spec.storageClassName
+          value: sbs-default
+
+  # The Bitnami Deployment's selector cannot change: the old MinIO keeps it,
+  # so Helm updates it in place, and Recreate stops the old pod before the
+  # new one opens the volume.
+  - it: runs the old MinIO in place of the Bitnami Deployment
+    template: templates/migration.yaml
+    asserts:
+      - documentIndex: 1
+        isKind:
+          of: Deployment
+      - documentIndex: 1
+        equal:
+          path: metadata.name
+          value: ryax-minio
+      - documentIndex: 1
+        equal:
+          path: spec.selector.matchLabels
+          value:
+            app.kubernetes.io/instance: ryax
+            app.kubernetes.io/name: minio
+            app.kubernetes.io/component: minio
+            app.kubernetes.io/part-of: minio
+      - documentIndex: 1
+        equal:
+          path: spec.strategy.type
+          value: Recreate
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.containers[0].image
+          value: docker.io/bitnamilegacy/minio:2025.7.23-debian-12-r3
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.containers[0].command
+          value: [/opt/bitnami/minio/bin/minio, server, /bitnami/minio/data, --address=:9000, --quiet]
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: ryax-minio
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 1200
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.securityContext.runAsGroup
+          value: 1001
+      - documentIndex: 1
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MINIO_ROOT_PASSWORD
+            valueFrom: {secretKeyRef: {name: ryax-minio-secret, key: root-password}}
+  # A Skupper connector created against ryax-minio kept MinIO's pod selector:
+  # it must find a closed door, not a store the filestore no longer reads.
+  - it: lets only the filestore pod reach the old MinIO
+    template: templates/migration.yaml
+    asserts:
+      - documentIndex: 2
+        isKind:
+          of: NetworkPolicy
+      - documentIndex: 2
+        equal:
+          path: metadata.name
+          value: ryax-minio
+      - documentIndex: 2
+        equal:
+          path: spec.podSelector.matchLabels
+          value:
+            app.kubernetes.io/instance: ryax
+            app.kubernetes.io/name: minio
+            app.kubernetes.io/component: minio
+            app.kubernetes.io/part-of: minio
+      - documentIndex: 2
+        equal:
+          path: spec.policyTypes
+          value: [Ingress]
+      - documentIndex: 2
+        equal:
+          path: spec.ingress
+          value:
+            - from:
+                - podSelector:
+                    matchLabels:
+                      app.kubernetes.io/name: filestore
+                      app.kubernetes.io/instance: ryax
+              ports:
+                - port: 9000
+
+  - it: gives the old MinIO a Service of its own, ryax-minio being the filestore
+    template: templates/migration.yaml
+    asserts:
+      - documentIndex: 3
+        isKind:
+          of: Service
+      - documentIndex: 3
+        equal:
+          path: metadata.name
+          value: ryax-minio-legacy
+      - documentIndex: 3
+        equal:
+          path: spec.selector["app.kubernetes.io/name"]
+          value: minio
+
+  # The copy image is listed in the airgap bundle only because this render
+  # contains it: airgap/generate-image-list.sh renders without a cluster.
+  - it: copies from the old MinIO before the gateway starts
+    template: templates/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: migrate-from-minio
+      - equal:
+          path: spec.template.spec.initContainers[0].image
+          value: docker.io/bitnamilegacy/minio:2025.7.23-debian-12-r3
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content: {name: SOURCE_HOST, value: ryax-minio-legacy}
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content: {name: WAIT_SECONDS, value: "0"}
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: SECRET_KEY
+            valueFrom: {secretKeyRef: {name: ryax-minio-secret, key: root-password}}
+      # once, exact, and then marked done
+      - matchRegex:
+          path: spec.template.spec.initContainers[0].args[0]
+          pattern: 'if \[ -f "\$MARKER" \]; then'
+      - matchRegex:
+          path: spec.template.spec.initContainers[0].args[0]
+          pattern: 'mirror --quiet --overwrite --remove "legacy/\$bucket" "\$DEST/\$bucket"'
+      - matchRegex:
+          path: spec.template.spec.initContainers[0].args[0]
+          pattern: '"\$MC" diff "legacy/\$bucket" "\$DEST/\$bucket"'
+      - matchRegex:
+          path: spec.template.spec.initContainers[0].args[0]
+          pattern: 'mv "\$MARKER.tmp" "\$MARKER"'
+      - notMatchRegex:
+          path: spec.template.spec.initContainers[0].args[0]
+          pattern: 'touch -m'
+      - contains:
+          path: spec.template.spec.initContainers[0].volumeMounts
+          content: {name: data, mountPath: /data}
+
+  - it: renders no MinIO and no copy with the migration off
+    set:
+      migration.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/migration.yaml
+      - lengthEqual:
+          path: spec.template.spec.initContainers
+          count: 1
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: prepare
+        template: templates/deployment.yaml
+
+  # ------------------------------------------------------------------------
+  # Against a cluster (helm install / upgrade)
+  # ------------------------------------------------------------------------
+  - it: renders no MinIO on a fresh install
+    kubernetesProvider:
+      scheme: &scheme
+        v1/ConfigMap:
+          gvr: {version: v1, resource: configmaps}
+          namespaced: true
+        v1/Namespace:
+          gvr: {version: v1, resource: namespaces}
+          namespaced: false
+        v1/PersistentVolumeClaim:
+          gvr: {version: v1, resource: persistentvolumeclaims}
+          namespaced: true
+        apps/v1/Deployment:
+          gvr: {group: apps, version: v1, resource: deployments}
+          namespaced: true
+        batch/v1/Job:
+          gvr: {group: batch, version: v1, resource: jobs}
+          namespaced: true
+      objects:
+        - &rootCA
+          apiVersion: v1
+          kind: ConfigMap
+          metadata: {name: kube-root-ca.crt, namespace: ryaxns}
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+        template: templates/migration.yaml
+      - lengthEqual:
+          path: spec.template.spec.initContainers
+          count: 1
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.resources.requests.storage
+          value: 20Gi
+        template: templates/pvc.yaml
+  # Helm renders before it creates the namespace of `--create-namespace`.
+  - it: renders no MinIO on a fresh install in a namespace not created yet
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - &kubeSystem
+          apiVersion: v1
+          kind: Namespace
+          metadata: {name: kube-system}
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+        template: templates/migration.yaml
+      - lengthEqual:
+          path: spec.template.spec.initContainers
+          count: 1
+        template: templates/deployment.yaml
+
+  - it: takes over the volume of a 26.9 install as it is
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - &legacyClaim
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata: {name: ryax-minio, namespace: ryaxns}
+          spec:
+            accessModes: [ReadWriteOnce]
+            resources: {requests: {storage: 37Gi}}
+            storageClassName: sbs-default
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 4
+        template: templates/migration.yaml
+      - equal:
+          path: spec.resources.requests.storage
+          value: 37Gi
+        template: templates/migration.yaml
+        documentIndex: 0
+      - equal:
+          path: spec.storageClassName
+          value: sbs-default
+        template: templates/migration.yaml
+        documentIndex: 0
+      - equal:
+          path: metadata.annotations["helm.sh/resource-policy"]
+          value: keep
+        template: templates/migration.yaml
+        documentIndex: 0
+      # the copy has to fit
+      - equal:
+          path: spec.resources.requests.storage
+          value: 37Gi
+        template: templates/pvc.yaml
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: migrate-from-minio
+        template: templates/deployment.yaml
+  - it: never sizes its volume below the one already there
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - *legacyClaim
+        - apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata: {name: ryax-filestore, namespace: ryaxns}
+          spec:
+            accessModes: [ReadWriteOnce]
+            resources: {requests: {storage: 50Gi}}
+    template: templates/pvc.yaml
+    asserts:
+      - equal:
+          path: spec.resources.requests.storage
+          value: 50Gi
+
+  # ------------------------------------------------------------------------
+  # Guards. Counts in a status are floats below: the fake client behind
+  # kubernetesProvider cannot copy a plain YAML integer, the API server sends
+  # int64, and the templates read both.
+  # ------------------------------------------------------------------------
+  # The Bitnami PVC has no keep policy: dropping the MinIO chart deletes it.
+  - it: refuses to upgrade a 26.9 install with the migration off
+    template: templates/migration.yaml
+    set:
+      migration.enabled: false
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - *legacyClaim
+    asserts:
+      - failedTemplate:
+          errorPattern: "would delete the MinIO volume ryax-minio before its objects are copied"
+
+  - it: refuses to decommission MinIO before a filestore pod has copied it
+    template: templates/migration.yaml
+    set:
+      migration.enabled: false
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - &keptClaim
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            name: ryax-minio
+            namespace: ryaxns
+            annotations: {helm.sh/resource-policy: keep}
+          spec: {resources: {requests: {storage: 20Gi}}}
+        - &legacyDeployment
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata: {name: ryax-minio, namespace: ryaxns}
+        - apiVersion: apps/v1
+          kind: Deployment
+          metadata: {name: ryax-filestore, namespace: ryaxns}
+          spec:
+            template:
+              spec:
+                initContainers: [{name: migrate-from-minio}, {name: prepare}]
+          status: {availableReplicas: 0.0}
+    asserts:
+      - failedTemplate:
+          errorPattern: "no filestore pod has finished copying its objects"
+  - it: refuses to decommission MinIO when there is no filestore yet
+    template: templates/migration.yaml
+    set:
+      migration.enabled: false
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - *keptClaim
+        - *legacyDeployment
+    asserts:
+      - failedTemplate:
+          errorPattern: "no filestore pod has finished copying its objects"
+  # A ready filestore that never ran the copy proves nothing.
+  - it: refuses to decommission MinIO when the filestore never copied it
+    template: templates/migration.yaml
+    set:
+      migration.enabled: false
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - *keptClaim
+        - *legacyDeployment
+        - apiVersion: apps/v1
+          kind: Deployment
+          metadata: {name: ryax-filestore, namespace: ryaxns}
+          spec:
+            template:
+              spec:
+                initContainers: [{name: prepare}]
+          status: {availableReplicas: 1.0}
+    asserts:
+      - failedTemplate:
+          errorPattern: "no filestore pod has finished copying its objects"
+  - it: decommissions MinIO once a filestore pod has copied it
+    set:
+      migration.enabled: false
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - *keptClaim
+        - *legacyDeployment
+        - &copiedFilestore
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata: {name: ryax-filestore, namespace: ryaxns}
+          spec:
+            template:
+              spec:
+                initContainers: [{name: migrate-from-minio}, {name: prepare}]
+          status: {availableReplicas: 1.0}
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+        template: templates/migration.yaml
+      - lengthEqual:
+          path: spec.template.spec.initContainers
+          count: 1
+        template: templates/deployment.yaml
+  - it: decommissions MinIO without the copy when told to
+    template: templates/migration.yaml
+    set:
+      migration.enabled: false
+      migration.allowDecommissionWithoutCopy: true
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - *keptClaim
+        - *legacyDeployment
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+  # MinIO gone, its volume left for the admin to delete: nothing to guard.
+  - it: upgrades as usual after the decommission
+    template: templates/migration.yaml
+    set:
+      migration.enabled: false
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - *keptClaim
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+
+  - it: refuses to upgrade while the pre-copy runs
+    template: templates/migration.yaml
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - *legacyClaim
+        - apiVersion: batch/v1
+          kind: Job
+          metadata: {name: ryax-filestore-precopy, namespace: ryaxns}
+          status: {active: 1.0}
+    asserts:
+      - failedTemplate:
+          errorPattern: "The pre-copy Job ryax-filestore-precopy is still running"
+  - it: upgrades once the pre-copy is over
+    template: templates/migration.yaml
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - *legacyClaim
+        - apiVersion: batch/v1
+          kind: Job
+          metadata: {name: ryax-filestore-precopy, namespace: ryaxns}
+          status: {succeeded: 1.0}
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 4
