@@ -294,6 +294,22 @@ helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns -
 !!! note
     Helm installs the chart's CRDs on the first install only, and never updates them. When a release adds or changes one, its release notes give the `kubectl apply` to run before the upgrade. 26.10.0 is one: it moves the broker to the RabbitMQ Cluster Operator.
 
+## Uninstall
+
+Delete the broker before the release: `helm uninstall` removes the RabbitMQ Cluster Operator at the same time, and the `RabbitmqCluster` would then keep its finalizer, with its pod still running.
+
+```sh
+kubectl -n ryaxns delete rabbitmqcluster ryax-broker
+helm uninstall ryax -n ryaxns
+```
+
+If an uninstall is already stuck, clear the finalizer:
+```sh
+kubectl -n ryaxns patch rabbitmqcluster ryax-broker --type merge -p '{"metadata":{"finalizers":[]}}'
+```
+
+Helm leaves the PersistentVolumeClaims and the CRDs behind; delete them too for a clean slate.
+
 ## Troubleshooting
 
 ### All actions' pods on ryaxns-execs are in imagePullBackOff
