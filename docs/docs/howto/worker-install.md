@@ -375,6 +375,7 @@ For this you need a DNS entry, for example `skupper.ryax.example.com`, pointing 
   skupper -n ryaxns connector create ryax-broker-ext 5672 --workload service/ryax-broker
   skupper -n ryaxns connector create ryax-minio-ext 9000 --workload service/ryax-minio
   ```
+  A connector keeps the pod selector its Service had when the connector was created. When an upgrade replaces the pods behind `ryax-broker` or `ryax-minio`, as 26.10.0 does for both, delete and recreate the connector with the same command.
 
 **worker**
 

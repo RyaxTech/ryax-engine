@@ -148,7 +148,7 @@ This micro-service speaks gRPC (with the actions), RMQ with Studio, and HTTP for
 	- Deploy/undeploy actions
 - Manage the workflow execution:
   - Get new execution triggers
-  - Fetch/push execution data from/to the filestore (Minio)
+  - Fetch/push execution data from/to the filestore
   - Push data to actions so that they create executions
 - Scheduling
   - Communicate with the worker to scale the infrastructure
@@ -185,7 +185,7 @@ The worker register itself in Ryax using a gRPC interface.
 Regarding  executions, the Worker gets IO from global when an action is triggered from an external action (action from another site) and push OI to local storage. 
 The Worker is in charge of pushing the data to the global storage if an execution is not in its site. 
 Since the I/O files is distributed over multiple sites, we need a way to share data between sites.
-To do so, we introduce a new public facing storage. In our case we make use of our fileStore (minio) that we expose publicly, but it could also be any Cloud storage. 
+To do so, we introduce a new public facing storage. In our case we make use of our filestore that we expose publicly, but it could also be any Cloud storage. 
 Based on this the data can be shared between site using this public storage with the following policy:
 
 *Outputs:*
@@ -275,10 +275,10 @@ It is a PostgreSQL database that stores the state of all stateful services. Each
 **Accessible by users**: No
 
 
-### Filestore (Minio)
+### Filestore (versitygw)
 
 **Description:**
-It is a Minio file storage service that exposes an S3-compatible API. It stores execution I/O files and directories. 
+It is a [versitygw](https://github.com/versity/versitygw) S3 gateway that stores execution I/O files and directories, and the files of the workflows. It keeps every object as a plain file on its volume, under `s3/<bucket>/<key>`, with the object metadata in extended attributes. The services reach it at `ryax-minio:9000`, the address of the MinIO it replaced in 26.10.0, with the credentials of `ryax-minio-secret`.
 
 **Responsibilities**:
 

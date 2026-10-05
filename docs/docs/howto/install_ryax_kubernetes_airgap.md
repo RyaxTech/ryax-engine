@@ -207,6 +207,8 @@ Helm never updates the chart's CRDs on an upgrade. When the release notes ask yo
 tar -xzOf ./ryax-engine-*.tgz ryax-engine/charts/rabbitmq/crds/rabbitmqclusters.rabbitmq.com.yaml \
   | kubectl apply --server-side -f -
 ```
+The 26.10.0 upgrade copies the filestore out of the MinIO of 26.9.0 with that same MinIO image, which the 26.9.0 bundle already holds. Its optional pre-copy is rendered from the chart package too: `helm template ryax ./ryax-engine-*.tgz ...`, with the options the release notes give.
+
 Don't forget to update Nix build dependencies with the process defined in the configuration.
 
 <!-- ### With a private registry
