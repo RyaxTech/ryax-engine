@@ -208,9 +208,9 @@ the old MinIO in place on its volume, and the filestore pod copies the objects
 before it starts serving. The `ryax-minio` PVC carries
 `argocd.argoproj.io/sync-options: Prune=false`, so a sync never deletes it. If
 you had changed `minio.persistence.size` or `minio.persistence.storageClass`, set
-the same under `filestore.migration.legacy.persistence`, or the sync fails on a
-volume that cannot shrink. Once the copy is done, which this prints the date
-of:
+the same under `filestore.migration.legacy.persistence`, or the sync fails on the
+volume, whose size cannot shrink and whose class cannot change. Once the copy is
+done, which this prints the date of:
 
 ```sh
 kubectl -n ryaxns exec deploy/ryax-filestore -c versitygw -- cat /data/.ryax-migrated-from-minio
