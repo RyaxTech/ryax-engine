@@ -240,6 +240,9 @@ tests:
         batch/v1/Job:
           gvr: {group: batch, version: v1, resource: jobs}
           namespaced: true
+        storage.k8s.io/v1/StorageClass:
+          gvr: {group: storage.k8s.io, version: v1, resource: storageclasses}
+          namespaced: false
       objects:
         - &rootCA
           apiVersion: v1
@@ -319,6 +322,67 @@ tests:
           path: spec.template.spec.initContainers[0].name
           value: migrate-from-minio
         template: templates/deployment.yaml
+  # The Bitnami chart named no class unless told to, and the cluster's default
+  # class filled it in. Naming it here would make `helm rollback` to 26.9
+  # unset the class of a bound PVC, which the API server refuses.
+  - it: leaves the storage class of the old volume to the cluster default, as 26.9 did
+    template: templates/migration.yaml
+    documentIndex: 0
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - &defaultClass
+          apiVersion: storage.k8s.io/v1
+          kind: StorageClass
+          metadata:
+            name: local-path
+            annotations: {storageclass.kubernetes.io/is-default-class: "true"}
+          provisioner: rancher.io/local-path
+        - &legacyDefaultClaim
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata: {name: ryax-minio, namespace: ryaxns}
+          spec:
+            accessModes: [ReadWriteOnce]
+            resources: {requests: {storage: 20Gi}}
+            storageClassName: local-path
+    asserts:
+      - notFailedTemplate: {}
+      - isKind:
+          of: PersistentVolumeClaim
+      - notExists:
+          path: spec.storageClassName
+  - it: names the storage class of the old volume when the values name one
+    template: templates/migration.yaml
+    documentIndex: 0
+    set:
+      global.defaultStorageClass: local-path
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - *defaultClass
+        - *legacyDefaultClaim
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: local-path
+  - it: names the storage class of the old volume when migration.legacy names one
+    template: templates/migration.yaml
+    documentIndex: 0
+    set:
+      migration.legacy.persistence.storageClass: local-path
+    kubernetesProvider:
+      scheme: *scheme
+      objects:
+        - *rootCA
+        - *defaultClass
+        - *legacyDefaultClaim
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: local-path
   - it: never sizes its volume below the one already there
     kubernetesProvider:
       scheme: *scheme

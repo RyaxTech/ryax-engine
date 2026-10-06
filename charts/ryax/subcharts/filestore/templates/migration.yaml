@@ -33,6 +33,21 @@ The MinIO of Ryax 26.9, kept running on its own volume for as long as
 {{- end }}
 {{- if include "filestore.migrating" . }}
 {{- $live := lookup "v1" "PersistentVolumeClaim" .Release.Namespace $legacyName }}
+{{- /*
+The storage class, as the Bitnami chart rendered it, for Helm patches the spec
+of a bound PVC from the previous release's manifest, and only accepts no
+change. The Bitnami chart named a class only when the values set one; the
+cluster's default class filled in the others, and naming it here would make
+`helm rollback` to 26.9 unset it, which the API server refuses. A live class
+that is not the default one was named in the values: keep it.
+*/}}
+{{- $class := .Values.migration.legacy.persistence.storageClass | default .Values.global.defaultStorageClass }}
+{{- if and (not $class) $live $live.spec.storageClassName }}
+{{- $liveClass := lookup "storage.k8s.io/v1" "StorageClass" "" $live.spec.storageClassName }}
+{{- if ne (index (($liveClass.metadata).annotations | default dict) "storageclass.kubernetes.io/is-default-class" | default "") "true" }}
+{{- $class = $live.spec.storageClassName }}
+{{- end }}
+{{- end }}
 ---
 # The PVC of the MinIO chart, taken over as it is: same name and spec, so its
 # data stays where it is. Neither Helm nor ArgoCD deletes it once it leaves the
@@ -53,17 +68,14 @@ spec:
   resources:
     requests:
       storage: {{ $live.spec.resources.requests.storage | quote }}
-  {{- with $live.spec.storageClassName }}
-  storageClassName: {{ . | quote }}
-  {{- end }}
   {{- else }}
   accessModes: [ReadWriteOnce]
   resources:
     requests:
       storage: {{ .Values.migration.legacy.persistence.size | quote }}
-  {{- with .Values.migration.legacy.persistence.storageClass | default .Values.global.defaultStorageClass }}
-  storageClassName: {{ . | quote }}
   {{- end }}
+  {{- with $class }}
+  storageClassName: {{ . | quote }}
   {{- end }}
 ---
 # MinIO, as the Bitnami chart ran it, read only by the filestore's copy. Same
