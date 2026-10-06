@@ -63,9 +63,16 @@ spec:
     # writes these lines unexpanded into its own <name>-default-user Secret,
     # which therefore does not hold usable credentials: read them from the
     # broker Secret.
+    #
+    # The operator's own defaults set disk_free_limit.absolute = 2GB, more than
+    # the broker volume holds by default (1Gi): the free-disk alarm would then
+    # be permanent and RabbitMQ blocks every publisher. Ryax's messages are
+    # transient and small, so the limit follows the volume instead. This file
+    # is loaded after the operator's, so it wins.
     additionalConfig: |
       default_user = $(RYAX_BROKER_USER)
       default_pass = $(RYAX_BROKER_PASSWORD)
+      disk_free_limit.absolute = {{ required "rabbitmq.diskFreeLimit is required" .Values.diskFreeLimit }}
       {{- with .Values.additionalConfig }}
       {{- . | nindent 6 }}
       {{- end }}
