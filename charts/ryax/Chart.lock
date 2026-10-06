@@ -1,40 +1,40 @@
 dependencies:
 - name: common-resources
   repository: file://subcharts/common-resources
-  version: 26.10.0-rc1
+  version: 26.10.0-rc2
 - name: action-builder
   repository: file://subcharts/action-builder
-  version: 26.10.0-rc1
+  version: 26.10.0-rc2
 - name: authorization
   repository: file://subcharts/authorization
-  version: 26.10.0-rc1
+  version: 26.10.0-rc2
 - name: front
   repository: file://subcharts/front
-  version: 26.10.0-rc1
+  version: 26.10.0-rc2
 - name: intelliscale
   repository: file://subcharts/intelliscale
-  version: 26.10.0-rc1
+  version: 26.10.0-rc2
 - name: repository
   repository: file://subcharts/repository
-  version: 26.10.0-rc1
+  version: 26.10.0-rc2
 - name: runner
   repository: file://subcharts/runner
-  version: 26.10.0-rc1
+  version: 26.10.0-rc2
 - name: studio
   repository: file://subcharts/studio
-  version: 26.10.0-rc1
+  version: 26.10.0-rc2
 - name: registry
   repository: file://subcharts/registry
-  version: 26.10.0-rc1
+  version: 26.10.0-rc2
 - name: datastore
   repository: file://subcharts/datastore
-  version: 26.10.0-rc1
+  version: 26.10.0-rc2
 - name: rabbitmq
   repository: file://subcharts/rabbitmq
-  version: 26.10.0-rc1
+  version: 26.10.0-rc2
 - name: filestore
   repository: file://subcharts/filestore
-  version: 26.10.0-rc1
+  version: 26.10.0-rc2
 - name: traefik
   repository: https://helm.traefik.io/traefik
   version: 41.6.1
@@ -50,5 +50,5 @@ dependencies:
 - name: alloy
   repository: https://grafana.github.io/helm-charts
   version: 1.13.0
-digest: sha256:159e5d665871ef0605753717871ace758f176e7c03f8123d1b2c2af80469c75a
-generated: "2026-10-06T13:16:29.176580207+02:00"
+digest: sha256:4c6d3ee1453bf165e0aab6b2ff4be873d15cb88e0dbbbba5d99b5ca279d8de87
+generated: "2026-10-06T15:27:59.282709392+02:00"
