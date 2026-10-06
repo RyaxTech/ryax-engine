@@ -81,6 +81,9 @@ filestoreSecret: ryax-minio-secret
 # -- Create the secret above. Set to false to provide it yourself; it must then
 # carry the key(s): filestore, filestore-access, filestore-secret, root-user and root-password.
 filestoreSecretCreate: true
+# -- Host of the filestore in the `filestore` key of the secret: the Service of
+# the filestore subchart (`filestore.service.name`), named after the MinIO it
+# replaced so that installed secrets and remote workers keep working.
 filestoreService: ryax-minio
 filestorePort: 9000
 filestoreUser: ryax

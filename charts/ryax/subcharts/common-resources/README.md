@@ -30,7 +30,7 @@ Common secrets and configuration for the Ryax platform
 | filestorePort | int | `9000` |  |
 | filestoreSecret | string | `"ryax-minio-secret"` | Create a filestore access secret |
 | filestoreSecretCreate | bool | `true` | Create the secret above. Set to false to provide it yourself; it must then carry the key(s): filestore, filestore-access, filestore-secret, root-user and root-password. |
-| filestoreService | string | `"ryax-minio"` |  |
+| filestoreService | string | `"ryax-minio"` | Host of the filestore in the `filestore` key of the secret: the Service of the filestore subchart (`filestore.service.name`), named after the MinIO it replaced so that installed secrets and remote workers keep working. |
 | filestoreUser | string | `"ryax"` |  |
 | global.monitoring.enabled | bool | `true` |  |
 | global.ryax.userNamespace | string | `"ryaxns-execs"` | Set the user action deployment namespace   |

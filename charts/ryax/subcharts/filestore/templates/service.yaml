@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}
+  labels: {{- include "filestore.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: s3
+      port: {{ .Values.service.port }}
+      targetPort: s3
+  selector: {{- include "filestore.selectorLabels" . | nindent 4 }}

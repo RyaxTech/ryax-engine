@@ -25,11 +25,6 @@ global:
     environment: "development" # development or production
     hostname: "local.ryax.io" # must be a valid dns address
 
-
-  # -- Needed by bitnami to avoid https://github.com/bitnami/charts/issues/30850
-  security:
-    allowInsecureImages: true
-
 # Ryax Services
 front:
   image:
@@ -73,9 +68,8 @@ intelliscale:
     registry: registry.ryax.org/dev
     pullPolicy: Always
 
-minio:
+filestore:
   persistence:
-    enabled: true
     size: 100Gi
 
 rabbitmq:
