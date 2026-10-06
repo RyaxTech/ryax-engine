@@ -51,6 +51,7 @@ tests:
           value: |
             default_user = $(RYAX_BROKER_USER)
             default_pass = $(RYAX_BROKER_PASSWORD)
+            disk_free_limit.absolute = 250Mi
       - equal:
           path: spec.override.statefulSet.spec.template.spec.containers[0].name
           value: rabbitmq
@@ -77,8 +78,34 @@ tests:
           value: |
             default_user = $(RYAX_BROKER_USER)
             default_pass = $(RYAX_BROKER_PASSWORD)
+            disk_free_limit.absolute = 250Mi
             log.console.level = debug
             consumer_timeout = 3600000
+
+  # The operator defaults disk_free_limit.absolute to 2GB, which the default
+  # 1Gi volume can never have free: the alarm then blocks every publisher.
+  # 26.10.0-rc1 shipped without this line and staging stopped moving messages.
+  - it: keeps the free-disk alarm under what the default volume holds
+    asserts:
+      - matchRegex:
+          path: spec.rabbitmq.additionalConfig
+          pattern: "(?m)^disk_free_limit\\.absolute = 250Mi$"
+      - equal:
+          path: spec.persistence.storage
+          value: 1Gi
+  - it: takes another free-disk limit from the values
+    set:
+      diskFreeLimit: 200MB
+    asserts:
+      - matchRegex:
+          path: spec.rabbitmq.additionalConfig
+          pattern: "(?m)^disk_free_limit\\.absolute = 200MB$"
+  - it: refuses an empty free-disk limit
+    set:
+      diskFreeLimit: ""
+    asserts:
+      - failedTemplate:
+          errorPattern: "rabbitmq.diskFreeLimit is required"
 
   - it: keeps its state on a 1Gi volume of the default class
     asserts:

@@ -138,7 +138,9 @@ Admins should take care of the following elements when upgrading to this version
   still naming a Bitnami image stops the render. The broker password is always the one
   in `ryax-broker-secret`, so a `rabbitmq.auth.password` set by the old troubleshooting
   guide does nothing. The broker also follows `global.tolerations`, `nodeSelector` and
-  `affinity` now.
+  `affinity` now. The broker blocks publishers when its volume has less than
+  `rabbitmq.diskFreeLimit` free (default `250Mi`, RabbitMQ units); keep it well under
+  `rabbitmq.persistence.size` if you shrink the volume.
 
 - **Uninstalling now takes one more step.** `helm uninstall` removes the operator at
   the same time as the broker, so nothing clears the `RabbitmqCluster` finalizer: the

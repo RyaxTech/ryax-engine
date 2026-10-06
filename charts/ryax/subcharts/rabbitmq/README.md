@@ -25,6 +25,7 @@ Ryax message broker, a RabbitmqCluster run by the RabbitMQ Cluster Operator
 | additionalPlugins | list | `[]` | Extra RabbitMQ plugins on top of the operator's own (rabbitmq_management, rabbitmq_prometheus and rabbitmq_peer_discovery_k8s). |
 | affinity | object | `{}` | Affinity injected as-is, overriding `global.affinity` when set |
 | brokerSecret | string | `"ryax-broker-secret"` | Secret holding the broker credentials, shared with the Ryax services. The RabbitMQ default user is seeded from its `broker-user` and `rabbitmq-password` keys on the first boot of an empty broker. Created by the common-resources subchart unless `global.secrets.create` is false. |
+| diskFreeLimit | string | `"250Mi"` | Free disk space under which RabbitMQ blocks publishers. The operator's default is 2GB, which a volume of `persistence.size` 1Gi can never have free, so the broker would refuse every message. Keep it well under the volume size. |
 | fullnameOverride | string | `"ryax-broker"` | Name of the RabbitmqCluster. The operator names the AMQP Service after it, so it is the broker host every Ryax service connects to, and must match `common-resources.brokerService`. |
 | image | object | `{"repository":"docker.io/rabbitmq","tag":"4.3.6-management"}` | RabbitMQ server image. The official image from Docker Hub, not a Bitnami one: the operator lays the container out itself. |
 | metrics.enabled | bool | `true` | Scrape the broker with a ServiceMonitor (needs `global.monitoring.enabled` for the CRD). RabbitMQ serves the metrics itself, on the `prometheus` port. |
