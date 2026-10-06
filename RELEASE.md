@@ -157,9 +157,13 @@ Admins should take care of the following elements when upgrading to this version
   **Downtime:** the services cannot reach the filestore until the copy is over. Without
   a pre-copy (below), count the time to read the whole MinIO volume once: on a test
   cluster, 750 MiB in 3,000 objects took a few seconds, and a large volume on network
-  storage takes minutes. The runner and studio restart while they wait, and their
-  restart back-off can add up to five minutes once the copy is over. They reconnect on
-  their own; to skip the back-off, restart them once the filestore is Ready:
+  storage takes minutes. On a local k3s upgrade of a 26.9.0 install holding 58 MiB in
+  410 objects, the copy itself took a second, the filestore was unreachable for 15 to
+  50 seconds while MinIO restarted, and the whole of Ryax was back within 3 minutes,
+  the broker switch being the longest part. The runner and studio restart while they
+  wait, and their restart back-off can add up to five minutes once the copy is over.
+  They reconnect on their own; to skip the back-off, restart them once the filestore is
+  Ready:
   ```sh
   kubectl -n ryaxns rollout status deploy/ryax-filestore --timeout=24h
   kubectl -n ryaxns rollout restart deploy/ryax-runner deploy/ryax-studio
@@ -170,8 +174,11 @@ Admins should take care of the following elements when upgrading to this version
 
   If MinIO ran without persistence (`minio.persistence.enabled: false`), it has no
   volume to copy from, and its objects go away with it, as they did whenever its pod
-  restarted. The `minio:` values are ignored now: remove them. To give the filestore
-  more room than MinIO had, set `filestore.persistence.size`.
+  restarted. The `minio:` values are ignored now: remove them, but carry a
+  `minio.persistence.storageClass` over as
+  `filestore.migration.legacy.persistence.storageClass`, as the class of MinIO's volume
+  cannot change. To give the filestore more room than MinIO had, set
+  `filestore.persistence.size`.
 
 - **Optional: pre-copy the objects to shorten the upgrade.** While 26.9.0 still runs,
   this copies the objects into the volume the filestore will use, and the upgrade then
@@ -189,10 +196,14 @@ Admins should take care of the following elements when upgrading to this version
   kubectl -n ryaxns apply -f precopy.yaml
   kubectl -n ryaxns wait --for=condition=complete job/ryax-filestore-precopy --timeout=24h
   kubectl -n ryaxns logs job/ryax-filestore-precopy | tail -n 1
+  kubectl -n ryaxns delete job ryax-filestore-precopy
   ```
   It creates the `ryax-filestore` volume, which the upgrade then takes over, and a Job
   that reads MinIO while Ryax keeps working. The upgrade refuses to start while that Job
-  runs. Offline, render it from the chart package (`helm template ryax
+  runs. Delete the Job once it is done, as above: as long as it exists, the volume
+  cannot be deleted, which a rollback or an uninstall does. The pre-copy only shortens
+  the upgrade when the volume is large: on the test cluster above, both copies took
+  about a second. Offline, render it from the chart package (`helm template ryax
   ryax-engine-26.10.0.tgz ...`): it only uses the MinIO image 26.9.0 already ran.
 
 - **Once 26.10.0 runs, decommission the old MinIO.** It only serves the copy, and
@@ -209,22 +220,33 @@ Admins should take care of the following elements when upgrading to this version
   The chart refuses to remove MinIO while no filestore pod has finished the copy
   (`filestore.migration.allowDecommissionWithoutCopy=true` forces it), and refuses
   `filestore.migration.enabled=false` on an upgrade from 26.9.0, which would delete
-  MinIO's volume before the copy. **After the decommission, a rollback to 26.9.0 is no
-  longer possible** without restoring MinIO's volume from a backup.
+  MinIO's volume before the copy. Like any upgrade, the decommission restarts the
+  runner and studio, and it restarts the filestore, unreachable for a few seconds.
+  **After the decommission, a rollback to 26.9.0 is no longer possible** without
+  restoring MinIO's volume from a backup.
 
 - **Rolling back to 26.9.0 before the decommission** brings MinIO back on its volume,
   untouched, and deletes the filestore and its volume. Objects written since the
   upgrade are lost, unless you copy them back into MinIO first, while 26.10.0 still runs
-  and no workflow runs:
+  and no workflow runs. That copy rewrites every object, not only the new ones, so it
+  takes about as long as the copy at the upgrade. Then delete the broker while its
+  operator still runs, for the Bitnami broker cannot take its `ryax-broker` Service
+  back otherwise, and roll back:
   ```sh
   kubectl -n ryaxns exec deploy/ryax-minio -- sh -c 'export HOME=/tmp
     mc=/opt/bitnami/minio-client/bin/mc
     $mc alias set new http://ryax-minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null
     $mc alias set old http://localhost:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null
     $mc mirror --overwrite new/ryax-filestore old/ryax-filestore'
+  kubectl -n ryaxns delete rabbitmqcluster ryax-broker
   helm rollback ryax <the 26.9.0 revision> -n ryaxns
   ```
-  Upgrading again later copies MinIO afresh.
+  Without the `delete rabbitmqcluster`, the rollback stops part-way on
+  `no Service with the name "ryax-broker" found`. Do not run a failed rollback again:
+  each attempt leaves more of both versions behind. Upgrade to 26.10.0 again with the
+  same values file, wait for every pod to be Ready, and roll back as above. Upgrading
+  again later copies MinIO afresh. A `ryax-worker-k8s` already on 26.10.0 can stay
+  there: on the test cluster it ran workflows with the rolled-back engine.
 
 - **GitOps (ArgoCD, Flux):** the chart cannot see the cluster, so it always renders
   the old MinIO and its volume while `filestore.migration.enabled` is on, the default.
