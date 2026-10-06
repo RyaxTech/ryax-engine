@@ -72,6 +72,10 @@ affinity: {}
 # -- Extra RabbitMQ plugins on top of the operator's own (rabbitmq_management,
 # rabbitmq_prometheus and rabbitmq_peer_discovery_k8s).
 additionalPlugins: []
+# -- Free disk space under which RabbitMQ blocks publishers. The operator's
+# default is 2GB, which a volume of `persistence.size` 1Gi can never have free,
+# so the broker would refuse every message. Keep it well under the volume size.
+diskFreeLimit: 50MB
 # -- Extra rabbitmq.conf lines, appended after the default user settings.
 additionalConfig: ""
 
