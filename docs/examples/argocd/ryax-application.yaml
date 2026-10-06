@@ -34,7 +34,7 @@ spec:
             create: false
 
           # Injected into every Ryax pod. Upstream subcharts (kube-prometheus-stack,
-          # minio, loki, tempo, alloy, traefik) do not read this: set
+          # loki, tempo, alloy, traefik) do not read this: set
           # their own placement values, see the how-to.
           tolerations: []
           # nodeSelector: {}
@@ -76,6 +76,14 @@ spec:
           # set this explicitly for the setup you want.
           registryCertSetup:
             enabled: true
+
+        # A new install has no MinIO of Ryax 26.9 to copy the filestore from.
+        # Without this, every sync renders that MinIO and an empty volume for it,
+        # since the chart cannot see the cluster. Leave it on (remove these lines)
+        # for the sync that upgrades a 26.9 install, see the how-to.
+        filestore:
+          migration:
+            enabled: false
 
   syncPolicy:
     automated:

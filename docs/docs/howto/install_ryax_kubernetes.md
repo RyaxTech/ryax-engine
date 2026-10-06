@@ -161,6 +161,7 @@ containers (`registry`) which all affect your Ryax instance performance, so it
 it is recommended to have SSD backed storage for all services to avoid delays
 state persistence, deployments, and runs.
 For more fine-grained settings you can set each storage class independently with the `storageClass` inside each service.
+The filestore keeps each object as a file, with its metadata in extended attributes, so its storage class must support user extended attributes, as ext4 and xfs do.
 Regarding the volume size, we recommend that you start small, you can extend them later on with most Storage providers.
 
 The default values give comfortable volume sizes to start working on the platform.
@@ -293,6 +294,9 @@ helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns -
 
 !!! note
     Helm installs the chart's CRDs on the first install only, and never updates them. When a release adds or changes one, its release notes give the `kubectl apply` to run before the upgrade. 26.10.0 is one: it moves the broker to the RabbitMQ Cluster Operator.
+
+!!! note
+    26.10.0 replaces the MinIO filestore with versitygw, and the upgrade copies the stored files into it before Ryax is available again. The old MinIO stays, for a rollback, until you decommission it. Its release notes give the steps, an optional pre-copy that shortens the upgrade, and the decommission.
 
 ## Uninstall
 
