@@ -231,7 +231,7 @@ userNamespaceResources: {}
 
 # -- container image name and version
 image:
-  tag: "26.9.0"
+  tag: "26.10.0-rc0"
   registry: docker.io/ryaxtech
   repository: worker-k8s
   digest: ""

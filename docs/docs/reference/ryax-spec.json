@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ryax API",
-    "version": "26.9.0",
+    "version": "26.10.0-rc0",
     "description": "The HTTP API of a Ryax installation: the API the Ryax web interface and the\n`ryaxctl` command line use. It merges the four services that make up the public\nsurface, each under its own path prefix:\n\n- `/api/authorization` -- users, projects and access tokens\n- `/api/repository` -- git sources and the actions built from them\n- `/api/studio` -- workflow authoring\n- `/api/runner` -- deployments, runs and sites\n\nAuthenticate with the token of a Ryax user in an `Authorization: Bearer` header.\n"
   },
   "servers": [
@@ -105,6 +105,9 @@
       "name": "Runner / Sites"
     },
     {
+      "name": "Runner / Node Pools"
+    },
+    {
       "name": "Runner / Filestore"
     },
     {
@@ -115,6 +118,9 @@
     },
     {
       "name": "Runner / Accounting"
+    },
+    {
+      "name": "Runner / Gpu Catalog"
     }
   ],
   "paths": {
@@ -2153,6 +2159,70 @@
         }
       }
     },
+    "/api/runner/gpu-models": {
+      "get": {
+        "tags": [
+          "Runner / Gpu Catalog"
+        ],
+        "summary": "Get GPU models",
+        "description": "List the catalog of supported GPUs, one row per model and partition (the whole card is the partition `full`).",
+        "operationId": "runner_get_gpu_models_gpu_models_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Keep the rows matching every space-separated word, case-insensitive, against brand, model, partition and memory.",
+              "examples": [
+                "a100 1g"
+              ],
+              "title": "Search"
+            },
+            "description": "Keep the rows matching every space-separated word, case-insensitive, against brand, model, partition and memory."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GPU models fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RunnerGpuConfigModel"
+                  },
+                  "title": "Response Get Gpu Models Gpu Models Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnerHTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/runner/healthz": {
       "get": {
         "tags": [
@@ -2172,6 +2242,378 @@
           },
           "400": {
             "description": "Service unhealthy"
+          }
+        }
+      }
+    },
+    "/api/runner/node-pools": {
+      "get": {
+        "tags": [
+          "Runner / Node Pools"
+        ],
+        "summary": "Get node pools",
+        "description": "List the node pools of every site, archived ones excluded. Each filter left out does not filter; bounds are inclusive.",
+        "operationId": "runner_get_node_pools_node_pools_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "gpu_config_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "GPU config ids from GET /gpu-models; a pool matches any of them. Repeat the parameter to give several.",
+              "default": [],
+              "title": "Gpu Config Ids"
+            },
+            "description": "GPU config ids from GET /gpu-models; a pool matches any of them. Repeat the parameter to give several."
+          },
+          {
+            "name": "site_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Repeat the parameter to give several; matches any of them.",
+              "default": [],
+              "title": "Site Ids"
+            },
+            "description": "Repeat the parameter to give several; matches any of them."
+          },
+          {
+            "name": "cpu_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In cores",
+              "title": "Cpu Min"
+            },
+            "description": "In cores"
+          },
+          {
+            "name": "cpu_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In cores",
+              "title": "Cpu Max"
+            },
+            "description": "In cores"
+          },
+          {
+            "name": "memory_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In bytes",
+              "title": "Memory Min"
+            },
+            "description": "In bytes"
+          },
+          {
+            "name": "memory_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "In bytes",
+              "title": "Memory Max"
+            },
+            "description": "In bytes"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Node pools fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RunnerNodePoolModel"
+                  },
+                  "title": "Response Get Node Pools Node Pools Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unknown GPU config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnerErrorModel"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Runner / Node Pools"
+        ],
+        "summary": "Create node pool",
+        "description": "Add a node pool to a site",
+        "operationId": "runner_create_node_pool_node_pools_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunnerCreateRootNodePoolRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Node pool created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnerCreateNodePoolResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Site not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnerErrorModel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unknown GPU config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnerErrorModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runner/node-pools/{node_pool_id}": {
+      "get": {
+        "tags": [
+          "Runner / Node Pools"
+        ],
+        "summary": "Get node pool",
+        "description": "View a node pool",
+        "operationId": "runner_get_node_pool_node_pools__node_pool_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "node_pool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Pool Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Node pool fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnerNodePoolModel"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Node pool not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnerErrorModel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnerHTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Runner / Node Pools"
+        ],
+        "summary": "Update node pool",
+        "description": "Update a node pool",
+        "operationId": "runner_update_node_pool_node_pools__node_pool_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "node_pool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Pool Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunnerUpdateNodePoolRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Node pool updated successfully"
+          },
+          "404": {
+            "description": "Node pool not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnerErrorModel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnerHTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runner/node-pools/{node_pool_id}/archive": {
+      "post": {
+        "tags": [
+          "Runner / Node Pools"
+        ],
+        "summary": "Archive node pool",
+        "description": "Mark a node pool as archived",
+        "operationId": "runner_archive_node_pool_node_pools__node_pool_id__archive_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "node_pool_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Pool Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Node pool archived successfully"
+          },
+          "404": {
+            "description": "Node pool not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnerErrorModel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunnerHTTPValidationError"
+                }
+              }
+            }
           }
         }
       }
@@ -2667,6 +3109,7 @@
         "summary": "Get node pools",
         "description": "View node pools in a site",
         "operationId": "runner_get_node_pools_sites__site_id__node_pools_get",
+        "deprecated": true,
         "security": [
           {
             "HTTPBearer": []
@@ -2717,6 +3160,7 @@
         "summary": "Create node pool",
         "description": "Add node pool to a site",
         "operationId": "runner_create_node_pool_sites__site_id__node_pools_post",
+        "deprecated": true,
         "security": [
           {
             "HTTPBearer": []
@@ -2755,11 +3199,11 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Unknown GPU model or partition",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RunnerHTTPValidationError"
+                  "$ref": "#/components/schemas/RunnerErrorModel"
                 }
               }
             }
@@ -2775,6 +3219,7 @@
         "summary": "Update node pool",
         "description": "Update a node pool in a site",
         "operationId": "runner_update_node_pool_sites__site_id__node_pools__node_pool_id__put",
+        "deprecated": true,
         "security": [
           {
             "HTTPBearer": []
@@ -2835,6 +3280,7 @@
         "summary": "Archive node pool",
         "description": "Mark a node pool as archived",
         "operationId": "runner_archive_node_pool_sites__site_id__node_pools__node_pool_id__archive_post",
+        "deprecated": true,
         "security": [
           {
             "HTTPBearer": []
@@ -8391,11 +8837,11 @@
             "title": "Cpu",
             "description": "Number of cpu for site node pool"
           },
-          "gpu": {
+          "gpu_count": {
             "type": "integer",
             "minimum": 0.0,
-            "title": "Gpu",
-            "description": "Number of gpu for site node pool"
+            "title": "Gpu Count",
+            "description": "Number of GPUs (or MIG slices) on one node of this pool"
           },
           "memory": {
             "type": "integer",
@@ -8456,13 +8902,28 @@
             "examples": [
               "mig-1g.10gb"
             ]
+          },
+          "gpu_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Model",
+            "description": "GPU model, from the catalog at GET /gpu-models. Declaring it is what lets the scheduler know how much memory and compute `gpu_mode` stands for.",
+            "examples": [
+              "A100 40GB"
+            ]
           }
         },
         "type": "object",
         "required": [
           "name",
           "cpu",
-          "gpu",
+          "gpu_count",
           "memory",
           "energy_score",
           "performance_score",
@@ -8470,7 +8931,7 @@
           "filter_no_gpu_action"
         ],
         "title": "CreateNodePoolRequest",
-        "description": "Former ``CreateNodePoolRequest``."
+        "description": "Former ``CreateNodePoolRequest``, for the deprecated nested route."
       },
       "RunnerCreateNodePoolResponse": {
         "properties": {
@@ -8485,6 +8946,110 @@
           "node_pool_id"
         ],
         "title": "CreateNodePoolResponse"
+      },
+      "RunnerCreateRootNodePoolRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Site node pool name",
+            "examples": [
+              "Local"
+            ]
+          },
+          "cpu": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Cpu",
+            "description": "Number of cpu for site node pool"
+          },
+          "gpu_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Gpu Count",
+            "description": "Number of GPUs (or MIG slices) on one node of this pool"
+          },
+          "memory": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Memory",
+            "description": "Size of memory in GB for site node pool"
+          },
+          "energy_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Energy Score",
+            "description": "Score for energy objective"
+          },
+          "performance_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Performance Score",
+            "description": "Score for performance objective"
+          },
+          "cost_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Cost Score",
+            "description": "Score for cost objective"
+          },
+          "maximum_time_in_sec": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maximum Time In Sec",
+            "description": "Maximum execution time allowed on node pool (in seconds)"
+          },
+          "filter_no_gpu_action": {
+            "type": "boolean",
+            "title": "Filter No Gpu Action",
+            "description": "Flag to indicate node pool is dedicated for gpu action"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id",
+            "description": "Site the node pool belongs to"
+          },
+          "gpu_config_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Config Id",
+            "description": "A GPU config `id` from GET /gpu-models, which sets the pool's model and partition. Leave it out for a pool without GPU.",
+            "examples": [
+              "nvidia-a100-40gb-mig-3g.20gb"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "cpu",
+          "gpu_count",
+          "memory",
+          "energy_score",
+          "performance_score",
+          "cost_score",
+          "filter_no_gpu_action",
+          "site_id"
+        ],
+        "title": "CreateRootNodePoolRequest",
+        "description": "For ``POST /node-pools``: the GPU is named by its catalog row alone."
       },
       "RunnerCreateSiteRequest": {
         "properties": {
@@ -8767,6 +9332,128 @@
         "title": "ExecutionResultState",
         "description": "An execution's state at the granularity the API reports it.\n\nCoarser than ``ExecutionState``: the REST layer and ``ActionRun`` speak this\nwhile the lifecycle speaks ``(ExecutionState, ExecutionErrorType)``. It is\nderived, never stored -- see ``Execution.result_state()``. The member\n*values* are the API contract the frontend matches on, so they do not move."
       },
+      "RunnerGpuBrand": {
+        "type": "string",
+        "enum": [
+          "NVIDIA"
+        ],
+        "title": "GpuBrand"
+      },
+      "RunnerGpuConfigModel": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "examples": [
+              "nvidia-a100-80gb-mig-1g.10gb"
+            ]
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "examples": [
+              "A100 80GB"
+            ]
+          },
+          "model_memory_gb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Memory Gb"
+          },
+          "partition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partition",
+            "examples": [
+              "1g.10gb",
+              "full"
+            ]
+          },
+          "memory_gb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Gb"
+          },
+          "compute_slice_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compute Slice Count"
+          },
+          "total_compute_slices": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Compute Slices"
+          },
+          "compute_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compute Fraction"
+          }
+        },
+        "type": "object",
+        "title": "GpuConfigModel",
+        "description": "One way a card can be handed out: a MIG slice, or the whole card.\n\nA flat row, so a registration form can offer every choice in one list.\n``id`` is what ``POST /node-pools`` takes as ``gpu_config_id``."
+      },
       "RunnerHTTPValidationError": {
         "properties": {
           "detail": {
@@ -8813,6 +9500,17 @@
             ],
             "title": "Name"
           },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
           "memory": {
             "anyOf": [
               {
@@ -8824,7 +9522,7 @@
             ],
             "title": "Memory"
           },
-          "gpu": {
+          "gpu_count": {
             "anyOf": [
               {
                 "type": "integer"
@@ -8833,7 +9531,7 @@
                 "type": "null"
               }
             ],
-            "title": "Gpu"
+            "title": "Gpu Count"
           },
           "architecture": {
             "anyOf": [
@@ -8877,6 +9575,17 @@
             ],
             "title": "Gpu Mode"
           },
+          "gpu_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Model"
+          },
           "gpu_num_total": {
             "anyOf": [
               {
@@ -8899,6 +9608,45 @@
             ],
             "title": "Filter No Gpu Action"
           },
+          "gpu_memory_gb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Memory Gb",
+            "description": "GPU memory one allocation on this pool gets, None when unknown.\n\nDerived rather than stored: it is what `gpu_mode` means once resolved\nagainst the catalog, and a caller should not have to do that itself.",
+            "readOnly": true
+          },
+          "gpu_compute_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Compute Fraction",
+            "description": "Share of a card one allocation gets, in 0..1, None when unknown.",
+            "readOnly": true
+          },
+          "gpu_config_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Config Id",
+            "description": "The GET /gpu-models row this pool registered, None if it names none.",
+            "readOnly": true
+          },
           "cpu": {
             "anyOf": [
               {
@@ -8915,6 +9663,9 @@
         },
         "type": "object",
         "required": [
+          "gpu_memory_gb",
+          "gpu_compute_fraction",
+          "gpu_config_id",
           "cpu"
         ],
         "title": "NodePoolModel",
@@ -9304,7 +10055,7 @@
               }
             ],
             "title": "State",
-            "description": "Workflow deployment state: ['None', 'Created', 'Started', 'Running', 'Stopped gracefully', 'Stopped', 'Paused']",
+            "description": "Workflow deployment state: ['None', 'Created', 'Started', 'Running', 'Stopped gracefully', 'Stopped']",
             "examples": [
               "Running"
             ]
@@ -9608,7 +10359,6 @@
           "enum",
           "file",
           "directory",
-          "table",
           "boolean",
           "bytes"
         ],
@@ -9634,7 +10384,8 @@
                 "type": "null"
               }
             ],
-            "title": "Cpu"
+            "title": "Cpu",
+            "description": "CPU cores"
           },
           "memory": {
             "anyOf": [
@@ -9645,7 +10396,8 @@
                 "type": "null"
               }
             ],
-            "title": "Memory"
+            "title": "Memory",
+            "description": "RAM, in bytes"
           },
           "time": {
             "anyOf": [
@@ -9656,7 +10408,8 @@
                 "type": "null"
               }
             ],
-            "title": "Time"
+            "title": "Time",
+            "description": "Time limit, in seconds"
           },
           "gpu": {
             "anyOf": [
@@ -9667,7 +10420,56 @@
                 "type": "null"
               }
             ],
-            "title": "Gpu"
+            "title": "Gpu",
+            "description": "Number of GPUs"
+          },
+          "gpu_brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Brand",
+            "description": "GPU brand each GPU must be, as named by the Runner's GPU catalog"
+          },
+          "gpu_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Model",
+            "description": "GPU model each GPU must be, as named by the Runner's GPU catalog"
+          },
+          "gpu_memory_gb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Memory Gb",
+            "description": "GPU memory needed on each GPU, in GB"
+          },
+          "gpu_compute_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Compute Fraction",
+            "description": "Share of the compute of each GPU needed, in 0..1"
           }
         },
         "type": "object",
