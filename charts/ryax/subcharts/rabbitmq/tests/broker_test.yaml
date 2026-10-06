@@ -51,7 +51,7 @@ tests:
           value: |
             default_user = $(RYAX_BROKER_USER)
             default_pass = $(RYAX_BROKER_PASSWORD)
-            disk_free_limit.absolute = 50MB
+            disk_free_limit.absolute = 250Mi
       - equal:
           path: spec.override.statefulSet.spec.template.spec.containers[0].name
           value: rabbitmq
@@ -78,7 +78,7 @@ tests:
           value: |
             default_user = $(RYAX_BROKER_USER)
             default_pass = $(RYAX_BROKER_PASSWORD)
-            disk_free_limit.absolute = 50MB
+            disk_free_limit.absolute = 250Mi
             log.console.level = debug
             consumer_timeout = 3600000
 
@@ -89,7 +89,7 @@ tests:
     asserts:
       - matchRegex:
           path: spec.rabbitmq.additionalConfig
-          pattern: "(?m)^disk_free_limit\\.absolute = 50MB$"
+          pattern: "(?m)^disk_free_limit\\.absolute = 250Mi$"
       - equal:
           path: spec.persistence.storage
           value: 1Gi

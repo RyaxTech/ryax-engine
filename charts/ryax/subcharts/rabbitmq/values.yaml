@@ -75,7 +75,7 @@ additionalPlugins: []
 # -- Free disk space under which RabbitMQ blocks publishers. The operator's
 # default is 2GB, which a volume of `persistence.size` 1Gi can never have free,
 # so the broker would refuse every message. Keep it well under the volume size.
-diskFreeLimit: 50MB
+diskFreeLimit: 250Mi
 # -- Extra rabbitmq.conf lines, appended after the default user settings.
 additionalConfig: ""
 
