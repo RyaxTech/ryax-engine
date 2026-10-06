@@ -97,6 +97,16 @@ tests:
           path: spec.template.spec.containers[0].args[0]
           pattern: 'MARKER\.tmp'
 
+  # Its finished pod keeps the filestore volume in use: a rollback or an
+  # uninstall cannot delete the volume while the Job is there.
+  - it: does not outlive the upgrade by a day
+    set: *on
+    asserts:
+      - documentIndex: 1
+        equal:
+          path: spec.ttlSecondsAfterFinished
+          value: 3600
+
   # Its pod is not one the filestore Service selects.
   - it: is labelled apart from the filestore
     set: *on

@@ -28,7 +28,10 @@ metadata:
   labels: {{- include "filestore.precopyLabels" . | nindent 4 }}
 spec:
   backoffLimit: 2
-  ttlSecondsAfterFinished: 86400
+  # While the Job exists, its finished pod keeps the volume from being deleted:
+  # a rollback or an uninstall would leave it Terminating. RELEASE.md deletes
+  # the Job once it is done; this is the safety net.
+  ttlSecondsAfterFinished: 3600
   template:
     metadata:
       labels: {{- include "filestore.precopyLabels" . | nindent 8 }}
