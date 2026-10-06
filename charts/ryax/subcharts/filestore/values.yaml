@@ -1,0 +1,141 @@
+global:
+  # -- Global container registry secret names as an array
+  # Example:
+  #   - name: myPullSercret
+  # @section -- Global
+  imagePullSecrets: []
+  # -- Leave empty to use the default storage class
+  # @section -- Global
+  defaultStorageClass: ""
+  # -- Tolerations injected as-is into every Ryax pod
+  # (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+  # Override with this chart's own `tolerations`.
+  # @section -- Global
+  tolerations: []
+  # -- Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # @section -- Global
+  nodeSelector: {}
+  # -- Affinity injected as-is into every Ryax pod. Override with this chart's
+  # own `affinity`.
+  # @section -- Global
+  affinity: {}
+
+# -- Name of the Deployment and of its PVC.
+fullnameOverride: ryax-filestore
+
+# -- versitygw, an S3 gateway that keeps every object as a plain file on the
+# volume, with its metadata in extended attributes. Pinned: never `latest`.
+image:
+  repository: ghcr.io/versity/versitygw
+  tag: v1.8.0
+  pullPolicy: IfNotPresent
+
+# -- Secret holding the S3 credentials, shared with the Ryax services. The
+# gateway's root access key and secret are its `root-user` and `root-password`
+# keys, the ones the MinIO chart used, so no Secret changes. Created by the
+# common-resources subchart unless `global.secrets.create` is false.
+filestoreSecret: ryax-minio-secret
+
+service:
+  # -- Name of the Service. The services, the remote workers' Skupper
+  # connectors and GitOps secrets all reach the filestore as
+  # `ryax-minio.<namespace>:9000` (the `filestore` key of `filestoreSecret`),
+  # so the name stays that of the MinIO it replaces. Must match
+  # `common-resources.filestoreService`.
+  name: ryax-minio
+  port: 9000
+
+# -- S3 region the gateway answers for. The Ryax services use minio-py, which
+# asks for the bucket location and signs with `us-east-1` until told otherwise.
+region: us-east-1
+
+# -- Extra environment variables of the gateway, e.g. VGW_* options. Do not
+# turn VGW_KEEP_ALIVE off: without it every request pays a new TCP connection,
+# and the filestore is slower than MinIO was.
+extraEnv: []
+
+persistence:
+  # -- Size of the volume. Empty: the size of the volume already there, else
+  # that of the MinIO volume being migrated (`migration.legacy.persistence.size`
+  # in a GitOps render), else 20Gi. Set it to grow the volume, if its storage
+  # class allows it.
+  size: ""
+  # -- Storage class of the volume. Defaults to `global.defaultStorageClass`,
+  # then to the cluster default. It must support user extended attributes
+  # (ext4 and xfs do).
+  storageClass: ""
+  # -- Use this PVC instead of creating one. The objects are kept under `s3/`.
+  existingClaim: ""
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 512Mi
+
+priorityClassName: backbone
+# -- Tolerations injected as-is, overriding `global.tolerations` when set
+tolerations: []
+# -- nodeSelector injected as-is, overriding `global.nodeSelector` when set
+nodeSelector: {}
+# -- Affinity injected as-is, overriding `global.affinity` when set
+affinity: {}
+
+# -- The one-off move of the data from the MinIO of Ryax 26.9 and older. See
+# the 26.10.0 upgrade notes in RELEASE.md.
+migration:
+  # -- Copy the objects of the old MinIO volume into this filestore, once. With
+  # `helm install`/`upgrade` the chart only does so when the old volume
+  # (`<release>-minio`) exists, so a fresh install gets nothing extra. A
+  # GitOps render cannot see the cluster and always includes the old MinIO
+  # and its volume: set this to false on a fresh GitOps install.
+  #
+  # Turning it off after the upgrade decommissions the old MinIO. Helm keeps
+  # its volume, which then has to be deleted by hand. The chart refuses to turn
+  # it off before the copy is done, and on a 26.9 install not yet migrated.
+  enabled: true
+  # -- Let `enabled: false` remove the old MinIO although no filestore pod
+  # has finished the copy. Its data is then not in the filestore.
+  allowDecommissionWithoutCopy: false
+  # -- The MinIO image of Ryax 26.9: it serves the old volume during the
+  # migration, and its `mc` client does the copy. Already in 26.9 airgap
+  # bundles.
+  image:
+    repository: docker.io/bitnamilegacy/minio
+    tag: 2025.7.23-debian-12-r3
+    pullPolicy: IfNotPresent
+  # -- The MinIO of Ryax 26.9, `<release>-minio`, and its PVC of the same name.
+  # The chart takes the PVC over as it is, and annotates it so that neither Helm
+  # nor ArgoCD ever deletes it.
+  legacy:
+    # -- Size and storage class of that PVC, for GitOps renders only: Helm
+    # reads them from the cluster. Set them to your former
+    # `minio.persistence.size` and `minio.persistence.storageClass`.
+    persistence:
+      size: 20Gi
+      storageClass: ""
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+      limits:
+        memory: 1000Mi
+  # -- Resources of the copy, which runs in an init container of the filestore
+  # pod and in the pre-copy Job.
+  copyResources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 1000Mi
+  precopy:
+    # -- Render the optional pre-copy Job (and the PVC it fills) instead of
+    # installing anything: only with `helm template --show-only
+    # charts/filestore/templates/precopy.yaml`, while Ryax 26.9 still runs. See
+    # RELEASE.md.
+    enabled: false
+    # -- Address of the MinIO the pre-copy reads from: the 26.9 Service.
+    source: ryax-minio
+    # -- How long the pre-copy waits for that MinIO before giving up.
+    waitSeconds: 300

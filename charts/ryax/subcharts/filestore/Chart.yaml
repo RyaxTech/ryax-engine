@@ -1,0 +1,12 @@
+apiVersion: v2
+name: filestore
+description: Ryax filestore, the S3 store of action inputs and outputs, served by versitygw over a volume
+home: https://ryax.tech
+type: application
+version: "26.9.0"
+appVersion: "26.9.0"
+# A Deployment, a PVC and a Service rather than the upstream versitygw chart:
+# that chart wants its credentials under its own Secret keys and defaults its
+# image to `latest`, while Ryax needs the existing ryax-minio-secret keys, a
+# pinned image, the ryax-minio:9000 address, and the one-off copy from MinIO
+# (templates/migration.yaml), which no upstream chart would carry.

@@ -307,6 +307,7 @@ verify_helm_charts:
       charts/ryax/subcharts/authorization
       charts/ryax/subcharts/common-resources
       charts/ryax/subcharts/datastore
+      charts/ryax/subcharts/filestore
       charts/ryax/subcharts/front
       charts/ryax/subcharts/intelliscale
       charts/ryax/subcharts/rabbitmq

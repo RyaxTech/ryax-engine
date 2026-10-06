@@ -32,9 +32,9 @@ dependencies:
 - name: rabbitmq
   repository: file://subcharts/rabbitmq
   version: 26.9.0
-- name: minio
-  repository: oci://registry-1.docker.io/bitnamicharts
-  version: 17.0.21
+- name: filestore
+  repository: file://subcharts/filestore
+  version: 26.9.0
 - name: traefik
   repository: https://helm.traefik.io/traefik
   version: 41.6.1
@@ -50,5 +50,5 @@ dependencies:
 - name: alloy
   repository: https://grafana.github.io/helm-charts
   version: 1.13.0
-digest: sha256:acc0ec283e5cfdb4806c5be23f3aa6f1cd2f9624e49fb51896e096c54773c28d
-generated: "2026-10-05T09:32:33.680956839+02:00"
+digest: sha256:d0796f50ee83e3a293240167d0382b3c9301f1ac5f081d5e40b31330c43a9ccd
+generated: "2026-10-05T19:15:58.567708039+02:00"

@@ -45,10 +45,6 @@ global:
     # "local.ryax.io"; leave both empty for a local install.
     hostname: ""
     
-  # -- Needed by bitnami to avoid https://github.com/bitnami/charts/issues/30850
-  security:
-    allowInsecureImages: true
-
   # Be aware that the folowing values are shared amoung the services,
   # but they are defined as static values to avoid unnecessary configuration overhead:
   #
@@ -153,50 +149,20 @@ studio:
 repository:
   priorityClass: microservices
 
-minio:
-  image:
-    repository: bitnamilegacy/minio
-  console:
-    # -- enable this to add internal Web console to browse Minio content
-    enabled: false
-    image:
-      repository: bitnamilegacy/minio-object-browser
-  auth:
-    existingSecret: ryax-minio-secret
-  commonLabels:
-    ryax.tech/resource-name: minio
-  containerSecurityContext:
-    runAsUser: 1200
-  metrics:
-    enabled: true
-  mode: standalone
-  # -- Replace the pod rather than rolling it, because the data volume is
-  # ReadWriteOnce: a rolling update starts the new pod before retiring the old
-  # one, the new one then waits forever for a volume the old one still holds,
-  # and the rollout never converges -- `helm upgrade --wait` blocks until it
-  # times out and marks the release failed. Deleting the stuck pod does not
-  # help either; the old ReplicaSet simply recreates it. There is no
-  # availability to lose: this is a single replica on a single volume.
-  updateStrategy:
-    type: Recreate
+# -- The filestore: the S3 store of the action inputs and outputs, served by
+# versitygw over a volume, at `ryax-minio:9000` with the credentials of
+# `ryax-minio-secret`. The filestore subchart's README lists every option,
+# including the migration from the MinIO of Ryax 26.9.
+filestore:
   persistence:
+    # -- Size of the volume. Empty: that of the volume already there, else that
+    # of the MinIO volume it is migrated from, else 20Gi.
+    size: ""
+  migration:
+    # -- Copy the objects of the MinIO of Ryax 26.9 at the upgrade, and keep
+    # that MinIO until this is turned off. Set it to false on a fresh GitOps
+    # install. See the 26.10.0 upgrade notes.
     enabled: true
-    size: 20Gi
-  podSecurityContext:
-    fsGroup: 1200
-  priorityClassName: backbone
-  resources:
-    limits:
-      memory: 1000Mi
-    requests:
-      cpu: 100m
-      memory: 1000Mi
-  serviceAccount:
-    create: false
-  defaultInitContainers:
-    # -- If you move data to NFS, enable this to force the permission of minio to match the one from ryax user (UID: 1200)
-    volumePermissions:
-      enabled: false
 
 # -- The message broker: a RabbitmqCluster named `ryax-broker`, run by the
 # RabbitMQ Cluster Operator. Both come from the rabbitmq subchart, whose README
@@ -354,9 +320,10 @@ kube-prometheus-stack:
     ingress:
       enabled: false
           
-    # -- Replace the pod rather than rolling it; the dashboard volume below is
-    # ReadWriteOnce and a rolling update deadlocks on it. See the same setting
-    # on `minio` for the full reasoning.
+    # -- Replace the pod rather than rolling it: the dashboard volume below is
+    # ReadWriteOnce, so a rolling update starts the new pod before retiring the
+    # old one, the new one waits forever for the volume the old one holds, and
+    # `helm upgrade --wait` times out.
     deploymentStrategy:
       type: Recreate
 

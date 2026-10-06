@@ -18,6 +18,7 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | file://subcharts/authorization | authorization | 26.9.0 |
 | file://subcharts/common-resources | common-resources | 26.9.0 |
 | file://subcharts/datastore | datastore | 26.9.0 |
+| file://subcharts/filestore | filestore | 26.9.0 |
 | file://subcharts/front | front | 26.9.0 |
 | file://subcharts/intelliscale | intelliscale | 26.9.0 |
 | file://subcharts/rabbitmq | rabbitmq | 26.9.0 |
@@ -30,7 +31,6 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | https://grafana.github.io/helm-charts | tempo | 1.x.x |
 | https://helm.traefik.io/traefik | traefik | 41.x.x |
 | https://prometheus-community.github.io/helm-charts | kube-prometheus-stack | 89.x.x |
-| oci://registry-1.docker.io/bitnamicharts | minio | 17.x.x |
 
 ## Values
 
@@ -59,6 +59,9 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | authorization.adminSecret | string | `"ryax-admin-credentials"` | Name of the secret holding the initial admin credentials. Repeated from the subchart's own default because a parent chart does not see its subcharts' defaults, and NOTES.txt has to name this secret. |
 | datastore.priorityClass | string | `"backbone"` |  |
 | datastore.pvcSize | string | `"2Gi"` |  |
+| filestore | object | `{"migration":{"enabled":true},"persistence":{"size":""}}` | The filestore: the S3 store of the action inputs and outputs, served by versitygw over a volume, at `ryax-minio:9000` with the credentials of `ryax-minio-secret`. The filestore subchart's README lists every option, including the migration from the MinIO of Ryax 26.9. |
+| filestore.migration.enabled | bool | `true` | Copy the objects of the MinIO of Ryax 26.9 at the upgrade, and keep that MinIO until this is turned off. Set it to false on a fresh GitOps install. See the 26.10.0 upgrade notes. |
+| filestore.persistence.size | string | `""` | Size of the volume. Empty: that of the volume already there, else that of the MinIO volume it is migrated from, else 20Gi. |
 | front.enabled | bool | `true` |  |
 | global.defaultStorageClass | string | `""` | Leave empty to use the default storage class |
 | global.imagePullSecrets | list | `[]` |  |
@@ -71,7 +74,6 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | global.ryax | object | `{"logLevel":"warning","userNamespace":"ryaxns-execs"}` | Ryax specific configuration |
 | global.ryax.logLevel | string | `"warning"` | Global log level, can be overriden locally |
 | global.ryax.userNamespace | string | `"ryaxns-execs"` | Namespace where user's actions are deployed |
-| global.security | object | `{"allowInsecureImages":true}` | Needed by bitnami to avoid https://github.com/bitnami/charts/issues/30850 |
 | global.tls.enabled | bool | `false` |  |
 | global.tls.environment | string | `nil` | development or production |
 | global.tls.hostname | string | `""` | The name Ryax is published under: the TLS certificate when global.ingress.hosts is empty, and `registry.<hostname>` for the registry. Defaults to the first of global.ingress.hosts; when both are set it must be one of them. Setting it does not restrict the hosts the Ingresses match: that is global.ingress.hosts. Must be a valid FQDN like "local.ryax.io"; leave both empty for a local install. |
@@ -80,7 +82,7 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | kube-prometheus-stack | object | `{"additionalPrometheusRulesMap":{"meta-monitoring":{"groups":[{"name":"meta-monitoring","rules":[{"alert":"InstanceDown","annotations":{"dashboards":"{{ .Values.dashboardUrl }}/HKcS6KdGk","description":"{{ `'{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute.'` }}\n","summary":"{{ `'Instance {{ $labels.instance }} down'` }}\n"},"expr":"up == 0","for":"5m","labels":{"severity":"critical"}}]}]},"resource-usage":{"groups":[{"name":"resource-usage","rules":[{"alert":"RyaxContainerCpuUsage","annotations":{"dashboards":"{{ .Values.dashboardUrl }}/6581e46e4e5c7ba40a07646395ef7b23","description":"{{ `\"Container CPU usage is above 95% for 15 minutes\\n  VALUE = {{ $value }}\\n  LABELS: {{ $labels }}\"` }}\n","summary":"{{ `\"Container CPU usage (instance {{ $labels.instance }})\"` }}\n"},"expr":"(sum(rate(container_cpu_usage_seconds_total{container=~\"ryax-.*\"}[15m])) BY (instance, name) * 100) > 95","for":"5m","labels":{"severity":"warning"}},{"alert":"RyaxContainerVolumeUsage","annotations":{"description":"{{ `\"Container Volume usage is above 80%\\n  VALUE = {{ $value }}\\n  LABELS: {{ $labels }}\"` }}\n","summary":"{{ `\"Container Volume usage (instance {{ $labels.instance }})\"` }}\n"},"expr":"(1 - (sum(container_fs_inodes_free{container=~\"ryax-.*\"}) BY (instance) / sum(container_fs_inodes_total{container=~\"ryax-.*\"}) BY (instance)) * 100) > 80","for":"5m","labels":{"severity":"warning"}},{"alert":"RyaxContainerVolumeIoUsage","annotations":{"description":"{{ `\"Container Volume IO usage is above 80%\\n  VALUE = {{ $value }}\\n  LABELS: {{ $labels }}\"` }}\n","summary":"{{ `\"Container Volume IO usage (instance {{ $labels.instance }})\"` }}\n"},"expr":"(sum(container_fs_io_current{container=~\"ryax-.*\"}) BY (instance, name) * 100) > 80","for":"5m","labels":{"severity":"warning"}}]}]}},"alertmanager":{"enabled":false},"crds":{"enabled":true,"upgradeJob":{"enabled":true,"forceConflicts":true}},"enabled":true,"grafana":{"admin":{"existingSecret":"grafana-credentials","passwordKey":"admin-password","userKey":"admin-user"},"deploymentStrategy":{"type":"Recreate"},"enabled":true,"grafana.ini":{"auth.anonymous":{"enabled":false},"users":{"allow_org_create":false,"allow_sign_up":false}},"ingress":{"enabled":false},"persistence":{"enabled":true,"size":"1Gi"},"plugins":["grafana-piechart-panel","grafana-clock-panel","vonage-status-panel"],"sidecar":{"dashboards":{"enabled":true,"label":"grafana_dashboard"},"datasources":{"enabled":true,"label":"grafana_datasource"}}},"kubeProxy":{"service":{"selector":{"component":"kube-proxy"}}},"prometheus":{"prometheusSpec":{"additionalScrapeConfigs":[{"job_name":"kubernetes-gpu-pod","kubernetes_sd_configs":[{"role":"pod"}],"relabel_configs":[{"action":"keep","regex":"nvidia-dcgm-exporter","source_labels":["__meta_kubernetes_pod_label_app"]},{"action":"keep","regex":"kube-system","source_labels":["__meta_kubernetes_namespace"]},{"action":"keep","regex":"9400","source_labels":["__meta_kubernetes_pod_container_port_number"]},{"action":"replace","separator":":","source_labels":["__meta_kubernetes_pod_ip","__meta_kubernetes_pod_container_port_number"],"target_label":"__address__"}],"scrape_interval":"5s"}],"externalLabels":{"cluster":"{{ default (first (default (list \"\") .Values.global.ingress.hosts)) .Values.global.tls.hostname }}","ryax-version":"{{ .Chart.Version }}"},"priorityClassName":"monitoring","serviceMonitorSelectorNilUsesHelmValues":false,"storageSpec":{"volumeClaimTemplate":{"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"10Gi"}}}}}}},"prometheusOperator":{"priorityClassName":"monitoring"}}` | Configuration for kube-prometheus-chart |
 | kube-prometheus-stack.grafana | object | `{"admin":{"existingSecret":"grafana-credentials","passwordKey":"admin-password","userKey":"admin-user"},"deploymentStrategy":{"type":"Recreate"},"enabled":true,"grafana.ini":{"auth.anonymous":{"enabled":false},"users":{"allow_org_create":false,"allow_sign_up":false}},"ingress":{"enabled":false},"persistence":{"enabled":true,"size":"1Gi"},"plugins":["grafana-piechart-panel","grafana-clock-panel","vonage-status-panel"],"sidecar":{"dashboards":{"enabled":true,"label":"grafana_dashboard"},"datasources":{"enabled":true,"label":"grafana_datasource"}}}` | Configuration for grafana component |
 | kube-prometheus-stack.grafana.admin.existingSecret | string | `"grafana-credentials"` | This secret is created by common-resources |
-| kube-prometheus-stack.grafana.deploymentStrategy | object | `{"type":"Recreate"}` | Replace the pod rather than rolling it; the dashboard volume below is ReadWriteOnce and a rolling update deadlocks on it. See the same setting on `minio` for the full reasoning. |
+| kube-prometheus-stack.grafana.deploymentStrategy | object | `{"type":"Recreate"}` | Replace the pod rather than rolling it: the dashboard volume below is ReadWriteOnce, so a rolling update starts the new pod before retiring the old one, the new one waits forever for the volume the old one holds, and `helm upgrade --wait` times out. |
 | kube-prometheus-stack.kubeProxy.service.selector.component | string | `"kube-proxy"` | Needed on AKS to properly select the pod and avoid KubeProxyDown alerts |
 | kube-prometheus-stack.prometheus.prometheusSpec.externalLabels | object | `{"cluster":"{{ default (first (default (list \"\") .Values.global.ingress.hosts)) .Values.global.tls.hostname }}","ryax-version":"{{ .Chart.Version }}"}` | inject more labels here like hostedOn: mycloud.com instanceType: production |
 | kube-prometheus-stack.prometheus.prometheusSpec.storageSpec | object | `{"volumeClaimTemplate":{"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"10Gi"}}}}}` | Persistent volume for the metrics. The key is `storageSpec` under `prometheusSpec`: kube-prometheus-stack reads nothing else, and Helm does not complain about a value it does not recognise, so a misplaced block leaves Prometheus on an emptyDir and every restart drops the metrics. |
@@ -93,24 +95,6 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 | loki.loki.query_scheduler | object | `{"max_outstanding_requests_per_tenant":2048}` | Adding this to avoid "too many outstanding requests" errors on the API See https://github.com/grafana/loki/issues/4613 |
 | loki.loki.schemaConfig.configs[0].object_store | string | `"filesystem"` | storing on filesystem, so there's no real persistence here. if you want to persist logs on S3 change this config. See https://grafana.com/docs/loki/latest/operations/storage/ |
 | loki.singleBinary.resources | object | `{"limits":{"cpu":1,"memory":"512Mi"},"requests":{"cpu":0.5,"memory":"512Mi"}}` | Avoid Loki using too many resources: Increase this if you experience OOM errors |
-| minio.auth.existingSecret | string | `"ryax-minio-secret"` |  |
-| minio.commonLabels."ryax.tech/resource-name" | string | `"minio"` |  |
-| minio.console.enabled | bool | `false` | enable this to add internal Web console to browse Minio content |
-| minio.console.image.repository | string | `"bitnamilegacy/minio-object-browser"` |  |
-| minio.containerSecurityContext.runAsUser | int | `1200` |  |
-| minio.defaultInitContainers.volumePermissions | object | `{"enabled":false}` | If you move data to NFS, enable this to force the permission of minio to match the one from ryax user (UID: 1200) |
-| minio.image.repository | string | `"bitnamilegacy/minio"` |  |
-| minio.metrics.enabled | bool | `true` |  |
-| minio.mode | string | `"standalone"` |  |
-| minio.persistence.enabled | bool | `true` |  |
-| minio.persistence.size | string | `"20Gi"` |  |
-| minio.podSecurityContext.fsGroup | int | `1200` |  |
-| minio.priorityClassName | string | `"backbone"` |  |
-| minio.resources.limits.memory | string | `"1000Mi"` |  |
-| minio.resources.requests.cpu | string | `"100m"` |  |
-| minio.resources.requests.memory | string | `"1000Mi"` |  |
-| minio.serviceAccount.create | bool | `false` |  |
-| minio.updateStrategy | object | `{"type":"Recreate"}` | Replace the pod rather than rolling it, because the data volume is ReadWriteOnce: a rolling update starts the new pod before retiring the old one, the new one then waits forever for a volume the old one still holds, and the rollout never converges -- `helm upgrade --wait` blocks until it times out and marks the release failed. Deleting the stuck pod does not help either; the old ReplicaSet simply recreates it. There is no availability to lose: this is a single replica on a single volume. |
 | rabbitmq | object | `{"operator":{"enabled":true},"persistence":{"enabled":true,"size":"1Gi"},"priorityClassName":"backbone"}` | The message broker: a RabbitmqCluster named `ryax-broker`, run by the RabbitMQ Cluster Operator. Both come from the rabbitmq subchart, whose README lists every option. The broker credentials are those of `ryax-broker-secret`. |
 | rabbitmq.operator.enabled | bool | `true` | Deploy the operator in the release namespace. Turn it off when the cluster already runs one that watches this namespace. |
 | registry.credentials.enabled | bool | `true` |  |

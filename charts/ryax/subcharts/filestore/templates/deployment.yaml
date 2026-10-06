@@ -1,0 +1,108 @@
+{{- $migrating := include "filestore.migrating" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "filestore.fullname" . }}
+  labels: {{- include "filestore.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  # The volume is ReadWriteOnce: a rolling update would start the new pod
+  # before stopping the old one, and wait forever for the volume it holds.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {{- include "filestore.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "filestore.labels" . | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      priorityClassName: {{ .Values.priorityClassName }}
+      securityContext: {{- include "filestore.podSecurityContext" . | nindent 8 }}
+      {{- include "filestore.placement" . | nindent 6 }}
+      initContainers:
+        {{- if $migrating }}
+        # Until it has copied MinIO's objects, the filestore is not Ready, and
+        # the services, which reach it through the Service, wait for it.
+        - name: migrate-from-minio
+          image: {{ include "filestore.migrationImage" . }}
+          imagePullPolicy: {{ .Values.migration.image.pullPolicy }}
+          command: [/bin/sh, -c]
+          args:
+            - |
+              {{- include "filestore.copyScript" (dict "mode" "final") | nindent 14 }}
+          env: {{- include "filestore.copyEnv" (dict "root" . "source" (printf "%s-legacy" (include "filestore.legacyName" .)) "waitSeconds" 0) | nindent 12 }}
+          resources: {{- toYaml .Values.migration.copyResources | nindent 12 }}
+          securityContext: {{- include "filestore.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+            - {name: tmp, mountPath: /tmp}
+        {{- end }}
+        # The gateway serves s3/, not the volume root, where lost+found and
+        # the migration marker would show up as buckets.
+        - name: prepare
+          image: {{ include "filestore.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [/bin/sh, -c, mkdir -p /data/s3]
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          securityContext: {{- include "filestore.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+      containers:
+        - name: versitygw
+          image: {{ include "filestore.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: VGW_BACKEND
+              value: posix
+            - name: VGW_BACKEND_ARG
+              value: /data/s3
+            - name: VGW_PORT
+              value: ":9000"
+            - name: VGW_REGION
+              value: {{ .Values.region | quote }}
+            # Without keep-alive versitygw closes the connection after every
+            # response, and each HEAD, GET and DELETE pays a new connection:
+            # about 2x MinIO's latency on dev1. With it, versitygw is faster
+            # than MinIO. See roadmap#1471.
+            - name: VGW_KEEP_ALIVE
+              value: "true"
+            # No log line per request.
+            - name: VGW_QUIET
+              value: "true"
+            - name: VGW_HEALTH
+              value: /health
+            - name: ROOT_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: root-user
+            - name: ROOT_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.filestoreSecret }}
+                  key: root-password
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: s3
+              containerPort: 9000
+          readinessProbe:
+            httpGet: {path: /health, port: s3}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /health, port: s3}
+            periodSeconds: 10
+            failureThreshold: 6
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          securityContext: {{- include "filestore.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "filestore.claimName" . }}
+        - name: tmp
+          emptyDir: {}
