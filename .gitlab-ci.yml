@@ -1,6 +1,6 @@
 variables:
-  CHARTS: "charts/ryax charts/worker-k8s charts/worker-ssh-slurm"
-  FILES_TO_PREPROCESS: "charts/ryax/Chart.yaml charts/worker-k8s/Chart.yaml charts/worker-ssh-slurm/Chart.yaml"
+  CHARTS: "charts/ryax charts/worker-k8s charts/worker-ssh-slurm charts/worker-coelivia"
+  FILES_TO_PREPROCESS: "charts/ryax/Chart.yaml charts/worker-k8s/Chart.yaml charts/worker-ssh-slurm/Chart.yaml charts/worker-coelivia/Chart.yaml"
 
 include:
   - project: ryax-tech/ryax/ci_common
@@ -292,6 +292,7 @@ check_chart_gitops:
     # otherwise never rendered anywhere in CI, and a typo in its templates ships.
     - nix shell nixpkgs#kubernetes-helm --command env CHART=charts/worker-k8s CHART_ARGS="--set gpuReadiness.enabled=true" ./charts/gitops-checks.sh
     - nix shell nixpkgs#kubernetes-helm --command env CHART=charts/worker-ssh-slurm ./charts/gitops-checks.sh
+    - nix shell nixpkgs#kubernetes-helm --command env CHART=charts/worker-coelivia ./charts/gitops-checks.sh
   rules:
     - if: $CI_COMMIT_TAG
       when: never
@@ -317,6 +318,7 @@ verify_helm_charts:
       charts/ryax/subcharts/studio
       charts/worker-k8s
       charts/worker-ssh-slurm
+      charts/worker-coelivia
 
 package_helm_charts:
   extends: .package_helm_charts

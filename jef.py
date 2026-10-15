@@ -325,6 +325,7 @@ def command_update_charts_version(args):
             "charts/ryax/subcharts/intelliscale/values.yaml",
             "charts/worker-k8s/values.yaml",
             "charts/worker-ssh-slurm/values.yaml",
+            "charts/worker-coelivia/values.yaml",
         ]
 
         for file_path in files_to_update:
@@ -359,6 +360,7 @@ def command_update_charts_version(args):
             "charts/ryax/Chart.yaml",
             "charts/worker-k8s/Chart.yaml",
             "charts/worker-ssh-slurm/Chart.yaml",
+            "charts/worker-coelivia/Chart.yaml",
         ]:
             if os.path.exists(parent_chart_path):
                 with open(parent_chart_path, "r") as f:
@@ -390,6 +392,7 @@ def command_update_charts_version(args):
             "charts/ryax",
             "charts/worker-k8s",
             "charts/worker-ssh-slurm",
+            "charts/worker-coelivia",
         ]:
             if os.path.exists(parent_dir):
                 print(f"Updating Chart.lock for {parent_dir}...")

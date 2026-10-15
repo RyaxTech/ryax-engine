@@ -1,0 +1,21 @@
+apiVersion: v2
+name: ryax-worker-coelivia
+description: Ryax Worker that manages execution of Actions on an HPC cluster through the Coelivia API.
+home: https://ryax.tech
+keywords:
+  - Ryax
+  - Execution
+  - HPC
+  - SLURM
+  - Coelivia
+sources:
+  - https://gitlab.com/ryax-tech/ryax/ryax-runner
+icon: https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd2-460a-b263-2e4c79b69196.png
+version: "26.9.0"
+appVersion: "26.9.0"
+dependencies:
+- name: postgresql
+  version: ~16.7.27
+  repository: "oci://registry-1.docker.io/bitnamicharts"
+  condition: postgresql.enabled
+

@@ -1,0 +1,193 @@
+global:
+  # -- Add nodeSelector injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+  # @section -- Global
+  nodeSelector: {}
+  # -- Global container image registry
+  # @section -- Global
+  imageRegistry:
+  # -- Global container registry secret names as an array
+  # Example:
+  #   - name: myPullSercret
+  # @section -- Global
+  imagePullSecrets: []
+  # --	Global default StorageClass for Persistent Volume(s)
+  # @section -- Global
+  defaultStorageClass:
+
+  monitoring:
+    # -- Enables service monitoring
+    # @section -- Global
+    enabled: false
+    # -- Traces collector (Tempo) endpoint Trace collection (disabled if empty)
+    # @section -- Global
+    otlpEndpoint: ""
+
+  ryax:
+    logLevel:
+    userNamespace: ryaxns-execs
+  # -- Credential secrets the chart generates itself (database, broker, JWT,
+  # encryption keys, registry htpasswd and TLS). Set to false to supply every one
+  # of them yourself -- sealed-secrets, external-secrets, or a plain kubectl
+  # create -- under the names listed in the values below. This is what a GitOps
+  # deployment wants: the generated values come from `lookup()`, which returns
+  # nothing when the chart is rendered without a cluster connection (`helm
+  # template`, ArgoCD's and Flux's repo servers), so every render would otherwise
+  # mint fresh passwords and roll them out to running pods.
+  # @section -- Global
+  secrets:
+    create: true
+  # -- Tolerations injected as-is into every Ryax pod
+  # (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+  # Required to run Ryax on tainted nodes; override per subchart with its own
+  # `tolerations`.
+  # Example:
+  #   - key: mycompany/mesh
+  #     operator: Exists
+  #     effect: NoSchedule
+  # @section -- Global
+  tolerations: []
+  # -- Affinity injected as-is into every Ryax pod. Override per subchart with its
+  # own `affinity`.
+  # @section -- Global
+  affinity: {}
+
+# -- Name of the secret that contains credentials to access the registry hosting Ryax actions.
+# Leave empty to use public access registry
+# Secret must be of type: kubernetes.io/dockerconfigjson
+actionRegistrySecret: ryax-registry-creds-secret
+
+# -- Ryax Worker configuration use for the registration. See documentation for more details:
+# https://docs.ryax.tech/reference/configuration.html#worker-coelivia-configuration
+# `credentials.api_url` is required. `token`, `biscuit` and `system` are
+# optional: an execution usually authenticates with the Biscuit passed in its
+# `hpc` addon parameters, and without `system` the first system the API returns
+# is used.
+# Example:
+# site:
+#   id: Site-iahoindsoia-ae
+#   spec:
+#     credentials:
+#       api_url: https://coelivia.example.com/api
+#     partitions:
+#     - name: debug
+#       id: NodePool-10I31U3421-azea
+# @section -- Ryax
+config:
+  site:
+    spec:
+      partitions:
+        
+      credentials: 
+
+# -- container image name and version.
+# The Coelivia worker image is only published to the development registry for
+# now; switch to docker.io/ryaxtech once ryax-core releases it to Docker Hub.
+image:
+  tag: "26.9.0"
+  registry: registry.ryax.org/dev
+  repository: worker-coelivia
+  digest: ""
+  ## Specify a imagePullPolicy
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#pre-pulled-images
+  ##
+  pullPolicy: IfNotPresent
+
+# -- log level of the service (override global.ryax.logLevel)
+logLevel:
+  
+# -- Add priority class
+priorityClass:
+
+apiPort: 8085
+metricsPort: 8094
+
+brokerSecret: ryax-broker-secret
+
+filestoreSecret: ryax-minio-secret
+filestoreName: ryax-filestore
+
+# -- Registry host to pull action images from on this site, replacing the host
+# the Runner recorded in the image reference. Only needed when that host is not
+# reachable from the worker: set it to the in-cluster registry Service,
+# `ryax-registry:5000`.
+# Leave empty to pull from the address the Runner provides.
+internalRegistryOverride: ""
+
+# -- Set as true to enable hpc offloading,
+# will run worker-coelivia container as root so singularity build works without --fakeroot
+# Disable it to avoid running as root inside the container
+# @section -- Important Settings
+hpcOffloading: true
+
+# -- Ed25519 public key (hex) of the Coelivia token-proxy. The worker uses it to
+# verify the Biscuit of an execution and read its user, which gives the job HOME
+# (`/home/{user}`). Leave empty to skip the verification.
+biscuitPublicKey: ""
+
+# -- Recommended resources request
+# This is needed because the Worker build the action using Singularity which requires some memory.
+# @section -- Resource Settings
+# Example:
+#   requests:
+#     memory: "4Gi"
+#     cpu: "1000m"
+#   limits:
+#     memory: "4Gi"
+resources: {}
+
+
+# -- Add extra environment variables
+extraEnv: []
+
+# -- Add affinity injected as-is (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity)
+# Example:
+#   nodeAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       nodeSelectorTerms:
+#       - matchExpressions:
+#         - key: topology.kubernetes.io/zone
+#           operator: In
+#           values:
+#           - antarctica-east1
+#           - antarctica-west1
+# -- Tolerations injected as-is, overriding `global.tolerations` when set
+# (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+tolerations: []
+# -- nodeSelector injected as-is, overriding `global.nodeSelector` when set
+# (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector)
+nodeSelector: {}
+affinity: {}
+
+# -- To override the default posgresql URL. Database URL in a SQLAlchemy compatible format.
+databaseURL:
+
+
+postgresql:
+  # -- Enables PostgreSQL local database instead of remote or local sqlite
+  enabled: true
+  # -- The bundled PostgreSQL is an upstream Bitnami subchart: it does not read
+  # `global.tolerations`, so a tainted node needs its placement set here, e.g.
+  #   primary:
+  #     tolerations: [...]
+  #     nodeSelector: {...}
+  auth:
+    # -- Create the database credentials secret named by `existingSecret` below.
+    # Set to false to provide it yourself; it must then carry the keys `password`,
+    # `postgres-password` and `datastore-worker-coelivia`.
+    createSecret: true
+    existingSecret: '{{ include "worker-coelivia.postgresql.secret" . }}'
+    database: worker-coelivia
+    username: worker-coelivia
+  image:
+    repository: bitnamilegacy/postgresql
+  metrics:
+    image:
+        repository: bitnamilegacy/postgres-exporter
+  primary:
+    persistence:
+      size: 1Gi
+ 
+monitoring:
+  # -- Enable service monitor for prometheus using ServiceMonitor CRD
+  serviceMonitor:
+    enabled: false

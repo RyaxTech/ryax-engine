@@ -37,10 +37,11 @@ Helm Chart configuration can be found in the [Ryax IntelliScale Helm chart docum
 
 ## Workers configuration
 
-Ryax workers register a *Site* with Ryax. There are two site types, each handled by its own dedicated Worker Helm chart:
+Ryax workers register a *Site* with Ryax. There are three site types, each handled by its own dedicated Worker Helm chart:
 
 - `KUBERNETES` sites are handled by the `ryax-worker-k8s` chart (documented below).
 - `SLURM_SSH` sites are handled by the `ryax-worker-slurm-ssh` chart (see [Worker SSH SLURM configuration](#worker-ssh-slurm-configuration)).
+- `COELIVIA_API` sites are handled by the `ryax-worker-coelivia` chart (see [Worker Coelivia configuration](#worker-coelivia-configuration)).
 
 The site type is determined by the Worker chart you install, so it is not part of the configuration.
 
@@ -50,6 +51,7 @@ The Worker Helm chart configuration values, depending on the Worker type, can be
 
 - Kubernetes Worker: [`ryax-worker-k8s` chart](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/master/charts/worker-k8s/README.md?ref_type=heads)
 - Slurm over SSH Worker: [`ryax-worker-slurm-ssh` chart](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/master/charts/worker-ssh-slurm/README.md?ref_type=heads)
+- Coelivia Worker: [`ryax-worker-coelivia` chart](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/master/charts/worker-coelivia/README.md?ref_type=heads)
 
 
 ## Worker Kubernetes configuration
@@ -90,3 +92,24 @@ config:
           name: large
 ```
 
+## Worker Coelivia configuration
+
+Configuration for a `COELIVIA_API` site type, which reaches the Slurm cluster through the Coelivia API instead of SSH (partitions use the same fields as the Kubernetes node pools above):
+```yaml
+config:
+  site:
+    id: Site-183948493-aiijd
+    spec:
+      credentials:  # Default access to the Coelivia API
+        api_url: https://coelivia.example.com/api
+        token: my-token  # (Optional) static Bearer token
+        biscuit: my-biscuit  # (Optional) default Biscuit, usually given per execution
+        system: my-system  # (Optional) Coelivia system to target, defaults to the first one the API returns
+      cache_dir: .ryax_cache  # (Optional) Used to store Singularity images and action IO, relative to the user's home. Defaults to ~/.ryax_cache
+      partitions:  # list of partition to be used by Ryax to deploy Actions
+        - id: NodePool-128394739-gadhj
+          name: default # The name of the partition in Slurm
+```
+
+An execution can override these credentials with its `hpc` addon parameters (`coelivia_host`, `coelivia_token`, `coelivia_system` and `biscuit`).
+Set the chart value `biscuitPublicKey` to the token-proxy's Ed25519 public key so the worker can verify the Biscuit and read the user that runs the job.
