@@ -76,8 +76,8 @@ config:
   site:
     spec:
       partitions:
-        
-      credentials: 
+      credentials:
+        api_url:
 
 # -- container image name and version.
 # The Coelivia worker image is only published to the development registry for

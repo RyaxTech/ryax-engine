@@ -94,7 +94,7 @@ config:
 
 ## Worker Coelivia configuration
 
-Configuration for a `COELIVIA_API` site type, which reaches the Slurm cluster through the Coelivia API instead of SSH (partitions use the same fields as the Kubernetes node pools above):
+Configuration for a `COELIVIA_API` site type, which reaches HPC Cluster (currently support Slurm, PBS, or FLUX) through the Coelivia API instead of SSH (partitions use the same fields as the Kubernetes node pools above):
 ```yaml
 config:
   site:
