@@ -1,0 +1,87 @@
+# Ryax Behind a Proxy
+
+Behind a proxy we need to configure variables so essential services access the internet to download dependencies.
+We must also completely turn off the feature of having an internet exposed registry. This will make a `NodePort`
+kubernetes resource to expose the internal registry. With the internal registry exposed through localhost 
+enables to deploy actions within the same kubernetes cluster and will require the worker to be installed inside 
+the same kubernetes cluster. Multi-site behind proxy, although feasible, it is out of the scope of this tutorial.
+
+First retrieve the values of your ryax helm release, assuming your release name is
+`ryax` installed on namespace `ryaxns` the command below should do it.
+
+```shell
+helm get values -n ryaxns ryax --output yaml > ryax-current-values.yaml
+```
+
+To be careful we will copy that file to another one so we can safely edit it to add the proxy support.
+
+```shell
+cp ryax-current-values.yaml ryax-proxy-values.yaml
+```
+
+Now we can edit the `ryax-proxy-values.yaml`. First, when behind a proxy, we need to disable tls and
+certificates this avoids deploying an internet exposed 
+registry, creating all necessary changes to pull your actions from localhost.
+
+```yaml
+certManager:
+  enabled: false
+...
+global:
+  tls:
+    enabled: false
+...
+registry:
+  ingress:
+    enabled: false
+...
+```
+
+Secondly, we need to add `extraEnvVars` to `grafana` and `extraEnv` to `action-builder` so it enables these
+services to access  the internet and download necessary dependencies. Adapt `PROXY_IP:PROXY_PORT` to your 
+proxy server. Note that `NO_PROXY` should contain the subnets that not require a proxy in your local network.
+
+```yaml
+kube-prometheus-stack:
+  grafana:
+    extraEnvVars:
+    - name: HTTP_PROXY
+      value: http://PROXY_IP:PROXY_PORT
+    - name: HTTPS_PROXY
+      value: http://PROXY_IP:PROXY_PORT
+    - name: NO_PROXY
+      value: localhost,.ryaxns,.ryaxns-execs,127.0.0.1,::1,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local
+action-builder:
+  extraEnv:
+  - name: HTTP_PROXY
+    value: http://PROXY_IP:PROXY_PORT
+  - name: HTTPS_PROXY
+    value: http://PROXY_IP:PROXY_PORT
+  - name: NO_PROXY
+    value: localhost,.ryaxns,.ryaxns-execs,127.0.0.1,::1,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local
+  - name: NIX_CURL_FLAGS
+    value: --proxy http://PROXY_IP:PROXY_PORT
+  - name: UV_HTTP_PROXY
+    value: http://PROXY_IP:PROXY_PORT
+  - name: UV_HTTPS_PROXY
+    value: http://PROXY_IP:PROXY_PORT
+  - name: ALL_PROXY
+    value: http://PROXY_IP:PROXY_PORT
+  - name: RYAX_BUILD_ENV_HTTP_PROXY
+    value: http://PROXY_IP:PROXY_PORT
+  - name: RYAX_BUILD_ENV_HTTPS_PROXY
+    value: http://PROXY_IP:PROXY_PORT
+  - name: RYAX_BUILD_ENV_ALL_PROXY
+    value: http://PROXY_IP:PROXY_PORT
+  - name: RYAX_BUILD_ENV_UV_HTTP_PROXY
+    value: http://PROXY_IP:PROXY_PORT
+  - name: RYAX_BUILD_ENV_UV_HTTPS_PROXY
+    value: http://PROXY_IP:PROXY_PORT
+```
+
+Finally, we can apply the new options by using the command above, where `ryax` is the release helm on your kubernetes,
+and `ryaxns` the namespace where you have ryax installed.
+
+```shell
+helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns ---values ryax-proxy-values.yaml
+```
