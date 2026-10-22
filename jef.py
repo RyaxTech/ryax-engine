@@ -48,8 +48,8 @@ REPOS_TO_BE_RELEASED = {
     "studio": {
         "gitlab_project": "ryax-tech/ryax/ryax-studio",
     },
-    "runner": {
-        "gitlab_project": "ryax-tech/ryax/ryax-runner",
+    "core": {
+        "gitlab_project": "ryax-tech/ryax/ryax-core",
     },
     "front": {
         "gitlab_project": "ryax-tech/ryax/ryax-front",
