@@ -48,8 +48,8 @@ REPOS_TO_BE_RELEASED = {
     "studio": {
         "gitlab_project": "ryax-tech/ryax/ryax-studio",
     },
-    "runner": {
-        "gitlab_project": "ryax-tech/ryax/ryax-runner",
+    "core": {
+        "gitlab_project": "ryax-tech/ryax/ryax-core",
     },
     "front": {
         "gitlab_project": "ryax-tech/ryax/ryax-front",
@@ -251,23 +251,27 @@ def command_pull_all(args) -> None:
     subprocess.run("git submodule foreach git pull --tags -f", shell=True, check=True)
 
 
-def _force_tag(tag: str) -> None:
+def _force_tag(tag: str, annotate: bool) -> None:
     assert tag
     # `git submodule foreach` runs over every submodule, SUBMODULES_NOT_RELEASED
     # included, so each command starts by stepping over those: it is handed
     # $sm_path, and exiting 0 leaves that submodule alone and moves to the next.
     skip = "|".join(SUBMODULES_NOT_RELEASED)
     guard = f'case "$sm_path" in {skip}) echo "Not part of the release: $sm_path"; exit 0;; esac; '
-    _run_cmd(f"git submodule foreach '{guard}git tag -f {tag}'")
+    # Release tags are annotated: plain `git describe` ignores lightweight tags.
+    annotation = f'-a -m "Release {tag}" ' if annotate else ""
+    _run_cmd(f"git submodule foreach '{guard}git tag -f {annotation}{tag}'")
     _run_cmd(f"git submodule foreach '{guard}git push -f origin {tag}'")
 
 
 def command_force_staging(args) -> None:
-    _force_tag("staging")
+    # `staging` is a moving marker, not a version: keep it lightweight so that
+    # `git describe` never answers with it.
+    _force_tag("staging", annotate=False)
 
 
 def command_tag_release(args) -> None:
-    _force_tag(args.tag)
+    _force_tag(args.tag, annotate=True)
 
 
 def _run_cmd(cmd) -> None:
