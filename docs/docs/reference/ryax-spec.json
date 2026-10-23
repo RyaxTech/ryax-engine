@@ -8831,6 +8831,13 @@
               "Local"
             ]
           },
+          "architecture": {
+            "$ref": "#/components/schemas/RunnerNodeArchitecture",
+            "description": "Node architecture",
+            "examples": [
+              "x86_64"
+            ]
+          },
           "cpu": {
             "type": "integer",
             "minimum": 0.0,
@@ -8922,6 +8929,7 @@
         "type": "object",
         "required": [
           "name",
+          "architecture",
           "cpu",
           "gpu_count",
           "memory",
@@ -8957,6 +8965,13 @@
               "Local"
             ]
           },
+          "architecture": {
+            "$ref": "#/components/schemas/RunnerNodeArchitecture",
+            "description": "Node architecture",
+            "examples": [
+              "x86_64"
+            ]
+          },
           "cpu": {
             "type": "integer",
             "minimum": 0.0,
@@ -8964,10 +8979,16 @@
             "description": "Number of cpu for site node pool"
           },
           "gpu_count": {
-            "type": "integer",
-            "minimum": 0.0,
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Gpu Count",
-            "description": "Number of GPUs (or MIG slices) on one node of this pool"
+            "description": "Number of GPUs (or MIG slices) on one node of this pool. Required with `gpu_config_id`, ignored without it."
           },
           "memory": {
             "type": "integer",
@@ -9039,8 +9060,8 @@
         "type": "object",
         "required": [
           "name",
+          "architecture",
           "cpu",
-          "gpu_count",
           "memory",
           "energy_score",
           "performance_score",
