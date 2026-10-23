@@ -63,7 +63,7 @@ dependencies:
     repository: "file://subcharts/filestore"
   # Reverse proxy
   - name: traefik
-    version: 41.x.x
+    version: 42.x.x
     repository: 'https://helm.traefik.io/traefik'
     condition: traefik.deployment.enabled
   # Observability
@@ -79,10 +79,10 @@ dependencies:
     condition: tempo.enabled
   # Logging
   - name: loki
-    version: ~7.3.0
+    version: ~7.5.0
     repository: "https://grafana.github.io/helm-charts"
     condition: loki.enabled
   - name: alloy
-    version: ~1.13.0
+    version: ~1.14.0
     repository: "https://grafana.github.io/helm-charts"
     condition: loki.enabled
