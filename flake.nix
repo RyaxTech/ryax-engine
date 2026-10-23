@@ -23,7 +23,12 @@
               pkgs.scaleway-cli
               pkgs.kubectl
               pkgs.k9s
-            ];
+              pkgs.agent-browser
+            ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.chromium ];
+            # agent-browser downloads Chrome for Testing otherwise
+            env = pkgs.lib.optionalAttrs pkgs.stdenv.isLinux {
+              AGENT_BROWSER_EXECUTABLE_PATH = "${pkgs.chromium}/bin/chromium";
+            };
           };
           # Enable autoformat
           formatter = pkgs.nixpkgs-fmt;
