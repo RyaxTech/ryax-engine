@@ -296,9 +296,12 @@ Admins should take care of the following elements when upgrading to this version
 
 - **GPU node pools: record the card, and mind the renamed field.** Existing pools keep working without it, but record the catalog `gpu_model` on each GPU pool (web interface, or `GET /api/runner/gpu-models` then the node pool API) to get precise matching and per-hardware recommendations. If your clusters are all A30 (4 compute slices), also set `intelliscale.config.algorithm_configs.simple_mig_recommender.total_compute_slices` to 4 for pools with no recorded model. Placement now defaults to `best_fit`; to keep the previous behaviour set `RYAX_SCHEDULER_GPU_FIT_POLICY=first_fit` through `runner.extraEnv`.
 
+- **Kubernetes 1.30 or later is required.** The bundled Traefik chart moved to 42.x, which refuses older clusters. Check `kubectl version` before upgrading.
+
 - **API users:**
   - `POST /workflows/{id}/deploy` returns **409** (with `deployment_status` in the body) instead of 400 when the workflow is already deploying, deployed or undeploying. A client that matched the 400 text must handle 409 instead.
   - Node pools take and return `gpu_count`, not `gpu` (the stored value is migrated). A client that still sends `gpu` when creating a node pool gets a 422.
+  - Creating a node pool now requires `architecture` (`x86_64` or `arm64`). A client that leaves it out gets a 422; the web UI already sends it.
   - New root endpoints `/api/runner/node-pools` (filters on GPU, site, CPU and memory; the GPU is named by `gpu_config_id`) and `GET /api/runner/gpu-models` returns a flat list. The nested `/sites/{id}/node-pools` routes remain, marked deprecated.
   - `GET /modules/{id}` and workflow action views now return `gpu_brand`, `gpu_model`, `gpu_memory_gb` and `gpu_compute_fraction` in `resources`.
   - The `table` input/output type no longer exists.
