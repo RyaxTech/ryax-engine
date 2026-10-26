@@ -57,6 +57,8 @@ Ryax used to know a GPU only as a count, plus an opaque MIG profile name that ha
   ([roadmap#1463](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1463))
 - **A workflow can be undeployed when it has several running deployments.** Undeploy used to fail and leave Studio in "Undeploying", with the portal and trigger views answering 500. It now stops all of them, and a stopped deployment is never brought back to running by a late trigger event. The leftover `PAUSED` state, which nothing has set since 26.7.0, is retired.
   ([roadmap#1337](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1337))
+- **A "Run once" no longer blocks the next deploy of its workflow.** When the trigger finished within seconds, its stop could be overwritten by the late "started" event. The deployment then stayed running forever, and every later deploy of that workflow was silently ignored, leaving Studio on "Deploying". Start, started and stop are now serialised per deployment, and a stopped deployment can no longer be set back to running. The upgrade repairs deployments already stuck this way.
+  ([roadmap#1485](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1485))
 - **A failed deployment says why.** A deployment whose trigger failed (no site registered, trigger error, trigger cancelled by itself, deployment that could not even be created) stayed in "Deploying" forever or went back to "not deployed" with no explanation. It now fails and Studio shows `The trigger '<name>' failed: <reason>`.
   ([roadmap#1445](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1445),
   [roadmap#1466](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1466))
