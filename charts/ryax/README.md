@@ -1,6 +1,6 @@
 # ryax-engine
 
-![Version: 26.10.0-rc4](https://img.shields.io/badge/Version-26.10.0--rc4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.10.0-rc4](https://img.shields.io/badge/AppVersion-26.10.0--rc4-informational?style=flat-square)
+![Version: 26.10.0-rc5](https://img.shields.io/badge/Version-26.10.0--rc5-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.10.0-rc5](https://img.shields.io/badge/AppVersion-26.10.0--rc5-informational?style=flat-square)
 
 Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows and applications on multiple infrastructure.
 
@@ -14,18 +14,18 @@ Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows
 
 | Repository | Name | Version |
 |------------|------|---------|
-| file://subcharts/action-builder | action-builder | 26.10.0-rc4 |
-| file://subcharts/authorization | authorization | 26.10.0-rc4 |
-| file://subcharts/common-resources | common-resources | 26.10.0-rc4 |
-| file://subcharts/datastore | datastore | 26.10.0-rc4 |
-| file://subcharts/filestore | filestore | 26.10.0-rc4 |
-| file://subcharts/front | front | 26.10.0-rc4 |
-| file://subcharts/intelliscale | intelliscale | 26.10.0-rc4 |
-| file://subcharts/rabbitmq | rabbitmq | 26.10.0-rc4 |
-| file://subcharts/registry | registry | 26.10.0-rc4 |
-| file://subcharts/repository | repository | 26.10.0-rc4 |
-| file://subcharts/runner | runner | 26.10.0-rc4 |
-| file://subcharts/studio | studio | 26.10.0-rc4 |
+| file://subcharts/action-builder | action-builder | 26.10.0-rc5 |
+| file://subcharts/authorization | authorization | 26.10.0-rc5 |
+| file://subcharts/common-resources | common-resources | 26.10.0-rc5 |
+| file://subcharts/datastore | datastore | 26.10.0-rc5 |
+| file://subcharts/filestore | filestore | 26.10.0-rc5 |
+| file://subcharts/front | front | 26.10.0-rc5 |
+| file://subcharts/intelliscale | intelliscale | 26.10.0-rc5 |
+| file://subcharts/rabbitmq | rabbitmq | 26.10.0-rc5 |
+| file://subcharts/registry | registry | 26.10.0-rc5 |
+| file://subcharts/repository | repository | 26.10.0-rc5 |
+| file://subcharts/runner | runner | 26.10.0-rc5 |
+| file://subcharts/studio | studio | 26.10.0-rc5 |
 | https://grafana.github.io/helm-charts | alloy | ~1.14.0 |
 | https://grafana.github.io/helm-charts | loki | ~7.5.0 |
 | https://grafana.github.io/helm-charts | tempo | 1.x.x |

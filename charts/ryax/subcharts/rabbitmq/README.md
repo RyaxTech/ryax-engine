@@ -1,6 +1,6 @@
 # rabbitmq
 
-![Version: 26.10.0-rc4](https://img.shields.io/badge/Version-26.10.0--rc4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.10.0-rc4](https://img.shields.io/badge/AppVersion-26.10.0--rc4-informational?style=flat-square)
+![Version: 26.10.0-rc5](https://img.shields.io/badge/Version-26.10.0--rc5-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 26.10.0-rc5](https://img.shields.io/badge/AppVersion-26.10.0--rc5-informational?style=flat-square)
 
 Ryax message broker, a RabbitmqCluster run by the RabbitMQ Cluster Operator
 
