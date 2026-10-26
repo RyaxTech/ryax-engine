@@ -29,6 +29,21 @@ Push options (`git push -o merge_request.*`) are the alternative to `glab`, but
 they reject any value containing a newline, so they cannot carry a multi-line MR
 description. Prefer `glab ... --description "$(cat file.md)"`.
 
+Pitfalls seen in practice:
+
+- **The snap `glab` cannot read `/tmp`.** Write description files under
+  `~/snap/glab/common/` and pass them from there.
+- **`glab mr create` takes the source project from the current directory.** Run
+  from `ryax-engine` against `--repo ryax-tech/ryax/ryax-core`, it fails with
+  `Source project is not a fork of the target project`. `cd` into the service
+  repo, or create the MR through the API (below), which names the project.
+- **Job details and traces need a token; pipeline lists do not.** An anonymous
+  `urllib` poller on `/jobs/<id>` gets 401.
+- **Poll gently.** One request a minute is plenty for pipelines. A shell loop
+  spawning `glab` per project per few seconds is enough to heat a laptop.
+- **zsh: never name a variable `path`.** It is tied to `$PATH`, so `for path in …`
+  empties it and every later command is "not found".
+
 > **On NixOS**, tools are not installed imperatively and `glab` may be absent
 > from PATH in non-login shells even when present on the system. Check first:
 >
@@ -298,6 +313,43 @@ Distinguish a **system failure** too: `ERROR: Job failed (system failure): prepa
 waiting for pod running: timed out` is the runner cluster out of capacity, not your change. Retry
 it. A real failure ends `command terminated with exit code 1`.
 
+**An engine branch audits the submodules *it* pins.** `security_checks` on a branch cut from
+engine `master` scans `master`'s gitlinks, which can be weeks behind the service masters and the
+release branch. Most of what it reports may already be fixed. Read the release branch's
+`security_checks` job before opening dependency MRs.
+
+### Dependency CVEs: where each fix goes
+
+| Finding | Fix | Check |
+|---|---|---|
+| Python (`uv audit`) | in the service repo: `uv lock --upgrade-package <pkg>`, only the flagged ones | `uv audit --preview-features audit --frozen` |
+| Front (`osv-scanner`, HIGH fails) | a `resolutions` entry in `package.json` (`"undici@7.29.1": "7.30.1"`), then `nix shell nixpkgs#nodejs nixpkgs#yarn-berry -c yarn install --mode=update-lockfile` | `nix run nixpkgs#osv-scanner -- scan source --lockfile yarn.lock --config osv-scanner.toml` |
+| Container images (vulnix, CVSS ≥ 7 fails) | `nix flake update nixpkgs` in **core and action-wrappers** | `security_checks_images`, see below |
+
+`--upgrade-package` can jump a major version when the lock already has the fix. Audit the
+unchanged lock first, and upgrade only what is still flagged.
+
+### The container image scan (`security_checks_images`)
+
+- It runs by itself only on engine `master` and schedules. On any other branch it is a **manual**
+  job, and it takes about 30 minutes.
+- **action-builder gets its runtime from the action-wrappers flake**, not from core's nixpkgs.
+  Bumping core alone leaves it on the old glibc/openssl: bump action-wrappers too, then run
+  `nix flake update actionWrappers` in core.
+- Whitelist entries in `core/nix/vulnix-whitelist.toml` are pinned to a package version on
+  purpose (`["glibc-2.42-100"]`). After a bump they stop matching, and the CVEs come back until
+  someone checks the new version and moves the entry. For glibc, grep nixpkgs'
+  `2.42-master.patch` for the CVE ids.
+- **To scan a core branch before it merges**, push a throwaway engine branch with core's gitlink
+  pointing at it, then play the job:
+
+  ```sh
+  git update-index --cacheinfo 160000,<core-sha>,core && git commit -m "Temporary: scan"
+  git push origin <scan-branch>
+  # find security_checks_images in the branch pipeline, then:
+  glab api --method POST "projects/ryax-tech%2Fryax%2Fryax-engine/jobs/<job-id>/play"
+  ```
+
 ### Every `mr note create` blocks the merge
 
 Each note is filed as its own **resolvable discussion**, and `ryax-repository`
@@ -387,6 +439,17 @@ git submodule foreach git checkout master && git submodule foreach git pull
 git commit -a && git push origin <release-branch>
 ```
 
+`charts_update` shells out to `helm` and `helm-docs`, and stops half-way with exit status 127 if
+either is missing. Put both on PATH before the first run. Don't run `jef.py` inside `nix develop`
+instead: the dev shell's Python has no `yaml` module.
+
+```sh
+export PATH="$(nix build --no-link --print-out-paths nixpkgs#kubernetes-helm)/bin:$(nix build --no-link --print-out-paths nixpkgs#helm-docs)/bin:$PATH"
+```
+
+Re-read the "Security and dependencies" bullet of `RELEASE.md` at each respin: chart and
+library versions in it go stale as the RCs pick up bumps.
+
 Then tag the engine. `git tag -F` strips every `#` line as a comment, which eats
 the markdown headings, and the convention is a `Ryax <version>` subject line:
 
@@ -452,6 +515,28 @@ kubectl get pods -n ryaxns | grep -vE "Running|Completed"
 kubectl get pods -n ryaxns --no-headers \
   | awk '$3!="Completed" {split($2,a,"/"); if (a[1]!=a[2] || $4>0) print}'
 ```
+
+A runner with one restart right after an upgrade is usually harmless. The datastore pod is
+recreated, not rolled, so the runner's first Alembic run can hit `Connection refused`; check
+`kubectl logs --previous` before worrying.
+
+### Staging
+
+- Kubeconfig: `~/.config/k8s-clusters/staging.yaml`. It authenticates through `scw`, so put
+  `nixpkgs#scaleway-cli` on PATH. The context is `admin@staging`.
+- **Back up before every upgrade**, on the datastore volume:
+
+  ```sh
+  P=$(kubectl get pod -n ryaxns -o name | grep datastore | head -1)
+  kubectl exec -n ryaxns $P -- sh -c 'set -o pipefail; pg_dumpall -U "$POSTGRES_USER" \
+    | gzip > /var/lib/postgresql/data/backups/pre-<version>.sql.gz && gzip -t /var/lib/postgresql/data/backups/pre-<version>.sql.gz'
+  ```
+
+- **Only upgrade on a stable network.** A dropped connection mid-upgrade leaves the release in
+  `pending-upgrade`, and every later upgrade refuses to start. `helm rollback ryax <last good
+  revision>` clears it. Don't delete the Helm release secret by hand.
+- The runner database is `runner` and node pools are in `node_pools`, for read-only checks with
+  `psql -U "$POSTGRES_USER" -d runner` in the datastore pod.
 
 ## The local cluster
 
