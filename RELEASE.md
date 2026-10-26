@@ -70,7 +70,7 @@ Ryax used to know a GPU only as a count, plus an opaque MIG profile name that ha
   ([roadmap#1451](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1451))
 - **The registry garbage collector works again.** It pointed at a configuration path that does not exist since the registry moved to v3, and hid the failure behind a success message, so no image was ever collected. A failing run now fails its Job.
   ([roadmap#1294](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1294))
-- **Security and dependencies.** The web interface's advisories are cleared (Angular 21.2.25, axios 1.20, undici 6.29, piscina 5.3, adm-zip 0.6.1, brace-expansion 2.1.6; the unpatched `braces` advisory only affects the build tooling and is tracked), and Python dependencies and nixpkgs (26.05) are refreshed across all services. Observability charts: kube-prometheus-stack 89.x (Grafana 13), Alloy 1.13, Traefik 41.6.
+- **Security and dependencies.** The web interface's advisories are cleared (Angular 21.2.25, axios 1.20, undici 6.29, piscina 5.3, adm-zip 0.6.1, brace-expansion 2.1.6; the unpatched `braces` advisory only affects the build tooling and is tracked), and Python dependencies and nixpkgs (26.05) are refreshed across all services. Observability charts: kube-prometheus-stack 89.x (Grafana 13), Loki 7.5, Alloy 1.14, Traefik 42.1.
 - **Documentation.** New GPU node pools guide, rewritten IntelliScale reference, `global.ingress.hosts`, proxy configuration and the RabbitMQ operator in the install, airgap and ArgoCD guides.
 
 ## Upgrade to this version

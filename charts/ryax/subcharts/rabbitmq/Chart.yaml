@@ -2,8 +2,8 @@ apiVersion: v2
 name: rabbitmq
 description: Ryax message broker, a RabbitmqCluster run by the RabbitMQ Cluster Operator
 type: application
-version: "26.10.0-rc3"
-appVersion: "26.10.0-rc3"
+version: "26.10.0-rc4"
+appVersion: "26.10.0-rc4"
 # The operator is vendored from its upstream release rather than pulled as a
 # chart dependency: upstream publishes plain manifests only, and the one
 # well-known Helm chart for it is Bitnami's.
