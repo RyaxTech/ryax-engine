@@ -94,9 +94,13 @@ model, and a `full` pool with no model tells Ryax nothing about its size.
 
 !!! note "Upgrading"
     `gpu_model` is new, so pools registered before it have none. Nothing
-    stops working: an unknown pool stays eligible for every request. Fill it
-    in to get precise matching, and to let `best_fit` reason about the pool at
-    all.
+    stops working: an unknown pool stays eligible for every request. But
+    without a model there is no precise matching, and `best_fit` cannot
+    reason about the pool at all. A pool's GPU cannot be changed after it is
+    created, so archive these pools and create new ones in their place. The
+    [26.10.0 upgrade notes](https://gitlab.com/ryax-tech/ryax/ryax-engine/-/blob/26.10.0/RELEASE.md#upgrade-to-this-version)
+    give the steps, including moving the actions pinned to the old pool and
+    updating the worker values.
 
     `gpu_count` is the same field the pool has always had, renamed from `gpu`
     to say what it counts. Existing pools are migrated; a client that still
