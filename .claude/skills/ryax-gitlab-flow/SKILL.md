@@ -98,6 +98,28 @@ yours to give.
 
 Always in `roadmap`, whatever repo the code lives in.
 
+**Every new issue follows one of the roadmap templates** in
+`.gitlab/issue_templates/`. Pick the one that fits:
+
+| Template | For |
+|---|---|
+| `Bug Report.md` | something that is broken |
+| `User Story.md` | a feature, from the user's point of view |
+| `Spike.md` | a timeboxed investigation that answers a question (roadmap !7, until it merges) |
+| `Action.md` | a request for a new action: its kind, inputs and outputs |
+
+`glab issue create` does not apply templates, so fetch one and fill in its
+sections. Keep its headings, and write a short answer in each one:
+
+```sh
+glab api "projects/ryax-tech%2Fryax%2Froadmap/repository/files/.gitlab%2Fissue_templates%2FBug%20Report.md/raw?ref=master" > issue.md
+```
+
+Keep the `/label` and `/assign` quick actions at the end of the template. They
+run when the issue is created, so the labels and the assignee come with it.
+Pass the description as a file (`-F description=@issue.md` on `glab api`, or
+`--description "$(cat issue.md)"` below).
+
 ```sh
 glab issue create --repo ryax-tech/ryax/roadmap \
   --title "..." --description "$(cat issue.md)" \
