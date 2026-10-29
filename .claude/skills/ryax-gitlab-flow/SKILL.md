@@ -482,8 +482,8 @@ git push origin $VERSION
 ./jef.py wait_all_pipes $VERSION
 ```
 
-**The image scan gates both the final tag and the merge back.** On `release-*`
-branches `security_checks` blocks, and `security_checks_images` is manual but blocking,
+**The image scan gates both the final tag and the merge back.** On `release-X.Y.Z`
+branches (the CI rule is `/^release-[0-9]/`) `security_checks` blocks, and `security_checks_images` is manual but blocking,
 so the pipeline sits *blocked* until someone plays it. Play it before tagging the final
 release, and again on the `Release X.Y.Z` commit, because that head pipeline is the one
 the merge request is checked against. With *Pipelines must succeed* on, the MR can't

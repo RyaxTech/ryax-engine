@@ -108,9 +108,10 @@ security_checks:
     # unnoticed.
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       allow_failure: false
-    # Blocking on a release branch too: with "Pipelines must succeed" set on the
+    # Blocking on a release branch (release-X.Y.Z; the digit keeps a feature
+    # branch named release-something out) too: with "Pipelines must succeed" set on the
     # project, its merge request cannot be merged while this is red.
-    - if: $CI_COMMIT_BRANCH =~ /^release-/
+    - if: $CI_COMMIT_BRANCH =~ /^release-[0-9]/
       allow_failure: false
     # A warning on every other branch. Most of what this job reports comes from
     # upstream advisories published after the code was written, so a new CVE in
@@ -149,7 +150,7 @@ security_checks_images:
     # until someone runs the scan, and with "Pipelines must succeed" set on the
     # project, the release merge request cannot be merged until it has passed.
     # Run it once on the final "Release X.Y.Z" commit, not on every push.
-    - if: $CI_COMMIT_BRANCH =~ /^release-/
+    - if: $CI_COMMIT_BRANCH =~ /^release-[0-9]/
       when: manual
       allow_failure: false
     # Elsewhere: available, not automatic. Trigger it from the pipeline view on a
