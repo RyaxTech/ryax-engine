@@ -59,6 +59,13 @@ Ryax used to know a GPU only as a count, plus an opaque MIG profile name that ha
   ([roadmap#1337](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1337))
 - **A "Run once" no longer blocks the next deploy of its workflow.** When the trigger finished within seconds, its stop could be overwritten by the late "started" event. The deployment then stayed running forever, and every later deploy of that workflow was silently ignored, leaving Studio on "Deploying". Start, started and stop are now serialised per deployment, and a stopped deployment can no longer be set back to running. The upgrade repairs deployments already stuck this way.
   ([roadmap#1485](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1485))
+- **The workflow page follows a "Run once" to its end.** It stayed on "Stop" after the run had finished, because it stopped refreshing the deployment's status. It now keeps refreshing it while the workflow is deployed.
+  ([roadmap#1491](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1491))
+- **The Kubernetes worker survives a message backlog.** After a broker outage it took every queued message at once, one database connection each, which OOM-killed its PostgreSQL. It now handles at most 10 messages at a time (`RYAX_MESSAGING_PREFETCH_COUNT`, `0` for no limit). Its metrics collection is also back to one fetch at a time, instead of piling up requests when the cluster is slow.
+  ([roadmap#1477](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1477),
+  [roadmap#1490](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1490))
+- **The node pool form says why a value is refused.** CPU, memory, scores and maximum time now show their limits, and the node pool API returns the architecture in the same lowercase form the form uses.
+  ([roadmap#1483](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1483))
 - **A failed deployment says why.** A deployment whose trigger failed (no site registered, trigger error, trigger cancelled by itself, deployment that could not even be created) stayed in "Deploying" forever or went back to "not deployed" with no explanation. It now fails and Studio shows `The trigger '<name>' failed: <reason>`.
   ([roadmap#1445](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1445),
   [roadmap#1466](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1466))
@@ -296,7 +303,14 @@ Admins should take care of the following elements when upgrading to this version
 
 - **Kubernetes worker: the MIG auto-labeler is removed.** The values `config.MIG` and `labeler` are gone, along with the node-labeler DaemonSet. If you relied on it to turn a `gpu-pool-mig-*` node label into `nvidia.com/mig.config`, label the GPU nodes with `nvidia.com/mig.config` yourself (cloud node-pool labels are the usual way), as the NVIDIA GPU Operator's MIG Manager expects. Remove both keys from your worker values. To keep actions off GPU nodes that are not ready yet, see the new opt-in `gpuReadiness` values: enable it **before** adding the startup taint to the node pool, as a tainted pool with the gate off never runs anything.
 
-- **⚠️ GPU node pools created before this version: recreate them.** Existing GPU pools, MIG ones included, have no GPU model: they keep running, but Ryax cannot match them on model, memory or share of a card, and the web interface shows their GPU as `-`. As a pool's GPU cannot be changed after creation, recreate each one in **Infrastructure** with the same settings, picking its card in the GPU select, then archive the old one. Add the new pool's id to the Kubernetes worker values next to the old one, with the same `selector`, and upgrade the worker before archiving; remove the old entry only after archiving. ⚠️ Archiving a pool unpins it from every action: re-pin the actions you want on the new pool in the Studio.
+- **⚠️ GPU node pools created before this version: recreate them.** Existing GPU pools, MIG ones included, have no GPU model: they keep running, but Ryax cannot match them on model, memory or share of a card, and the web interface shows their GPU as `-`. As a pool's GPU cannot be changed after creation, replace each one:
+  1. Recreate it in **Infrastructure** with the same settings, picking its card in the GPU select.
+  2. Add the new pool's id to the Kubernetes worker values next to the old one, with the same `selector`, and upgrade the worker.
+  3. Pin the actions pinned to the old pool to the new one instead (Studio, **Constraints › Sites and Node Pools**), and redeploy their workflows. Also redeploy the workflows whose trigger runs on the old pool.
+  4. Archive the old pool.
+  5. Once nothing runs on it any more, remove the old entry from the worker values and upgrade the worker.
+
+  ⚠️ Archiving a pool does not touch deployed workflows: an action still pinned to it keeps running on it, and a trigger running on it stays there. Redeploying a workflow without changing the pin drops it, and the action can then run on any pool. A worker asked to run on a pool it no longer lists runs the execution on the first pool of its values. Hence the order above. ([roadmap#1492](https://gitlab.com/ryax-tech/ryax/roadmap/-/issues/1492) will make archiving handle this.)
 
 - **GPU placement defaults.** Placement now defaults to `best_fit`. To keep the previous behaviour, set `RYAX_SCHEDULER_GPU_FIT_POLICY=first_fit` through `runner.extraEnv`.
 
@@ -306,6 +320,8 @@ Admins should take care of the following elements when upgrading to this version
   - `POST /workflows/{id}/deploy` returns **409** (with `deployment_status` in the body) instead of 400 when the workflow is already deploying, deployed or undeploying. A client that matched the 400 text must handle 409 instead.
   - Node pools take and return `gpu_count`, not `gpu` (the stored value is migrated). A client that still sends `gpu` when creating a node pool gets a 422.
   - Creating a node pool now requires `architecture` (`x86_64` or `arm64`). A client that leaves it out gets a 422; the web UI already sends it.
+  - Node pools return `architecture` in lowercase (`x86_64`, `arm64`), as the create request takes it. It was `X86_64` before.
+  - `GET /api/runner/node-pools/{id}` answers 404 for an archived node pool.
   - New root endpoints `/api/runner/node-pools` (filters on GPU, site, CPU and memory; the GPU is named by `gpu_config_id`) and `GET /api/runner/gpu-models` returns a flat list. The nested `/sites/{id}/node-pools` routes remain, marked deprecated.
   - `GET /modules/{id}` and workflow action views now return `gpu_brand`, `gpu_model`, `gpu_memory_gb` and `gpu_compute_fraction` in `resources`.
   - The `table` input/output type no longer exists.

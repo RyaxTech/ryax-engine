@@ -57,7 +57,7 @@ global:
 
 # -- container image name and version
 image:
-  tag: "26.10.0-rc6"
+  tag: "26.10.0-rc7"
   registry: docker.io/ryaxtech
   repository: action-builder
   digest: ""
