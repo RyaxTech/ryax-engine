@@ -1,8 +1,27 @@
 We are proud to announce the release of:
 
 ✨ ✨ ✨ ✨ ✨ ✨ ✨ ✨ ✨
-# Ryax 26.10.0
+# Ryax 26.10.1
 ✨ ✨ ✨ ✨ ✨ ✨ ✨ ✨ ✨
+
+A security patch release on top of 26.10.0. It fixes the advisories published since 26.10.0 and changes no behaviour or API, so upgrading needs no extra steps.
+
+## Security fixes
+
+- **brotli 1.2.0 → 1.2.1** (CVE-2026-111497, out-of-bounds write, CVSS 9.8) in the `worker-k8s`, `worker-ssh-slurm` and `action-builder` images, by moving nixpkgs nixos-26.05 to `08d3a97`. That also brings glibc 2.42-103.
+- **gdb is gone from the worker images.** Nothing used it, and in `worker-k8s` it was the only reason the image shipped curl and brotli. To debug a worker pod, use `kubectl debug` with an ephemeral container.
+- **dnspython 2.8.0 → 2.9.0** in the Runner, the workers and the action builder (GHSA-45c3-73f7-pv4m).
+- **msgpack 1.2.1 → 1.2.4** in the default actions (GHSA-j586-36cw-2gc2).
+
+## Documentation
+
+- The node pool API examples in the README and the [GPU node pools guide](https://docs.ryax.tech/howto/gpu_node_pools/) now send the `architecture` field that 26.10.0 requires.
+
+The 26.10.0 release notes follow, including its upgrade steps if you are coming from 26.9.0 or earlier.
+
+---
+
+# Ryax 26.10.0
 
 GPU requests by model, memory and share of a card, a random initial admin password, a broker and a filestore that no longer depend on Bitnami, and a round of fixes for imports, stuck executions and failed deployments.
 
