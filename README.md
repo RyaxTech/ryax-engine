@@ -164,11 +164,13 @@ SITE_ID=$(curl -s -X POST http://localhost/api/runner/sites \
   -d '{"name":"Local","type":"KUBERNETES"}' | jq -r .site_id)
 
 # cpu is in millicores and memory in bytes: 1000 mCPU and 2GiB below.
-NODE_POOL_ID=$(curl -s -X POST "http://localhost/api/runner/sites/$SITE_ID/node-pools" \
+# Use "arm64" as architecture on an ARM machine.
+NODE_POOL_ID=$(curl -s -X POST http://localhost/api/runner/node-pools \
   -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \
-  -d '{"name":"k3s","cpu":1000,"gpu":0,"memory":2147483648,
-       "energy_score":50,"performance_score":50,"cost_score":50,
-       "filter_no_gpu_action":true}' | jq -r .node_pool_id)
+  -d "{\"site_id\":\"$SITE_ID\",\"name\":\"k3s\",\"architecture\":\"x86_64\",
+       \"cpu\":1000,\"memory\":2147483648,
+       \"energy_score\":50,\"performance_score\":50,\"cost_score\":50,
+       \"filter_no_gpu_action\":false}" | jq -r .node_pool_id)
 
 echo "SITE_ID=$SITE_ID NODE_POOL_ID=$NODE_POOL_ID"
 ```
