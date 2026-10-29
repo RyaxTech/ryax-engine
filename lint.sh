@@ -294,7 +294,8 @@ check_images() {
       "$DIM" "$CORE_WHITELIST" "$RESET"
   fi
 
-  local scan_dir image rc verdict split_rc level pkg worst count msg
+  local scan_dir image rc verdict split_rc level pkg worst count ids msg
+  local scan_errors=0
   local blocking=0
   scan_dir="$(mktemp -d)"
 
@@ -322,18 +323,39 @@ check_images() {
       blocking=1
       continue
     fi
-    # vulnix exits 0 when it finds nothing, 1 when only whitelisted issues
-    # remain and 2 when something is not whitelisted.
-    rc=0
-    if [ -n "$whitelist" ]; then
-      nix run nixpkgs#vulnix -- --closure "$scan_dir/$image" --whitelist "$whitelist" \
-        --json > "$scan_dir/$image.json" || rc=$?
-    else
-      nix run nixpkgs#vulnix -- --closure "$scan_dir/$image" \
-        --json > "$scan_dir/$image.json" || rc=$?
+    # vulnix exits 0 when nothing outside the whitelist is found and 2 when
+    # something is. It only exits 1 for whitelisted findings with
+    # --show-whitelisted, which is not passed here, so a 1 is a crash -- most
+    # often a timeout downloading the NVD feeds -- and so is a 2 without a
+    # report. The exit code alone cannot tell "clean" from "never scanned":
+    # only a JSON report proves the scan ran. The NVD feeds are slow to answer
+    # at times, so retry before giving up.
+    local attempt
+    for attempt in 1 2 3; do
+      rc=0
+      if [ -n "$whitelist" ]; then
+        nix run nixpkgs#vulnix -- --closure "$scan_dir/$image" --whitelist "$whitelist" \
+          --json > "$scan_dir/$image.json" || rc=$?
+      else
+        nix run nixpkgs#vulnix -- --closure "$scan_dir/$image" \
+          --json > "$scan_dir/$image.json" || rc=$?
+      fi
+      if { [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; } \
+          && python3 -c 'import json, sys; assert isinstance(json.load(open(sys.argv[1])), list)' \
+               "$scan_dir/$image.json" 2>/dev/null; then
+        break
+      fi
+      printf '%s  vulnix failed (exit %s, attempt %s of 3)%s\n' "$DIM" "$rc" "$attempt" "$RESET"
+      rc=-1
+      [ "$attempt" -lt 3 ] && sleep 30
+    done
+    if [ "$rc" -eq -1 ]; then
+      ko "$image: could not scan the image, see the vulnix error above"
+      blocking=1
+      scan_errors=1
+      continue
     fi
-    if [ "$rc" -eq 0 ]; then ok "$image: no known vulnerability"; continue; fi
-    if [ "$rc" -eq 1 ]; then ok "$image: only whitelisted findings"; continue; fi
+    if [ "$rc" -eq 0 ]; then ok "$image: nothing outside the whitelist"; continue; fi
 
     # vulnix has no severity threshold of its own, so split its findings here:
     # only a CVSSv3 base score of $VULNIX_FAIL_SCORE or above fails the build,
@@ -349,18 +371,21 @@ for entry in json.load(open(report)):
     scores = entry.get("cvssv3_basescore") or {}
     cves = entry.get("affected_by") or []
     worst = max((scores.get(c) or 0 for c in cves), default=0)
-    row = (f"{entry['pname']}-{entry['version']}", worst, len(cves))
+    # The ids, worst first, so a failure can be triaged from the job log
+    # without rerunning vulnix.
+    ids = ", ".join(sorted(cves, key=lambda c: -(scores.get(c) or 0)))
+    row = (f"{entry['pname']}-{entry['version']}", worst, len(cves), ids)
     (blocking if worst >= threshold else tolerated).append(row)
 
 for level, rows in (("fail", blocking), ("warn", tolerated)):
-    for pkg, worst, count in sorted(rows, key=lambda r: -r[1]):
-        print(f"{level}|{pkg}|{worst}|{count}")
+    for pkg, worst, count, ids in sorted(rows, key=lambda r: -r[1]):
+        print(f"{level}|{pkg}|{worst}|{count}|{ids}")
 sys.exit(1 if blocking else 0)
 PY
     ) || split_rc=$?
-    while IFS='|' read -r level pkg worst count; do
+    while IFS='|' read -r level pkg worst count ids; do
       [ -z "$level" ] && continue
-      msg="$image: $pkg — $count CVE(s), worst CVSS $worst"
+      msg="$image: $pkg — $count CVE(s), worst CVSS $worst: $ids"
       if [ "$level" = "fail" ]; then ko "$msg"; else warn "$msg"; fi
     done <<< "$verdict"
     if [ "$split_rc" -ne 0 ]; then
@@ -371,6 +396,10 @@ PY
   done
   rm -rf "$scan_dir"
 
+  if [ "$scan_errors" -ne 0 ]; then
+    ko "Some container images could not be scanned"
+    return 1
+  fi
   if [ "$blocking" -ne 0 ]; then
     ko "Vulnerabilities of CVSS $VULNIX_FAIL_SCORE or above found in the container images"
     return 1
