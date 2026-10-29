@@ -1,43 +1,43 @@
 dependencies:
 - name: common-resources
   repository: file://subcharts/common-resources
-  version: 26.9.0
+  version: 26.10.0
 - name: action-builder
   repository: file://subcharts/action-builder
-  version: 26.9.0
+  version: 26.10.0
 - name: authorization
   repository: file://subcharts/authorization
-  version: 26.9.0
+  version: 26.10.0
 - name: front
   repository: file://subcharts/front
-  version: 26.9.0
+  version: 26.10.0
 - name: intelliscale
   repository: file://subcharts/intelliscale
-  version: 26.9.0
+  version: 26.10.0
 - name: repository
   repository: file://subcharts/repository
-  version: 26.9.0
+  version: 26.10.0
 - name: runner
   repository: file://subcharts/runner
-  version: 26.9.0
+  version: 26.10.0
 - name: studio
   repository: file://subcharts/studio
-  version: 26.9.0
+  version: 26.10.0
 - name: registry
   repository: file://subcharts/registry
-  version: 26.9.0
+  version: 26.10.0
 - name: datastore
   repository: file://subcharts/datastore
-  version: 26.9.0
+  version: 26.10.0
 - name: rabbitmq
   repository: file://subcharts/rabbitmq
-  version: 26.9.0
+  version: 26.10.0
 - name: filestore
   repository: file://subcharts/filestore
-  version: 26.9.0
+  version: 26.10.0
 - name: traefik
   repository: https://helm.traefik.io/traefik
-  version: 41.6.1
+  version: 42.1.3
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
   version: 89.2.4
@@ -46,9 +46,9 @@ dependencies:
   version: 1.24.4
 - name: loki
   repository: https://grafana.github.io/helm-charts
-  version: 7.3.0
+  version: 7.5.0
 - name: alloy
   repository: https://grafana.github.io/helm-charts
-  version: 1.13.0
-digest: sha256:d0796f50ee83e3a293240167d0382b3c9301f1ac5f081d5e40b31330c43a9ccd
-generated: "2026-10-05T19:15:58.567708039+02:00"
+  version: 1.14.4
+digest: sha256:0bb30e02e2893cbb38da840884daa5fab6ec4640332f92db51e27cb64ab14683
+generated: "2026-10-29T10:02:33.742762568+01:00"

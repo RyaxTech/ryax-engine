@@ -15,55 +15,55 @@ icon: https://user-images.githubusercontent.com/104617518/167607288-537e67fb-bbd
 name: ryax-engine
 description: Ryax is a open-source Hybrid workflow orchestrator to optimize your AI workflows and applications on multiple infrastructure.
 type: application
-version: "26.9.0"
-appVersion: "26.9.0"
+version: "26.10.0"
+appVersion: "26.10.0"
 dependencies:
   # Ryax internal subcharts
   - name: common-resources
-    version: "26.9.0"
+    version: "26.10.0"
     repository: "file://subcharts/common-resources"
   - name: action-builder
-    version: "26.9.0"
+    version: "26.10.0"
     repository: "file://subcharts/action-builder"
   - name: authorization
-    version: "26.9.0"
+    version: "26.10.0"
     repository: "file://subcharts/authorization"
   - name: front
-    version: "26.9.0"
+    version: "26.10.0"
     repository: "file://subcharts/front"
   - name: intelliscale
-    version: "26.9.0"
+    version: "26.10.0"
     repository: "file://subcharts/intelliscale"
     condition: intelliscale.enabled
   - name: repository
-    version: "26.9.0"
+    version: "26.10.0"
     repository: "file://subcharts/repository"
   - name: runner
-    version: "26.9.0"
+    version: "26.10.0"
     repository: "file://subcharts/runner"
   - name: studio
-    version: "26.9.0"
+    version: "26.10.0"
     repository: "file://subcharts/studio"
 
   # Docker registry
   - name: registry
-    version: "26.9.0"
+    version: "26.10.0"
     repository: "file://subcharts/registry"
   # Postgres database
   - name: datastore
-    version: "26.9.0"
+    version: "26.10.0"
     repository: "file://subcharts/datastore"
   # RabbitMQ message broker, and the RabbitMQ Cluster Operator that runs it
   - name: rabbitmq
-    version: "26.9.0"
+    version: "26.10.0"
     repository: "file://subcharts/rabbitmq"
   # S3 compatible storage
   - name: filestore
-    version: "26.9.0"
+    version: "26.10.0"
     repository: "file://subcharts/filestore"
   # Reverse proxy
   - name: traefik
-    version: 41.x.x
+    version: 42.x.x
     repository: 'https://helm.traefik.io/traefik'
     condition: traefik.deployment.enabled
   # Observability
@@ -79,10 +79,10 @@ dependencies:
     condition: tempo.enabled
   # Logging
   - name: loki
-    version: ~7.3.0
+    version: ~7.5.0
     repository: "https://grafana.github.io/helm-charts"
     condition: loki.enabled
   - name: alloy
-    version: ~1.13.0
+    version: ~1.14.0
     repository: "https://grafana.github.io/helm-charts"
     condition: loki.enabled

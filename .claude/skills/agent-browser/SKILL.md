@@ -69,6 +69,26 @@ exec nix shell nixpkgs#nodejs --command agent-browser "$@"
 irrelevant, since that download is exactly what is being skipped. `Launch test: pass` is
 the line to check. See the `nixos-tools` skill for the general pattern.
 
+### From the ryax-engine dev shell (Nix on another distro)
+
+The `ryax-engine` flake ships `agent-browser` and a nixpkgs `chromium`, and it sets
+`AGENT_BROWSER_EXECUTABLE_PATH`, so `nix develop` is enough on any machine with Nix. On a
+non-NixOS host such as Ubuntu, two more things are needed: the host's `LD_LIBRARY_PATH`
+breaks the Nix chromium, and the chromium sandbox helper is not set up. A wrapper:
+
+```sh
+#!/usr/bin/env bash
+cd ~/Projects/ryax-engine && exec nix develop --command env -u LD_LIBRARY_PATH \
+  AGENT_BROWSER_SESSION=ryax-staging AGENT_BROWSER_ARGS=--no-sandbox agent-browser "$@"
+```
+
+- `doctor` ignores `AGENT_BROWSER_ARGS` and reports a launch failure. Ignore it if a real
+  `open` works.
+- `open` can hang waiting for a load event even though the page has loaded: prefix every call
+  with `timeout 60`.
+- When done, `close`, then make sure no `chromium-unwrapped` from the Nix store is left behind.
+  Kill only those, never the user's own browser.
+
 ## Driving the Ryax UI
 
 Log in — three commands, refs straight from the snapshot:
@@ -109,6 +129,13 @@ ab click @eN
 
 Routes live in `front/apps/ryax/src/app/**/*.routes.ts`. Note `/app/settings` is the older
 `project` module (it owns the variables list) while `/app/projects` is `project-new`.
+
+### A click that "succeeded" may have sent nothing
+
+Buttons at the bottom of a tall modal (the node pool Create and Edit forms) sit below the
+viewport. `click` reports success, but no request goes out. Scroll the button into view first,
+and confirm every action with `network requests --filter runner` (status code), not with the
+click's own output.
 
 ## Three techniques worth reusing
 

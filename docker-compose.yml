@@ -1,6 +1,6 @@
 services:
   kubernetes:
-    image: rancher/k3s:v1.36.0-k3s1
+    image: rancher/k3s:v1.36.5-k3s1
     command:
       - server
       - --disable=metrics-server
@@ -29,7 +29,7 @@ services:
       - 443:443    # Ingress controller port 443
 
   kubernetes-node:
-    image: rancher/k3s:v1.36.0-k3s1
+    image: rancher/k3s:v1.36.5-k3s1
     tmpfs:
       - /run
       - /var/run

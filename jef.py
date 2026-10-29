@@ -790,9 +790,7 @@ def command_check_helm_deps(args) -> int:
                     continue
 
                 if repo.startswith("oci://"):
-                    versions = (
-                        _skopeo_list_versions(repo, name) if has_skopeo else []
-                    )
+                    versions = _skopeo_list_versions(repo, name) if has_skopeo else []
                 else:  # http(s) helm repository
                     url = repo.rstrip("/")
                     repo_name = repo_map.get(url)
@@ -873,25 +871,19 @@ def command_check_helm_deps(args) -> int:
                     recommended_v = r["recommended"]
 
                     try:
-                        locked_v = (
-                            Version(r["locked"]) if r["locked"] != "-" else None
-                        )
+                        locked_v = Version(r["locked"]) if r["locked"] != "-" else None
                     except ValueError:
                         locked_v = None
 
                     major_bump = (
-                        r["cmajor"] is not None
-                        and r["cmajor"] < recommended_v.major
+                        r["cmajor"] is not None and r["cmajor"] < recommended_v.major
                     )
                     if locked_v is None:
                         # No parseable lock entry: cannot tell if it is behind.
                         unknown.append(r["name"])
                         rec_color = TCOLOR.OKBLUE
                         marker = "→"
-                    elif (
-                        r["cmajor"] is not None
-                        and locked_v.major > r["cmajor"] + 1
-                    ):
+                    elif r["cmajor"] is not None and locked_v.major > r["cmajor"] + 1:
                         # More than one major above the previous release.
                         overshoot.append(
                             (

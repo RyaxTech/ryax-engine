@@ -46,9 +46,9 @@ whatever `global.ryax.userNamespace` is set to.
 |---|---|---|
 | `ryax-datastore-secret` | Opaque | `datastore`, `datastore-db`, `datastore-user`, `datastore-pass`, `all-databases`, and `datastore-<db>`, `datastore-<db>-db`, `datastore-<db>-user`, `datastore-<db>-pass` for each of `repository`, `studio`, `authorization`, `runner` |
 | `ryax-broker-secret` (release ns **and** `ryaxns-execs`) | Opaque | `broker`, `broker-user`, `rabbitmq-password` |
-| `ryax-broker-cookie` | Opaque | `rabbitmq-erlang-cookie` |
-| `ryax-minio-secret` | Opaque | `filestore`, `filestore-access`, `filestore-secret`, `root-user`, `root-password` |
+| `ryax-minio-secret` | Opaque | `filestore`, `filestore-access`, `filestore-secret`, `root-user`, `root-password` (the filestore's root credentials; `filestore` is `ryax-minio.<release ns>:9000`) |
 | `api-jwt-secret-key` | Opaque | `jwt-secret-key` |
+| `ryax-admin-credentials` | Opaque | `admin-user`, `admin-password` |
 | `grafana-credentials` | Opaque | `admin-user`, `admin-password` |
 | `runner-encryption-key` | Opaque | `encryption-key` |
 | `studio-password-encryption-key` | Opaque | `encryption-key` |
@@ -59,17 +59,26 @@ whatever `global.ryax.userNamespace` is set to.
 | `<release>-db-pass` (worker charts, only when `postgresql.enabled`) | Opaque | `password`, `postgres-password`, `datastore-worker-k8s` / `datastore-worker-ssh-slurm` |
 
 The `datastore-*` and `broker` values are connection URLs, so they must agree
-with the passwords in the same secret:
+with the passwords in the same secret. The broker's own user is seeded from
+`broker-user` and `rabbitmq-password` the first time it starts, so keep the
+password URL-safe (alphanumeric is simplest):
 
 ```
 datastore-runner = postgresql://runner:<datastore-runner-pass>@ryax-datastore/runner
 broker           = ampq://ryaxmq:<rabbitmq-password>@ryax-broker.<release ns>:5672/
 ```
 
+`ryax-admin-credentials` is the one exception to "before the first sync": it
+holds the credentials of the admin account seeded when the user table is empty,
+and the Deployment reads both keys with `optional: true`. An **existing**
+installation therefore syncs without it — it will never seed again. A **new** one
+must have it, or the authorization pod stops with
+`No initial admin password configured`.
+
 Each credential also has its own flag, so you can hand over one at a time —
 `datastore.datastoreSecretCreate`, `common-resources.jwtSecretCreate`,
-`registry.credentials.createSecret`, and so on. See the chart README for the
-full list.
+`authorization.adminSecretCreate`, `registry.credentials.createSecret`, and so
+on. See the chart README for the full list.
 
 !!! note "Keeping chart-generated secrets"
     If you would rather let the chart generate them, add the `ignoreDifferences`
@@ -117,9 +126,15 @@ IngressClass the cluster marks default.
 
 Two things to know if you *do* keep the bundled Traefik:
 
-- Set `global.tls.hostname`. Without it the Ingress rules match **every** host,
-  so once Traefik's Service gets an external address it answers for everything in
-  the cluster, not just Ryax.
+- List Ryax's names in `global.ingress.hosts`. Left empty, the Ingress rules
+  match **every** host, so once Traefik's Service gets an external address it
+  answers for everything in the cluster, not just Ryax. `global.tls.hostname` does
+  not do this: it only names the certificate and the registry.
+  ```yaml
+  global:
+    ingress:
+      hosts: ["ryax.example.com"]
+  ```
 - Do not set `traefik.ingressClass.isDefaultClass: true`. The
   `ingressclass.kubernetes.io/is-default-class` annotation is cluster-scoped, so
   the bundled Traefik would claim every classless Ingress in every namespace —
@@ -146,18 +161,67 @@ global:
       effect: NoSchedule
 ```
 
+The broker reads them too: `rabbitmq.tolerations`, `rabbitmq.nodeSelector` and
+`rabbitmq.affinity` override them for the RabbitMQ pod, and the same keys under
+`rabbitmq.operator` for its operator. So does the filestore, overridden by
+`filestore.tolerations`, `filestore.nodeSelector` and `filestore.affinity`.
+
 The bundled upstream subcharts do **not** read those globals — they have their own
 values:
 
 | Subchart | Where placement goes |
 |---|---|
 | `kube-prometheus-stack` | `prometheusOperator.*`, `prometheus.prometheusSpec.*`, `grafana.*` (each takes `tolerations`, `nodeSelector`, `affinity`) |
-| `minio`, `rabbitmq` | `tolerations`, `nodeSelector`, `affinity` |
 | `loki` | `singleBinary.tolerations`, `singleBinary.nodeSelector` |
 | `tempo` | `tolerations`, `nodeSelector` |
 | `alloy` | `controller.tolerations` (already tolerates every taint by default) |
 | `traefik` | `tolerations`, `nodeSelector` |
 | worker charts' `postgresql` | `postgresql.primary.tolerations`, `postgresql.primary.nodeSelector` |
+
+## The broker and its CRD
+
+The message broker is a `RabbitmqCluster`, run by the RabbitMQ Cluster Operator
+that the chart deploys in the release namespace, watching that namespace only.
+ArgoCD applies the chart's `rabbitmqclusters.rabbitmq.com` CRD before the
+resource that uses it, in the same sync. Keep `ServerSideApply=true`: the CRD is
+too large for the annotation a client-side apply records.
+
+If the cluster already runs a RabbitMQ Cluster Operator that watches the Ryax
+namespace, set `rabbitmq.operator.enabled: false`, or both operators reconcile
+the same broker.
+
+## The filestore, and moving off MinIO
+
+The filestore is [versitygw](https://github.com/versity/versitygw), which
+replaced MinIO in 26.10.0. The chart copies the objects of the old MinIO into
+it, once, and keeps that MinIO and its volume until you turn
+`filestore.migration.enabled` off. Rendered without a cluster, the chart cannot
+tell whether there is anything to copy, so it renders the old MinIO and its
+PVC, `ryax-minio`, whenever that value is on, which is the default.
+
+**On a new install there is nothing to copy:** set
+`filestore.migration.enabled: false`, as the example Application does.
+Otherwise the first sync creates an empty `ryax-minio` volume and an idle MinIO.
+
+**When upgrading from 26.9.0,** leave it on for the upgrade. The sync updates
+the old MinIO in place on its volume, and the filestore pod copies the objects
+before it starts serving. The `ryax-minio` PVC carries
+`argocd.argoproj.io/sync-options: Prune=false`, so a sync never deletes it. If
+you had changed `minio.persistence.size` or `minio.persistence.storageClass`, set
+the same under `filestore.migration.legacy.persistence`, or the sync fails on the
+volume, whose size cannot shrink and whose class cannot change. Once the copy is
+done, which this prints the date of:
+
+```sh
+kubectl -n ryaxns exec deploy/ryax-filestore -c versitygw -- cat /data/.ryax-migrated-from-minio
+```
+
+set `filestore.migration.enabled: false`. ArgoCD then prunes the old MinIO and
+leaves its volume, which you delete by hand:
+`kubectl -n ryaxns delete pvc ryax-minio`. From then on, going back to 26.9.0
+needs that volume restored from a backup. The 26.10.0 release notes give the
+whole procedure, the optional pre-copy that shortens the upgrade, and the
+rollback.
 
 ## The first sync runs no migration, on purpose
 

@@ -467,6 +467,17 @@ Also change `--node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabl
 sed -i 's/<YOUR CLUSTER NAME>/'$RYAX_CLUSTER_NAME'/g' cluster-autoscaler-autodiscover.yaml
 ```
 
+If you plan to run GPU node pools, add the startup-taint flag to the same
+container's `command:` list now. Without it the autoscaler reads the GPU
+readiness taint as permanent and never scales a GPU pool up at all — see
+[GPU node pools and MIG](./gpu_node_pools.md#step-5-tell-the-cluster-autoscaler-the-taint-is-temporary).
+On the `v1.34.1` pinned above, use the full key; from 1.36 onward
+`--startup-taint-prefix=readiness.k8s.io/` covers every key under the prefix.
+
+```shell
+sed -i 's|- --node-group-auto-discovery|- --startup-taint=readiness.k8s.io/nvidia-gpu-not-ready\n        - --node-group-auto-discovery|' cluster-autoscaler-autodiscover.yaml
+```
+
 Now deploy the autoscaler.
 
 ```shell
@@ -547,6 +558,11 @@ managedNodeGroups:
     - key: sku
       value: gpu
       effect: NoSchedule
+    # Startup taint: keeps actions off the node until its NVIDIA driver and MIG
+    # geometry are in place. See the GPU node pools How-To linked below.
+    - key: readiness.k8s.io/nvidia-gpu-not-ready
+      value: pending
+      effect: NoSchedule
     tags:
       k8s.io/cluster-autoscaler/node-template/taint/ryax.tech/ryaxns-execs: "only:NoSchedule"
       k8s.io/cluster-autoscaler/node-template/label/ryax.tech/nodepool: gpu-spot-l4-a10g-24gb
@@ -559,7 +575,7 @@ on cloudFormation will be ignored).
 
 
 ```shell
-eksctl create nodegroup -f cluster-config-ryax-demo-main-site.yaml
+eksctl create nodegroup -f cluster-config.yaml
 ```
 
 Meanwhile the cloudFormation provisioning is happening you can go ahead and install the nvidia operator through helm.
@@ -570,18 +586,52 @@ helm repo update
 ```
 
 Now let's edit a values file to parameterize the `nvidia/gpu-operator`. It is important to allow the nvidia operator deamonsets to run on
-the gpu nodes by adding tolerations for the 2 added taints.
+the gpu nodes by adding tolerations for the 3 added taints.
+
+Both toleration lists below **replace** their defaults rather than appending to
+them, so the entries the charts ship with are repeated here. `node-feature-discovery`
+is a separate subchart that `daemonsets.tolerations` does not cover — and it is
+what labels the node `nvidia.com/gpu.present`, so missing it leaves the node
+unlabelled, unprobed and permanently tainted.
 
 ```shell
 cat >nvidia-gpu-operator-values.yaml <<EOF
 daemonsets:
   tolerations:
+  # gpu-operator's own default -- this list replaces it, so keep it.
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
   - key: sku
     value: gpu
     effect: NoSchedule
   - key: ryax.tech/ryaxns-execs
     value: only
     effect: NoSchedule
+  - key: readiness.k8s.io/nvidia-gpu-not-ready
+    operator: Exists
+    effect: NoSchedule
+
+node-feature-discovery:
+  worker:
+    tolerations:
+    # The subchart's own defaults -- keep them.
+    - key: node-role.kubernetes.io/control-plane
+      operator: Equal
+      value: ""
+      effect: NoSchedule
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+    - key: sku
+      value: gpu
+      effect: NoSchedule
+    - key: ryax.tech/ryaxns-execs
+      value: only
+      effect: NoSchedule
+    - key: readiness.k8s.io/nvidia-gpu-not-ready
+      operator: Exists
+      effect: NoSchedule
 # if you need to enable MIG check the full parameters list with
 #  helm show values nvidia/gpu-operator
 EOF
@@ -592,3 +642,7 @@ Now install the operator by using the configuration given.
 ```shell
 helm upgrade --install -n kube-system gpu-operator nvidia/gpu-operator -f nvidia-gpu-operator-values.yaml
 ```
+
+To partition these GPUs with MIG, and to finish wiring the readiness gate whose
+taint was added to the node group above, follow
+[GPU node pools and MIG](./gpu_node_pools.md).

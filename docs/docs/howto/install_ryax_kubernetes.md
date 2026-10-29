@@ -40,6 +40,7 @@ Hardware:
   yes
   ```
 - Have access to a DNS server where you can add a new `A` or `CNAME` entry for your cluster.
+- Ryax installs the `rabbitmqclusters.rabbitmq.com` CRD and runs the [RabbitMQ Cluster Operator](https://www.rabbitmq.com/kubernetes/operator/operator-overview) in its own namespace, for its message broker. If your cluster already runs that operator and it watches the Ryax namespace, add `rabbitmq.operator.enabled: false` to your values.
 
 ### Enable TLS
 
@@ -94,6 +95,15 @@ helm install ryax oci://registry.ryax.org/release-charts/ryax-engine \
   -n ryaxns --create-namespace \
   -f prod.yaml -f secrets.yaml \
   --set global.tls.hostname='example.company.io'
+```
+
+This names the certificate, but Ryax still answers for any host that reaches the
+cluster. To restrict it to its own names, for instance on a cluster shared with
+other applications, list them in `global.ingress.hosts` (the certificate then covers
+all of them, so each must resolve to the cluster):
+
+```sh
+  --set 'global.ingress.hosts={example.company.io}'
 ```
 
 !!! warning
@@ -151,6 +161,7 @@ containers (`registry`) which all affect your Ryax instance performance, so it
 it is recommended to have SSD backed storage for all services to avoid delays
 state persistence, deployments, and runs.
 For more fine-grained settings you can set each storage class independently with the `storageClass` inside each service.
+The filestore keeps each object as a file, with its metadata in extended attributes, so its storage class must support user extended attributes, as ext4 and xfs do.
 Regarding the volume size, we recommend that you start small, you can extend them later on with most Storage providers.
 
 The default values give comfortable volume sizes to start working on the platform.
@@ -159,13 +170,28 @@ The default values give comfortable volume sizes to start working on the platfor
 
 Now you can access your cluster with its IP address in your web browser.
 
-Default credentials are:
+The admin account is created on the first start with a password generated for
+your installation. `helm install` printed the commands to read it back; they are:
 
-- user: `user1`
-- password: `pass1`
+```sh
+kubectl -n <namespace> get secret ryax-admin-credentials -o jsonpath='{.data.admin-user}' | base64 -d; echo
+kubectl -n <namespace> get secret ryax-admin-credentials -o jsonpath='{.data.admin-password}' | base64 -d; echo
+```
 
 !!! warning
-    Change this password and user as soon as you're logged in!
+    Change this password as soon as you're logged in. The secret is **not**
+    updated when you do, so the value above stops working — keep the new one
+    somewhere safe.
+
+!!! note
+    The secret is only read when the user table is empty, which is the very first
+    start. Upgrading an existing installation never changes your password, and the
+    value in the secret of an instance that has been upgraded is not the one in use.
+
+To choose the credentials yourself instead of having them generated, set
+`authorization.adminUsername` and `authorization.adminPassword` before the first
+install, or create the `ryax-admin-credentials` secret yourself and set
+`authorization.adminSecretCreate: false`.
 
 ## Install a Worker
 
@@ -234,6 +260,11 @@ taints:
    value: only
 ```
 
+GPU node pools need more than this: an autoscaled GPU node reports `Ready` before
+its NVIDIA driver and MIG geometry are in place, so actions landing in that
+window get a whole GPU instead of their MIG slice. See
+[GPU node pools and MIG](./gpu_node_pools.md).
+
 ### Install the worker
 
 Once your `worker-values.yaml` is ready, install the Kubernetes Worker (`ryax-worker-k8s` chart) in the same cluster and namespace as Ryax:
@@ -261,34 +292,29 @@ Run the upgrade with:
 helm upgrade ryax oci://registry.ryax.org/release-charts/ryax-engine -n ryaxns -f values.yaml
 ```
 
+!!! note
+    Helm installs the chart's CRDs on the first install only, and never updates them. When a release adds or changes one, its release notes give the `kubectl apply` to run before the upgrade. 26.10.0 is one: it moves the broker to the RabbitMQ Cluster Operator.
+
+!!! note
+    26.10.0 replaces the MinIO filestore with versitygw, and the upgrade copies the stored files into it before Ryax is available again. The old MinIO stays, for a rollback, until you decommission it. Its release notes give the steps, an optional pre-copy that shortens the upgrade, and the decommission.
+
+## Uninstall
+
+Delete the broker before the release: `helm uninstall` removes the RabbitMQ Cluster Operator at the same time, and the `RabbitmqCluster` would then keep its finalizer, with its pod still running.
+
+```sh
+kubectl -n ryaxns delete rabbitmqcluster ryax-broker
+helm uninstall ryax -n ryaxns
+```
+
+If an uninstall is already stuck, clear the finalizer:
+```sh
+kubectl -n ryaxns patch rabbitmqcluster ryax-broker --type merge -p '{"metadata":{"finalizers":[]}}'
+```
+
+Helm leaves the PersistentVolumeClaims and the CRDs behind; delete them too for a clean slate.
+
 ## Troubleshooting
-
-### Cannot upgrade, Bitnami charts password error
-
-When trying to change configuration you might experience rabbitmq, or postgresql errors like below.
-
-```shell
-COMBINED OUTPUT:
-  Error: Failed to render chart: exit status 1: Error: execution error at (rabbitmq/templates/secrets.yaml:4:17):
-  PASSWORDS ERROR: You must provide your current passwords when upgrading the release.
-                   Note that even after reinstallation, old credentials may be needed as they may be kept in persistent volume claims.
-                   Further information can be obtained at https://docs.bitnami.com/general/how-to/troubleshoot-helm-chart-issues/#credential-errors-while-upgrading-chart-releases
-      'auth.password' must not be empty, please add '--set auth.password=$RABBITMQ_PASSWORD' to the command. To get the current value:
-          export RABBITMQ_PASSWORD=$(kubectl get secret --namespace "ryaxns" ryax-broker-secret -o jsonpath="{.data.rabbitmq-password}" | base64 -d)
-  Use --debug flag to render out invalid YAML
-```
-
-You can find the correct password with:
-```shell
-kubectl get secret --namespace ryaxns ryax-broker-secret -o jsonpath="{.data.rabbitmq-password}" | base64 -d
-```
-
-To avoid this step on every update, you can add the password in the helm values like below:
-```yaml
-rabbitmq:
-  auth:
-    password: <MY SECRET>
-```
 
 ### All actions' pods on ryaxns-execs are in imagePullBackOff
 

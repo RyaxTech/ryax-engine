@@ -39,6 +39,12 @@ Now, you should able to create a backup with:
 velero backup create my-ryax-cluster --ttl 336h --default-volumes-to-fs-backup
 ```
 
+The filestore keeps every stored file as a plain file on its volume, under
+`s3/<bucket>/<key>`, and the S3 metadata of each one (ETag, content type) in
+extended attributes. A restore that drops the extended attributes still gives
+back readable files: the filestore then serves them with a default ETag and
+content type, which Ryax does not use.
+
 If you want regular backup of your system, you can for example create a daily
 backup that runs every day at 3am which is kept for 2 weeks with:
 ```sh
