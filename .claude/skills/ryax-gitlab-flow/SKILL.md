@@ -604,12 +604,20 @@ SITE_ID=$(curl -s -X POST http://localhost/api/runner/sites \
   -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \
   -d '{"name":"Local","type":"KUBERNETES"}' | jq -r .site_id)
 
-NODE_POOL_ID=$(curl -s -X POST "http://localhost/api/runner/sites/$SITE_ID/node-pools" \
+NODE_POOL_ID=$(curl -s -X POST http://localhost/api/runner/node-pools \
   -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \
-  -d '{"name":"k3s","cpu":1000,"gpu":0,"memory":2147483648,
-       "energy_score":50,"performance_score":50,"cost_score":50,
-       "filter_no_gpu_action":true}' | jq -r .node_pool_id)
+  -d "{\"site_id\":\"$SITE_ID\",\"name\":\"k3s\",\"architecture\":\"x86_64\",
+       \"cpu\":1000,\"memory\":2147483648,
+       \"energy_score\":50,\"performance_score\":50,\"cost_score\":50,
+       \"filter_no_gpu_action\":false}" | jq -r .node_pool_id)
 ```
+
+Since 26.10.0, `architecture` is required and the old `gpu` field is rejected,
+both with a 422 — and `jq` then turns the error into the string `null`, which
+`helm install` accepts as a node pool id without complaint. Check the id before
+installing the worker. A GPU pool adds `gpu_config_id` (from
+`GET /api/runner/gpu-models`) and `gpu_count`; keep `filter_no_gpu_action`
+for those, it reserves the pool for GPU actions.
 
 **`cpu` is millicores and `memory` is bytes**, though the schema types both as
 plain integers — 1000 mCPU and 2GiB above. Passing `2` for 2GB creates a pool

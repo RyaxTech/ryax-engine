@@ -73,7 +73,8 @@ identifies a card, so there is no brand to send beside it:
 ```sh
 curl -X POST "$RYAX_URL/api/runner/sites/$SITE_ID/node-pools" \
   -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \
-  -d '{"name":"gpu","cpu":8000,"gpu_count":4,"memory":68719476736,
+  -d '{"name":"gpu","architecture":"x86_64",
+       "cpu":8000,"gpu_count":4,"memory":68719476736,
        "energy_score":50,"performance_score":50,"cost_score":50,
        "filter_no_gpu_action":true,
        "gpu_mode":"mig-3g.20gb",
