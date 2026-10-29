@@ -29,6 +29,11 @@ pages:
   artifacts:
     paths:
       - public
+  # The site is built from the repository alone. Without this, any failed
+  # job in an earlier stage -- typically a security audit catching an advisory
+  # published after the release -- skips the deploy stage and leaves the live
+  # docs on the previous version.
+  needs: []
   rules:
     # A scheduled pipeline exists to re-run the audits, not to redeploy an
     # unchanged site.
