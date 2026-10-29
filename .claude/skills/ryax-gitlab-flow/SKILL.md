@@ -482,6 +482,24 @@ git push origin $VERSION
 ./jef.py wait_all_pipes $VERSION
 ```
 
+**The image scan gates both the final tag and the merge back.** On `release-*`
+branches `security_checks` blocks, and `security_checks_images` is manual but blocking,
+so the pipeline sits *blocked* until someone plays it. Play it before tagging the final
+release, and again on the `Release X.Y.Z` commit, because that head pipeline is the one
+the merge request is checked against. With *Pipelines must succeed* on, the MR can't
+merge until it's green. Play it through the API:
+
+```sh
+P=projects/ryax-tech%2Fryax%2Fryax-engine
+PL=$(glab api "$P/pipelines?ref=release-$VERSION&per_page=1" | jq -r '.[0].id')
+J=$(glab api "$P/pipelines/$PL/jobs?per_page=50" | jq -r '.[]|select(.name=="security_checks_images").id')
+glab api -X POST "$P/jobs/$J/play"
+```
+
+A failure is fixed or whitelisted with a justification in `core/nix/vulnix-whitelist.toml`;
+vulnix matches CPEs by product name, so check NVD's ranges before assuming a bump is
+missing (brotli 1.2.1 was flagged through the Go port's range).
+
 **Check every submodule is on the commit you mean to release before tagging.**
 `tag_release` force-tags each submodule's *current HEAD*, so a submodule left on a
 feature branch ships an unmerged commit:

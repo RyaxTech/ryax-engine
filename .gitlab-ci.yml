@@ -108,6 +108,10 @@ security_checks:
     # unnoticed.
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       allow_failure: false
+    # Blocking on a release branch too: with "Pipelines must succeed" set on the
+    # project, its merge request cannot be merged while this is red.
+    - if: $CI_COMMIT_BRANCH =~ /^release-/
+      allow_failure: false
     # A warning on every other branch. Most of what this job reports comes from
     # upstream advisories published after the code was written, so a new CVE in
     # a dependency must not block a merge request that has nothing to do with
@@ -119,7 +123,7 @@ security_checks:
 # realises the core image closures and hands each to vulnix. What it reports
 # comes from upstream advisories rather than the commit under test, so it runs
 # only where it can act -- blocking on the default branch and on a schedule,
-# manual elsewhere.
+# manual but blocking on release branches, manual and optional elsewhere.
 security_checks_images:
   extends: .security_base
   variables:
@@ -140,6 +144,13 @@ security_checks_images:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       allow_failure: false
     - if: $CI_PIPELINE_SOURCE == "schedule"
+      allow_failure: false
+    # Manual but blocking on a release branch: the pipeline stays "blocked"
+    # until someone runs the scan, and with "Pipelines must succeed" set on the
+    # project, the release merge request cannot be merged until it has passed.
+    # Run it once on the final "Release X.Y.Z" commit, not on every push.
+    - if: $CI_COMMIT_BRANCH =~ /^release-/
+      when: manual
       allow_failure: false
     # Elsewhere: available, not automatic. Trigger it from the pipeline view on a
     # branch that touches the runner submodule or the image definitions.
