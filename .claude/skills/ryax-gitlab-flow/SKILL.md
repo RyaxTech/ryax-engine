@@ -43,6 +43,13 @@ Pitfalls seen in practice:
   spawning `glab` per project per few seconds is enough to heat a laptop.
 - **zsh: never name a variable `path`.** It is tied to `$PATH`, so `for path in …`
   empties it and every later command is "not found".
+- **zsh globs unquoted patterns in arguments.** `grep -r --include=*.nix …` fails with
+  `no matches found` before grep runs. Quote it: `--include='*.nix'`.
+- **`glab mr create` has no `-F`.** It answers `Unknown shorthand flag: 'F'`. Use
+  `-d "$(cat mr.md)"`; `-F description=@file` only exists on `glab api`.
+- **A 405 mentioning a moved project means the local remote is stale.** `ci_common`
+  moved under `ryax-tech/ryax/`, and clones made before still point at the old path.
+  Pass `-R ryax-tech/ryax/ci_common`, or fix it once with `git remote set-url`.
 
 > **On NixOS**, tools are not installed imperatively and `glab` may be absent
 > from PATH in non-login shells even when present on the system. Check first:
@@ -272,7 +279,7 @@ glab api "projects/<enc>/merge_requests/<iid>/changes" \
 git diff --name-only <target>...<branch> | wc -l     # should match
 ```
 
-### `git add -A` in the superproject commits submodule pointers
+### `git add -A` and `git commit -a` in the superproject commit submodule pointers
 
 `ryax-engine` tracks each service as a submodule, so a dirty `core/` or `intelliscale/` shows up as
 a modified path and `git add -A` sweeps the gitlink in. The MR then silently bumps a service to
@@ -285,6 +292,15 @@ pushing:
 
 ```sh
 git diff --name-only origin/master...HEAD     # a bare 'core' or 'intelliscale' line is the bug
+```
+
+`git commit -am` does the same: `-a` stages every modified tracked path, gitlinks included. If
+it is already pushed and a force-push is not an option, put master's pointers back in a new
+commit without touching the checkouts:
+
+```sh
+git update-index --cacheinfo 160000,$(git rev-parse origin/master:core),core   # per submodule
+git commit -m "Keep master's submodule pointers"
 ```
 
 ### Bumping a submodule on purpose
@@ -496,6 +512,10 @@ J=$(glab api "$P/pipelines/$PL/jobs?per_page=50" | jq -r '.[]|select(.name=="sec
 glab api -X POST "$P/jobs/$J/play"
 ```
 
+When you write a CI rule on branch names, test the regex against the MR's **own** branch
+too. `/^release-/` also matched `release-branches-need-security-checks`, the branch adding
+the rule, so its pipeline blocked like a real release.
+
 A failure is fixed or whitelisted with a justification in `core/nix/vulnix-whitelist.toml`;
 vulnix matches CPEs by product name, so check NVD's ranges before assuming a bump is
 missing (brotli 1.2.1 was flagged through the Go port's range).
@@ -556,6 +576,10 @@ kubectl get pods -n ryaxns --no-headers \
   | awk '$3!="Completed" {split($2,a,"/"); if (a[1]!=a[2] || $4>0) print}'
 ```
 
+Note both revisions from `helm list -n ryaxns` before upgrading: they are what
+`helm rollback ryax <rev>` and `helm rollback ryax-worker-k8s <rev>` take if the new
+version misbehaves.
+
 A runner with one restart right after an upgrade is usually harmless. The datastore pod is
 recreated, not rolled, so the runner's first Alembic run can hit `Connection refused`; check
 `kubectl logs --previous` before worrying.
@@ -563,7 +587,9 @@ recreated, not rolled, so the runner's first Alembic run can hit `Connection ref
 ### Staging
 
 - Kubeconfig: `~/.config/k8s-clusters/staging.yaml`. It authenticates through `scw`, so put
-  `nixpkgs#scaleway-cli` on PATH. The context is `admin@staging`.
+  `nixpkgs#scaleway-cli` on PATH. The context is `admin@staging`. Exported variables do not
+  survive between tool calls, so repeat the `export KUBECONFIG=… PATH=…` in every command;
+  a missing `scw` shows up as `executable scw not found`, not as an auth error.
 - **Back up before every upgrade**, on the datastore volume:
 
   ```sh
