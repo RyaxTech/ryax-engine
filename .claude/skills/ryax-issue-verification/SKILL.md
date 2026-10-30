@@ -249,6 +249,10 @@ curl -s "http://localhost/api/runner/workflow_runs" -H "Authorization: $JWT"
 curl -s "http://localhost/api/runner/workflow_runs/$RUN" -H "Authorization: $JWT"
 ```
 
+The list answers **400 "Too many execution found"** once the project has more than 50
+runs, so on a long-lived instance like staging always pass a range:
+`/api/runner/workflow_runs?range=0-20`. The `Content-Range` response header gives the total.
+
 Per-action state is under `.runs[]` with `state` and `error_message`. A file output's
 `value` looks like `/runner/filestore/<StoredFile-id>/<filename>` — the download URL keeps
 **both** trailing segments:
