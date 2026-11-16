@@ -216,6 +216,7 @@ gpuReadiness:
 
 # -- Resource limit and request for individual user actions if not set in the action `resources` section.
 # Requires a LimitRange Kubernetes object. See for more details: https://kubernetes.io/docs/concepts/policy/limit-range/
+# Created in the user namespace (`config.site.spec.namespace`), which must not be the release namespace.
 # @section -- Ryax User Actions Settings
 userActionResources:
   request:
@@ -264,15 +265,16 @@ brokerSecret: ryax-broker-secret
 filestoreSecret: ryax-minio-secret
 filestoreName: ryax-filestore
 
-# -- Recommended resource requirement
+# -- Resources of the worker and of its database migration init container.
+# Set explicitly so that no LimitRange of the cluster decides them: the worker
+# uses ~150Mi, 300Mi at peak.
 # @section -- Resource Settings
-# Example:
-#   requests:
-#     memory: "2Gi"
-#     cpu: "1000m"
-#   limits:
-#     memory: "2Gi"
-resources: {}
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 1Gi
 
 # -- Add extra environment variables
 extraEnv: []

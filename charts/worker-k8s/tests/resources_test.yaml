@@ -1,0 +1,36 @@
+suite: Worker resources and the user namespace
+release:
+  namespace: ryaxns
+set:
+  config.site.id: Site-1
+  config.site.spec.namespace: ryaxns-execs
+tests:
+  - it: gives the worker and its migration explicit memory, so no LimitRange decides it
+    template: templates/deployments.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 256Mi
+      - equal:
+          path: spec.template.spec.initContainers[0].resources.requests.memory
+          value: 256Mi
+      - equal:
+          path: spec.template.spec.initContainers[0].resources.limits.memory
+          value: 1Gi
+  - it: puts the LimitRange in the user namespace
+    template: templates/resource_quota.yaml
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: LimitRange
+      - equal:
+          path: metadata.namespace
+          value: ryaxns-execs
+  - it: refuses the release namespace as the user namespace
+    template: templates/resource_quota.yaml
+    set:
+      config.site.spec.namespace: ryaxns
+    asserts:
+      - failedTemplate:
+          errorPattern: "the release namespace"
