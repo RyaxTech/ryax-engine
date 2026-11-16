@@ -191,6 +191,13 @@ tolerations: []
 nodeSelector: {}
 affinity: {}
 
+skupper:
+  # -- Namespace of the Skupper site that links the remote sites to this one.
+  # The HTTP service of an action running on a remote site is exposed through a
+  # Skupper Listener, and its Ingress, in this namespace. Defaults to the
+  # release namespace, where the multi-site guide creates the site.
+  namespace: ""
+
 ingress:
   # -- Render an Ingress for this service. Turn it off when routing is handled
   # outside the chart -- Gateway API, a service mesh, an external load balancer.

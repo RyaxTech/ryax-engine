@@ -64,6 +64,16 @@ actionRegistrySecret: ryax-registry-creds-secret
 # Leave empty to pull from the address the Runner provides.
 internalRegistryOverride: ""
 
+skupper:
+  # -- Set when this worker runs on a remote cluster linked to the main Ryax
+  # site through Skupper (see the multi-site worker installation guide). The
+  # HTTP service of an action running here is then exposed to the main site
+  # through a Skupper Connector, which the main site's Listener reaches. Leave
+  # it off for a worker on the main site's own cluster.
+  enabled: false
+  # -- Namespace of this cluster's Skupper site. Defaults to the release namespace.
+  namespace: ""
+
 # -- Ryax Worker configuration use for the registration. See documentation for more details:
 # https://docs.ryax.tech/reference/configuration.html#worker-configuration
 # @section -- Ryax
