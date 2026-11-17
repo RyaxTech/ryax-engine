@@ -131,6 +131,16 @@ security_checks_images:
     # vulnix holds the whole NVD database in memory; OOMKilled below this.
     KUBERNETES_MEMORY_REQUEST: "2Gi"
     KUBERNETES_MEMORY_LIMIT: "8Gi"
+    # Downloading every NVD feed on each run times out against nvd.nist.gov
+    # (failing since 2026-10-30): keep vulnix's feeds between pipelines, so a
+    # run only refreshes the "modified" feed. Inside the project for the cache.
+    VULNIX_CACHE_DIR: "$CI_PROJECT_DIR/.cache/vulnix"
+  cache:
+    key: vulnix-nvd-feeds
+    paths:
+      - .cache/vulnix
+    # Saved even when the scan fails on a finding: the feeds are still good.
+    when: always
   script:
     # `cachix use` pulls the closures the runner pipeline already published
     # instead of rebuilding them, and `watch-exec` pushes whatever this job does

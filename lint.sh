@@ -150,6 +150,13 @@ check_deps() {
 # Same rule as core/nix/vulnix-whitelist.toml: no entry without a reason.
 FRONT_LOCKFILE="front/yarn.lock"
 
+# Where vulnix keeps the NVD feeds it downloads (vulnix's own default). CI
+# points it inside the project and caches it between pipelines: downloading
+# the whole database every run is what times out against nvd.nist.gov.
+VULNIX_CACHE_DIR="${VULNIX_CACHE_DIR:-$HOME/.cache/vulnix}"
+# Seconds one vulnix run may take before it is killed and retried.
+VULNIX_ATTEMPT_TIMEOUT="${VULNIX_ATTEMPT_TIMEOUT:-900}"
+
 check_node_deps() {
   section "Scanning the front dependencies for CVEs"
 
@@ -330,14 +337,20 @@ check_images() {
     # report. The exit code alone cannot tell "clean" from "never scanned":
     # only a JSON report proves the scan ran. The NVD feeds are slow to answer
     # at times, so retry before giving up.
+    #
+    # Each attempt is bounded: a feed download that stalls rather than fails
+    # used to hold the job until its one-hour timeout, with no attempt left.
+    # A `timeout` kill exits 124, which counts as a failed attempt below.
     local attempt
     for attempt in 1 2 3; do
       rc=0
       if [ -n "$whitelist" ]; then
-        nix run nixpkgs#vulnix -- --closure "$scan_dir/$image" --whitelist "$whitelist" \
-          --json > "$scan_dir/$image.json" || rc=$?
+        timeout "$VULNIX_ATTEMPT_TIMEOUT" nix run nixpkgs#vulnix -- \
+          --cache-dir "$VULNIX_CACHE_DIR" --closure "$scan_dir/$image" \
+          --whitelist "$whitelist" --json > "$scan_dir/$image.json" || rc=$?
       else
-        nix run nixpkgs#vulnix -- --closure "$scan_dir/$image" \
+        timeout "$VULNIX_ATTEMPT_TIMEOUT" nix run nixpkgs#vulnix -- \
+          --cache-dir "$VULNIX_CACHE_DIR" --closure "$scan_dir/$image" \
           --json > "$scan_dir/$image.json" || rc=$?
       fi
       if { [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; } \
