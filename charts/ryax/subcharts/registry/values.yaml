@@ -171,6 +171,13 @@ credentials:
 resources: {}
 
 garbageCollect:
+  # -- Keep the garbage-collect CronJob from running. It runs `registry
+  # garbage-collect --delete-untagged` while the registry still accepts pushes,
+  # and a build pushing at that moment can lose the layers of its image
+  # (ryax-tech/ryax/roadmap#1500). Off until that is fixed: set it to false only
+  # if no action build can happen while it runs, or start a run by hand in a
+  # maintenance window with `kubectl create job --from=cronjob/<release>-registry-garbage-collect`.
+  suspend: true
   imagePullPolicy: "IfNotPresent"
   # -- Do not add request unless you are sure. The lack of resource it might make
   # the job fail forever...

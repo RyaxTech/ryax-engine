@@ -47,6 +47,7 @@ Ryax internal container registry.
 | debugPort | int | `5001` | Metrics port used by monitoring |
 | garbageCollect.imagePullPolicy | string | `"IfNotPresent"` |  |
 | garbageCollect.resources | object | `{}` | Do not add request unless you are sure. The lack of resource it might make the job fail forever... |
+| garbageCollect.suspend | bool | `true` | Keep the garbage-collect CronJob from running. It runs `registry garbage-collect --delete-untagged` while the registry still accepts pushes, and a build pushing at that moment can lose the layers of its image (ryax-tech/ryax/roadmap#1500). Off until that is fixed: set it to false only if no action build can happen while it runs, or start a run by hand in a maintenance window with `kubectl create job --from=cronjob/<release>-registry-garbage-collect`. |
 | global.ryax.userNamespace | string | `"ryaxns-execs"` |  |
 | global.tls.enabled | bool | `false` |  |
 | image | object | `{"digest":"","pullPolicy":"IfNotPresent","registry":"docker.io","repository":"registry","tag":"3"}` | container image name and version |

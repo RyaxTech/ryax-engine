@@ -7,6 +7,8 @@ metadata:
 spec:
   # At minute 0 past every 2nd hour
   schedule: "0 */2 * * *"
+  # roadmap#1500: no GC while a build may push. See garbageCollect.suspend.
+  suspend: {{ .Values.garbageCollect.suspend }}
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   jobTemplate:

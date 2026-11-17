@@ -37,3 +37,17 @@ tests:
           path: spec.jobTemplate.spec.template.spec.volumes
       - notExists:
           path: spec.jobTemplate.spec.template.spec.containers[0].volumeMounts
+  - it: is suspended by default (roadmap#1500)
+    template: templates/cronJobs.yaml
+    asserts:
+      - equal:
+          path: spec.suspend
+          value: true
+  - it: runs on its schedule once garbageCollect.suspend is false
+    template: templates/cronJobs.yaml
+    set:
+      garbageCollect.suspend: false
+    asserts:
+      - equal:
+          path: spec.suspend
+          value: false
