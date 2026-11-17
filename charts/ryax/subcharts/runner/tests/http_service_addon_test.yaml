@@ -1,0 +1,54 @@
+suite: HTTP service add-on settings
+# The Runner creates the Ingresses of the actions' HTTP services: without a
+# class they are only served by a default IngressClass, which the bundled
+# Traefik deliberately is not. For an action on a remote site, it exposes them
+# through a Skupper Listener in the Skupper site namespace.
+templates:
+  - templates/deployments.yaml
+release:
+  namespace: ryaxns
+tests:
+  - it: gives the Ingresses the global class, rendered with the release name
+    set:
+      global.ingress.className: "{{ .Release.Name }}-traefik"
+    release:
+      name: ryax
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: RYAX_USER_API_INGRESS_CLASS
+            value: ryax-traefik
+  - it: prefers the runner's own class
+    set:
+      global.ingress.className: traefik
+      ingress.className: nginx
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: RYAX_USER_API_INGRESS_CLASS
+            value: nginx
+  - it: leaves the class empty when none is set
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: RYAX_USER_API_INGRESS_CLASS
+            value: ""
+  - it: uses the release namespace for Skupper by default
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: RYAX_SKUPPER_NAMESPACE
+            value: ryaxns
+  - it: uses the configured Skupper namespace
+    set:
+      skupper.namespace: skupper
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: RYAX_SKUPPER_NAMESPACE
+            value: skupper

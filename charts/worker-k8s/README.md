@@ -23,7 +23,7 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | actionLogsQueryRate | int | `5` | Rate at which the User Action logging system is queried to get the logs in seconds. |
-| userActionResources | object | `{"limit":{"memory":"64Mi"},"request":{"cpu":0.1,"memory":"64Mi"}}` | Resource limit and request for individual user actions if not set in the action `resources` section. Requires a LimitRange Kubernetes object. See for more details: https://kubernetes.io/docs/concepts/policy/limit-range/ |
+| userActionResources | object | `{"limit":{"memory":"64Mi"},"request":{"cpu":0.1,"memory":"64Mi"}}` | Resource limit and request for individual user actions if not set in the action `resources` section. Requires a LimitRange Kubernetes object. See for more details: https://kubernetes.io/docs/concepts/policy/limit-range/ Created in the user namespace (`config.site.spec.namespace`), which must not be the release namespace. |
 
 ### Ryax
 
@@ -70,7 +70,7 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| resources | object | `{}` | Recommended resource requirement Example:   requests:     memory: "2Gi"     cpu: "1000m"   limits:     memory: "2Gi" |
+| resources | object | `{"limits":{"memory":"1Gi"},"requests":{"cpu":"100m","memory":"256Mi"}}` | Resources of the worker and of its database migration init container. Set explicitly so that no LimitRange of the cluster decides them: the worker uses ~150Mi, 300Mi at peak. |
 | userNamespaceResources | object | `{}` | Activate this to limit users' resource total usage. Highly recommended in production! Resource quota for the user namespace set as-is in the Kubernetes ResourceQuota: Example:   requests.cpu: "2"   requests.memory: 2Gi   limits.cpu: "16"   limits.memory: 32Gi See for more details: https://kubernetes.io/docs/concepts/policy/resource-quotas/ |
 
 ### Other Values
@@ -98,6 +98,8 @@ The Ryax Worker service manages deployments and executions on Kubernetes
 | postgresql.auth.createSecret | bool | `true` | Create the database credentials secret named by `existingSecret` below. Set to false to provide it yourself; it must then carry the keys `password`, `postgres-password` and `datastore-worker-k8s`. |
 | postgresql.enabled | bool | `true` | Enables PostgreSQL local database |
 | priorityClass | string | `nil` | Add priority class |
+| skupper.enabled | bool | `false` | Set when this worker runs on a remote cluster linked to the main Ryax site through Skupper (see the multi-site worker installation guide). The HTTP service of an action running here is then exposed to the main site through a Skupper Connector, which the main site's Listener reaches. Leave it off for a worker on the main site's own cluster. |
+| skupper.namespace | string | `""` | Namespace of this cluster's Skupper site. Defaults to the release namespace. |
 | tolerations | list | `[]` | Tolerations injected as-is, overriding `global.tolerations` when set (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). |
 
 ----------------------------------------------

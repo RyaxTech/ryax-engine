@@ -80,6 +80,7 @@ The Ryax Runner service orchestrates the deployment and the execution of Actions
 | nodeSelector | object | `{}` | nodeSelector injected as-is, overriding `global.nodeSelector` when set (https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) |
 | priorityClass | string | `nil` | Deployment prority class |
 | releaseMarker | string | `"ryax-release-marker"` | Name of the ConfigMap that marks the release as installed. The database-migration hooks read it and skip themselves when it is absent, so a first sync cannot deadlock on a database that does not exist yet. Created by the common-resources subchart. |
+| skupper.namespace | string | `""` | Namespace of the Skupper site that links the remote sites to this one. The HTTP service of an action running on a remote site is exposed through a Skupper Listener, and its Ingress, in this namespace. Defaults to the release namespace, where the multi-site guide creates the site. |
 | tolerations | list | `[]` | Tolerations injected as-is, overriding `global.tolerations` when set (https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). |
 | upgradeJob.image | string | `"docker.io/bitnamilegacy/kubectl:1.33"` |  |
 | userAPIPort | int | `10080` |  |

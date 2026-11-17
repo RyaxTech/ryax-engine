@@ -1,5 +1,13 @@
 {{ if .Values.config }}
 {{ if get .Values.config "site" }}
+{{- /*
+The ResourceQuota and the LimitRange are for the user actions only. In the
+release namespace they would also apply to Ryax's own services: the LimitRange
+defaults (64Mi) OOM-kill every one that sets no resources of its own.
+*/}}
+{{- if eq (tpl .Values.config.site.spec.namespace .) .Release.Namespace }}
+{{- fail (printf "config.site.spec.namespace is %q, the release namespace: the user actions need a namespace of their own (by default global.ryax.userNamespace, e.g. ryaxns-execs)." .Release.Namespace) }}
+{{- end }}
 {{- if .Values.userNamespaceResources }}
 apiVersion: v1
 kind: ResourceQuota

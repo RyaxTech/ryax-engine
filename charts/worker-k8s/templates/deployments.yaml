@@ -135,6 +135,10 @@ spec:
             - name: RYAX_ACTIONS_PULL_SECRET
               value: {{ .Values.actionRegistrySecret }}
             {{- end }}
+            {{- if .Values.skupper.enabled }}
+            - name: RYAX_SKUPPER_NAMESPACE
+              value: {{ .Values.skupper.namespace | default .Release.Namespace | quote }}
+            {{- end }}
             {{- if .Values.internalRegistryOverride }}
             - name: RYAX_INTERNAL_REGISTRY_OVERRIDE
               value: {{ .Values.internalRegistryOverride | quote }}

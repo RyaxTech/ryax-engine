@@ -61,6 +61,19 @@ rules:
   - update
   - patch
   - delete
+# The HTTP service add-on exposes actions to the main site through Skupper
+- apiGroups:
+  - skupper.io
+  resources:
+  - connectors
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

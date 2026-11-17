@@ -121,6 +121,10 @@ spec:
               value: /{{ .Values.baseApiUrl }}
             - name: RYAX_USER_NAMESPACE
               value: {{ .Values.global.ryax.userNamespace }}
+            - name: RYAX_USER_API_INGRESS_CLASS
+              value: {{ tpl (.Values.ingress.className | default .Values.global.ingress.className | default "") . | quote }}
+            - name: RYAX_SKUPPER_NAMESPACE
+              value: {{ .Values.skupper.namespace | default .Release.Namespace | quote }}
             - name: RYAX_DEFAULT_ACTION_LOG_LEVEL
               value: {{ .Values.defaultActionLogLevel }}
             - name: RYAX_OTLP_ENDPOINT
