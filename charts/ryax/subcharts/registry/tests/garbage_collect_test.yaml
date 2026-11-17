@@ -1,0 +1,39 @@
+suite: Garbage collection runs on the registry's own volume
+# The CronJob used to test `persistence.enable` -- a key nothing sets -- so it
+# never mounted the volume and ran on an empty /var/lib/registry: "failed to
+# mark: filesystem: Path not found: /docker/registry/v2/repositories". It must
+# mount the claim the registry Deployment uses, at the same path.
+templates:
+  - templates/cronJobs.yaml
+  - templates/deployments.yaml
+tests:
+  - it: mounts the registry's claim
+    template: templates/cronJobs.yaml
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: RELEASE-NAME-registry-pvc-0
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /var/lib/registry
+  - it: uses the same claim and path as the registry
+    template: templates/deployments.yaml
+    documentSelector:
+      path: kind
+      value: Deployment
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: RELEASE-NAME-registry-pvc-0
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /var/lib/registry
+  - it: mounts nothing without persistence
+    template: templates/cronJobs.yaml
+    set:
+      persistence.enabled: false
+    asserts:
+      - isNullOrEmpty:
+          path: spec.jobTemplate.spec.template.spec.volumes
+      - notExists:
+          path: spec.jobTemplate.spec.template.spec.containers[0].volumeMounts
