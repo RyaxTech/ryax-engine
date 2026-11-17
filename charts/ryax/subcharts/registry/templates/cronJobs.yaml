@@ -27,7 +27,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           volumes:
-            {{- if .Values.persistence.enable }}
+            {{- if .Values.persistence.enabled }}
             - name: registry-data-dir
               persistentVolumeClaim:
                 claimName: {{ include "registry.fullname" . | printf "%s-pvc-0" }}
@@ -57,7 +57,7 @@ spec:
                 - garbage-collect
                 - --delete-untagged
                 - /etc/distribution/config.yml
-              {{- if .Values.persistence.enable }}
+              {{- if .Values.persistence.enabled }}
               volumeMounts:
                 - name: registry-data-dir
                   mountPath: /var/lib/registry
