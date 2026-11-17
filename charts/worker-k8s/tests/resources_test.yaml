@@ -1,4 +1,9 @@
 suite: Worker resources and the user namespace
+# Listed, so that only these render: without the list every template does, and
+# secrets.yaml needs the postgresql dependency, which CI does not build.
+templates:
+  - templates/deployments.yaml
+  - templates/resource_quota.yaml
 release:
   namespace: ryaxns
 set:
