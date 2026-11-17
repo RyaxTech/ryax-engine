@@ -1,8 +1,62 @@
 We are proud to announce the release of:
 
 ✨ ✨ ✨ ✨ ✨ ✨ ✨ ✨ ✨
-# Ryax 26.10.1
+# Ryax 26.11.0
 ✨ ✨ ✨ ✨ ✨ ✨ ✨ ✨ ✨
+
+Actions with an HTTP service now work on remote sites, IntelliScale sizes memory from what actually happened, and a round of security fixes.
+
+## New features
+
+### HTTP services on remote sites
+
+An action using the **HTTP service** add-on, such as JupyterLab or web hosting, can now run on a remote Kubernetes site linked through Skupper. Its URL is served by the main site as before. Ryax creates the Skupper route for each execution and removes it when the execution ends.
+
+To enable it, set `skupper.enabled: true` on the worker of each remote site. See the [multi-site worker guide](https://docs.ryax.tech/howto/worker-install/).
+
+### IntelliScale memory recommendations (roadmap#1480)
+
+- A memory out-of-memory error is now treated as a lower bound for the next recommendation.
+- The minimum memory IntelliScale recommends is configurable.
+- IntelliScale learns from a metric before publishing the recommendation it triggers.
+
+## Bug fixes and improvements
+
+- **HTTP service Ingresses now name their IngressClass** (from `ingress.className`). Without one, they were only served when some IngressClass was the cluster default.
+- **The Kubernetes add-on works again on workers.** Its labels, annotations, node selector and companion Service were ignored since the worker protocol v2, because add-on settings were not sent to the worker.
+- **Worker chart:**
+  - The worker and its database migration get explicit resources by default (256Mi request, 1Gi limit).
+  - The chart now refuses a `config.site.spec.namespace` equal to the release namespace. The action LimitRange (64Mi defaults) would otherwise apply to Ryax's own pods and get them OOM-killed.
+- **Registry garbage collection never ran.** Its CronJob did not mount the registry volume. It does now, but it is **suspended by default**: see the upgrade notes.
+- Fixed the JupyterLab action build.
+- An invalid UTF-8 error is reported with its message.
+
+## Security fixes
+
+- Python dependencies upgraded in every service:
+  - `opentelemetry-api` (GHSA-mf5v-w3w3-f6cg)
+  - `dnspython` (GHSA-vvf4-9x63-8xvv)
+  - in the default actions: `oauthlib` (GHSA-3jp2-3mrg-2vxc), `pyasn1` (4 advisories) and `soupsieve` (3 advisories)
+- Front: `node-forge` 1.4.3 (7 advisories) and `follow-redirects` 1.16.3 (GHSA-mrwp-f3q8-3g9p). `picomatch` (GHSA-fc5q-39xc-vjpf) has no fix; it is only used by the build tooling.
+- nixpkgs moved to the latest nixos-26.05 (2026-11-16) in every image.
+- Helm dependencies updated: traefik 42.4.1, kube-prometheus-stack 90, loki 7.6, alloy 1.16.
+
+## Upgrade to this version
+
+Admins should take care of the following when upgrading:
+
+- **Remote sites with Skupper:** set `skupper.enabled: true` in each remote worker's values. The Runner exposes remote HTTP services in its release namespace; set `runner.skupper.namespace` if your Skupper site is elsewhere.
+- **Worker `config.site.spec.namespace`** must not be the release namespace (`ryaxns-execs` by default). The upgrade now fails with an explicit error if it is.
+- **Registry garbage collection is suspended** (`registry.garbageCollect.suspend: true`) until roadmap#1500: a build pushing during collection could lose image layers. To reclaim space, run it by hand when no build is running: `kubectl create job --from=cronjob/<release>-registry-garbage-collect gc-manual`. The first real run deletes everything deleted images left behind since install, so back up the registry volume first.
+- **kube-prometheus-stack 89 → 90** (only if `kube-prometheus-stack.enabled`): read its [upgrade notes](https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/UPGRADE.md) for the CRDs to apply before upgrading.
+- **The Kubernetes add-on now takes effect.** Workflows that set it get the labels, annotations, node selector and Service they ask for.
+- New optional settings `RYAX_K8S_EXECUTION_LABEL`, `RYAX_K8S_ADDON_LABEL`, `RYAX_SKUPPER_ANNOTATION`, `RYAX_SKUPPER_API_GROUP` and `RYAX_SKUPPER_API_VERSION` keep their defaults. If you change one, change it on the Runner and on every worker.
+
+The 26.10.1 release notes follow.
+
+---
+
+# Ryax 26.10.1
 
 A security patch release on top of 26.10.0. It fixes the advisories published since 26.10.0 and changes no behaviour or API, so upgrading needs no extra steps.
 

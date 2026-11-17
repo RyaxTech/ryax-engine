@@ -419,8 +419,10 @@ For this you need a DNS entry, for example `skupper.ryax.example.com`, pointing 
 
 * Now that we have the configuration and a secure connection with the credentials we will use Helm to install the latest Ryax Worker:
   ```sh
-  helm upgrade --install ryax-worker oci://registry.ryax.org/release-charts/ryax-worker-k8s --values worker.yaml -n ryaxns
+  helm upgrade --install ryax-worker oci://registry.ryax.org/release-charts/ryax-worker-k8s --values worker.yaml -n ryaxns \
+    --set skupper.enabled=true
   ```
+  `skupper.enabled=true` tells the worker it reaches the main site through Skupper. An action using the HTTP service add-on (JupyterLab, web hosting, …) is then exposed on the main site through a Skupper route that Ryax creates for each execution. Set `skupper.namespace` if the Skupper site is not in the worker's release namespace. On the main site, the Runner looks for its Skupper site in its release namespace; set `runner.skupper.namespace` otherwise.
 * For help `worker-values.yaml` see the guide [here](#configuration-1).
 
 That's it! Once the *ryax-worker* pod is up and running, you can test it by forcing to deploy on that worker on the deploy tab.
