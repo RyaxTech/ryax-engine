@@ -156,6 +156,9 @@ FRONT_LOCKFILE="front/yarn.lock"
 VULNIX_CACHE_DIR="${VULNIX_CACHE_DIR:-$HOME/.cache/vulnix}"
 # Seconds one vulnix run may take before it is killed and retried.
 VULNIX_ATTEMPT_TIMEOUT="${VULNIX_ATTEMPT_TIMEOUT:-900}"
+# Where vulnix downloads the NVD feeds from, when not nvd.nist.gov (vulnix's
+# default). Empty: the default. See nix-community/vulnix#171.
+VULNIX_MIRROR="${VULNIX_MIRROR:-}"
 
 check_node_deps() {
   section "Scanning the front dependencies for CVEs"
@@ -341,17 +344,20 @@ check_images() {
     # Each attempt is bounded: a feed download that stalls rather than fails
     # used to hold the job until its one-hour timeout, with no attempt left.
     # A `timeout` kill exits 124, which counts as a failed attempt below.
+    local -a mirror_args=()
+    [ -n "$VULNIX_MIRROR" ] && mirror_args=(--mirror "$VULNIX_MIRROR")
     local attempt
     for attempt in 1 2 3; do
       rc=0
       if [ -n "$whitelist" ]; then
         timeout "$VULNIX_ATTEMPT_TIMEOUT" nix run nixpkgs#vulnix -- \
-          --cache-dir "$VULNIX_CACHE_DIR" --closure "$scan_dir/$image" \
-          --whitelist "$whitelist" --json > "$scan_dir/$image.json" || rc=$?
+          "${mirror_args[@]}" --cache-dir "$VULNIX_CACHE_DIR" \
+          --closure "$scan_dir/$image" --whitelist "$whitelist" \
+          --json > "$scan_dir/$image.json" || rc=$?
       else
         timeout "$VULNIX_ATTEMPT_TIMEOUT" nix run nixpkgs#vulnix -- \
-          --cache-dir "$VULNIX_CACHE_DIR" --closure "$scan_dir/$image" \
-          --json > "$scan_dir/$image.json" || rc=$?
+          "${mirror_args[@]}" --cache-dir "$VULNIX_CACHE_DIR" \
+          --closure "$scan_dir/$image" --json > "$scan_dir/$image.json" || rc=$?
       fi
       if { [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; } \
           && python3 -c 'import json, sys; assert isinstance(json.load(open(sys.argv[1])), list)' \
