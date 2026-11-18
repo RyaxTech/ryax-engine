@@ -28,6 +28,7 @@ To enable it, set `skupper.enabled: true` on the worker of each remote site. See
   - The worker and its database migration get explicit resources by default (256Mi request, 1Gi limit).
   - The chart now refuses a `config.site.spec.namespace` equal to the release namespace. The action LimitRange (64Mi defaults) would otherwise apply to Ryax's own pods and get them OOM-killed.
 - **Registry garbage collection never ran.** Its CronJob did not mount the registry volume. It does now, but it is **suspended by default**: see the upgrade notes.
+- **GPU catalog:** node pools can now declare every NVIDIA GPU Scaleway offers: L4, P100, RTX PRO 6000 (MIG `1g.24gb`, `2g.48gb`, `4g.96gb`) and B300 (MIG `1g.34gb` to `7g.269gb`), next to the H100, A100, A30, L40S, V100 and T4 already listed.
 - Fixed the JupyterLab action build.
 - An invalid UTF-8 error is reported with its message.
 
