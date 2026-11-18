@@ -159,6 +159,14 @@ VULNIX_ATTEMPT_TIMEOUT="${VULNIX_ATTEMPT_TIMEOUT:-900}"
 # Where vulnix downloads the NVD feeds from, when not nvd.nist.gov (vulnix's
 # default). Empty: the default. See nix-community/vulnix#171.
 VULNIX_MIRROR="${VULNIX_MIRROR:-}"
+# Set (CI does), the feeds are fetched into this directory first -- resumed,
+# retried, checked against their .meta, and only when they changed -- and
+# served to vulnix from 127.0.0.1. vulnix's own download gives up after 10s
+# without data and starts over each time, which nvd.nist.gov and its mirrors
+# are too slow for from CI. Empty: vulnix downloads the feeds itself.
+VULNIX_FEEDS_DIR="${VULNIX_FEEDS_DIR:-}"
+# Where to fetch them from, tried in order.
+VULNIX_FEED_SOURCES="${VULNIX_FEED_SOURCES:-https://nvd.nist.gov/feeds/json/cve/2.0/ https://mirror.cveb.in/nvd/json/cve/2.0/}"
 
 check_node_deps() {
   section "Scanning the front dependencies for CVEs"
@@ -323,6 +331,114 @@ check_images() {
   (cd core && nix build "${all_attrs[@]}" \
       --option sandbox relaxed --no-warn-dirty --no-link) || true
 
+  local feed_server_pid=""
+  if [ -n "$VULNIX_FEEDS_DIR" ]; then
+    printf '%s  fetching the NVD feeds into %s%s\n' "$DIM" "$VULNIX_FEEDS_DIR" "$RESET"
+    # shellcheck disable=SC2086 # the sources are a space-separated list
+    if ! python3 - "$VULNIX_FEEDS_DIR" $VULNIX_FEED_SOURCES <<'NVDPY'
+import gzip, hashlib, os, sys, time, urllib.request
+from datetime import date
+
+dest, sources = sys.argv[1], [s.rstrip("/") + "/" for s in sys.argv[2:]]
+os.makedirs(dest, exist_ok=True)
+year = date.today().year
+# What vulnix 1.12 asks its mirror for: the last six yearly feeds, and the
+# "modified" one once its database is less than a week old.
+names = [str(y) for y in range(year - 5, year + 1)] + ["modified"]
+
+
+def get(url, timeout, headers=None):
+    req = urllib.request.Request(url, headers={"User-Agent": "ryax-ci", **(headers or {})})
+    return urllib.request.urlopen(req, timeout=timeout)
+
+
+def parse_meta(text):
+    fields = dict(line.split(":", 1) for line in text.strip().splitlines() if ":" in line)
+    return {"sha256": fields["sha256"].strip().lower(), "gzSize": int(fields["gzSize"])}
+
+
+def digest(path):
+    # The .meta sha256 is the one of the uncompressed JSON
+    h = hashlib.sha256()
+    with gzip.open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def fetch(name):
+    gz = os.path.join(dest, f"nvdcve-2.0-{name}.json.gz")
+    meta_path = os.path.join(dest, f"nvdcve-2.0-{name}.meta")
+    errors = []
+    for src in sources:
+        try:
+            with get(f"{src}nvdcve-2.0-{name}.meta", 60) as r:
+                meta_text = r.read().decode()
+            meta = parse_meta(meta_text)
+        except Exception as err:
+            errors.append(f"{src}: {err}")
+            continue
+        if (os.path.exists(meta_path) and os.path.exists(gz)
+                and parse_meta(open(meta_path).read()) == meta
+                and os.path.getsize(gz) == meta["gzSize"]):
+            print(f"    {name}: unchanged")
+            return True
+        part = gz + ".part"
+        for attempt in range(8):
+            have = os.path.getsize(part) if os.path.exists(part) else 0
+            if have > meta["gzSize"]:
+                os.remove(part)
+                have = 0
+            if have == meta["gzSize"]:
+                break
+            try:
+                headers = {"Range": f"bytes={have}-"} if have else None
+                with get(f"{src}nvdcve-2.0-{name}.json.gz", 120, headers) as r:
+                    with open(part, "ab" if have and r.status == 206 else "wb") as out:
+                        while chunk := r.read(1 << 20):
+                            out.write(chunk)
+            except Exception as err:
+                errors.append(f"{src} attempt {attempt + 1}: {err}")
+                time.sleep(min(60, 10 * (attempt + 1)))
+        if os.path.exists(part) and os.path.getsize(part) == meta["gzSize"] \
+                and digest(part) == meta["sha256"]:
+            os.replace(part, gz)
+            with open(meta_path, "w") as f:
+                f.write(meta_text)
+            print(f"    {name}: fetched from {src}")
+            return True
+        if os.path.exists(part):
+            os.remove(part)
+        errors.append(f"{src}: incomplete or corrupt download")
+    if os.path.exists(gz):
+        # An older complete copy still scans: report it, do not fail on it
+        print(f"    {name}: could not refresh, using the cached copy ({errors[-1]})")
+        return True
+    print(f"    {name}: FAILED: {'; '.join(errors[-3:])}")
+    return False
+
+
+sys.exit(0 if all([fetch(name) for name in names]) else 1)
+NVDPY
+    then
+      ko "could not fetch the NVD feeds"
+      rm -rf "$scan_dir"
+      return 1
+    fi
+    local port
+    port=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
+    python3 -m http.server --bind 127.0.0.1 --directory "$VULNIX_FEEDS_DIR" "$port" \
+      >/dev/null 2>&1 &
+    feed_server_pid=$!
+    VULNIX_MIRROR="http://127.0.0.1:$port/"
+    local _
+    for _ in $(seq 1 20); do
+      python3 -c 'import sys, urllib.request; urllib.request.urlopen(sys.argv[1], timeout=2)' \
+        "$VULNIX_MIRROR" >/dev/null 2>&1 && break
+      sleep 0.5
+    done
+  fi
+
   for image in $CORE_IMAGES; do
     printf '\n%s• %s%s\n' "$BLUE" "$image" "$RESET"
     # A build failure is a real error, distinct from a vulnerability finding.
@@ -414,6 +530,7 @@ PY
     fi
   done
   rm -rf "$scan_dir"
+  [ -n "$feed_server_pid" ] && kill "$feed_server_pid" 2>/dev/null
 
   if [ "$scan_errors" -ne 0 ]; then
     ko "Some container images could not be scanned"

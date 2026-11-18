@@ -135,13 +135,15 @@ security_checks_images:
     # (failing since 2026-10-30): keep vulnix's feeds between pipelines, so a
     # run only refreshes the "modified" feed. Inside the project for the cache.
     VULNIX_CACHE_DIR: "$CI_PROJECT_DIR/.cache/vulnix"
-    # nvd.nist.gov keeps timing out the feed downloads: fetch them from the
-    # community mirror instead (nix-community/vulnix#171).
-    VULNIX_MIRROR: "https://mirror.cveb.in/nvd/json/cve/2.0/"
+    # vulnix's own feed download times out against nvd.nist.gov and its
+    # mirrors from here: lint.sh fetches the raw feeds itself (resumed,
+    # retried, only when changed) and serves them to vulnix locally.
+    VULNIX_FEEDS_DIR: "$CI_PROJECT_DIR/.cache/nvd-feeds"
   cache:
     key: vulnix-nvd-feeds
     paths:
       - .cache/vulnix
+      - .cache/nvd-feeds
     # Saved even when the scan fails on a finding: the feeds are still good.
     when: always
   script:
