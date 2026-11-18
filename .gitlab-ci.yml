@@ -5,7 +5,7 @@ variables:
 include:
   - project: ryax-tech/ryax/ci_common
     # Releases: https://gitlab.com/ryax-tech/ryax/ci_common/-/tags
-    ref: 8.3.0
+    ref: 8.4.0
     file: common-steps-gitlab-ci.yml
 
 stages:
