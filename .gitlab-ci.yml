@@ -12,8 +12,8 @@ stages:
   - verify
 
 # THROWAWAY BRANCH: diagnose why vulnix times out in CI. Not for merging.
-# Round 2: all five images, as security_checks_images, with an 8Gi or a 16Gi
-# memory limit, sampling memory and I/O pressure.
+# Round 3: all five images, with or without `cachix watch-exec` around the
+# scan as security_checks_images runs it.
 .security_base:
   stage: verify
   # No `image:` override on purpose: these jobs need the nix, uv and cachix of the
@@ -55,10 +55,11 @@ diag_vulnix:
   timeout: 2h
   parallel:
     matrix:
-      - KUBERNETES_MEMORY_LIMIT: ["8Gi", "16Gi"]
+      - WRAP: [watch-exec, none]
   variables:
     KUBERNETES_MEMORY_REQUEST: "2Gi"
     VARIANT: project
+    KUBERNETES_MEMORY_LIMIT: "8Gi"
     VULNIX_FEEDS_DIR: "$CI_PROJECT_DIR/.cache/nvd-feeds"
     VULNIX_ATTEMPT_TIMEOUT: "2400"
   cache:
@@ -75,4 +76,10 @@ diag_vulnix:
         export VULNIX_CACHE_DIR="$CI_PROJECT_DIR/.cache/vulnix"
       fi
     - cachix use ryaxtech-ci
-    - ./diag-vulnix.sh
+    - 'if [ -n "${CACHIX_AUTH_TOKEN:-}" ]; then echo "CACHIX_AUTH_TOKEN is set"; else echo "CACHIX_AUTH_TOKEN is NOT set"; fi'
+    - |
+      if [ "$WRAP" = watch-exec ]; then
+        cachix watch-exec ryaxtech-ci -- ./diag-vulnix.sh
+      else
+        ./diag-vulnix.sh
+      fi
