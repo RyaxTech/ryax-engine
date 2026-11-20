@@ -277,7 +277,7 @@ OSVPY
 # references, which is all vulnix needs -- no container runtime involved.
 # See core/docs/development.md for the image list, why the build needs a
 # relaxed sandbox, and how to triage and whitelist findings.
-CORE_IMAGES="runner worker-k8s worker-ssh-slurm action-builder authorization"
+CORE_IMAGES="${CORE_IMAGES:-runner worker-k8s worker-ssh-slurm action-builder authorization}"
 CORE_WHITELIST="core/nix/vulnix-whitelist.toml"
 # CVSSv3 base score at which a finding stops being a warning and fails the run.
 # 7.0 is the CVSS "high" boundary, so low and medium findings only warn.
@@ -466,14 +466,14 @@ NVDPY
     for attempt in 1 2 3; do
       rc=0
       if [ -n "$whitelist" ]; then
-        timeout "$VULNIX_ATTEMPT_TIMEOUT" nix run nixpkgs#vulnix -- \
+        timeout "$VULNIX_ATTEMPT_TIMEOUT" nix run nixpkgs#vulnix -- -vv \
           "${mirror_args[@]}" --cache-dir "$VULNIX_CACHE_DIR" \
           --closure "$scan_dir/$image" --whitelist "$whitelist" \
-          --json > "$scan_dir/$image.json" || rc=$?
+          --json > "$scan_dir/$image.json" 2> >(while IFS= read -r l; do printf '%s vulnix: %s\n' "$(date -u +%T)" "$l"; done >&2) || rc=$?
       else
-        timeout "$VULNIX_ATTEMPT_TIMEOUT" nix run nixpkgs#vulnix -- \
+        timeout "$VULNIX_ATTEMPT_TIMEOUT" nix run nixpkgs#vulnix -- -vv \
           "${mirror_args[@]}" --cache-dir "$VULNIX_CACHE_DIR" \
-          --closure "$scan_dir/$image" --json > "$scan_dir/$image.json" || rc=$?
+          --closure "$scan_dir/$image" --json > "$scan_dir/$image.json" 2> >(while IFS= read -r l; do printf '%s vulnix: %s\n' "$(date -u +%T)" "$l"; done >&2) || rc=$?
       fi
       if { [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; } \
           && python3 -c 'import json, sys; assert isinstance(json.load(open(sys.argv[1])), list)' \
