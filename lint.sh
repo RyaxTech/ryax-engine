@@ -167,6 +167,12 @@ VULNIX_MIRROR="${VULNIX_MIRROR:-}"
 VULNIX_FEEDS_DIR="${VULNIX_FEEDS_DIR:-}"
 # Where to fetch them from, tried in order.
 VULNIX_FEED_SOURCES="${VULNIX_FEED_SOURCES:-https://nvd.nist.gov/feeds/json/cve/2.0/ https://mirror.cveb.in/nvd/json/cve/2.0/}"
+# Set (CI does, to ryaxtech-ci), the image closures are built under
+# `cachix watch-exec <cache>`, so that what this run builds is pushed for the
+# next one. Only the build: vulnix must not run under watch-exec, where
+# `nix run nixpkgs#vulnix` hangs after substituting vulnix and every attempt
+# dies at its timeout (that was the 15-minute stalls in CI).
+CACHIX_CACHE="${CACHIX_CACHE:-}"
 
 check_node_deps() {
   section "Scanning the front dependencies for CVEs"
@@ -328,7 +334,11 @@ check_images() {
     all_attrs+=(".#${image}.image")
   done
   printf '%s  realising %d image closures%s\n' "$DIM" "${#all_attrs[@]}" "$RESET"
-  (cd core && nix build "${all_attrs[@]}" \
+  local -a build_wrapper=()
+  if [ -n "$CACHIX_CACHE" ] && command -v cachix >/dev/null 2>&1; then
+    build_wrapper=(cachix watch-exec "$CACHIX_CACHE" --)
+  fi
+  (cd core && "${build_wrapper[@]}" nix build "${all_attrs[@]}" \
       --option sandbox relaxed --no-warn-dirty --no-link) || true
 
   local feed_server_pid=""
