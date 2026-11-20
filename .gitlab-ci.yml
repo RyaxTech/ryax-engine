@@ -12,8 +12,8 @@ stages:
   - verify
 
 # THROWAWAY BRANCH: diagnose why vulnix times out in CI. Not for merging.
-# Two variants in parallel: vulnix's database in the build directory (as in
-# security_checks_images, with its GitLab cache, read-only) or in /tmp.
+# Round 2: all five images, as security_checks_images, with an 8Gi or a 16Gi
+# memory limit, sampling memory and I/O pressure.
 .security_base:
   stage: verify
   # No `image:` override on purpose: these jobs need the nix, uv and cachix of the
@@ -55,12 +55,11 @@ diag_vulnix:
   timeout: 2h
   parallel:
     matrix:
-      - VARIANT: [project, tmp]
+      - KUBERNETES_MEMORY_LIMIT: ["8Gi", "16Gi"]
   variables:
     KUBERNETES_MEMORY_REQUEST: "2Gi"
-    KUBERNETES_MEMORY_LIMIT: "8Gi"
+    VARIANT: project
     VULNIX_FEEDS_DIR: "$CI_PROJECT_DIR/.cache/nvd-feeds"
-    CORE_IMAGES: runner
     VULNIX_ATTEMPT_TIMEOUT: "2400"
   cache:
     key: vulnix-nvd-feeds
